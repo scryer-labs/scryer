@@ -137,7 +137,7 @@ class DeclarationScannerTest {
     @Test fun `root only scope is explicit for multi module Gradle builds`() {
         root.resolve("settings.gradle").writeText("include ':api'")
         val facts = gradle("")
-        assertTrue(facts.notes.any { "module dependencies are not expanded" in it })
+        assertTrue(facts.notes.any { "Module directory missing" in it })
     }
 
     @Test fun `Maven reads namespace properties local management and scope`() {

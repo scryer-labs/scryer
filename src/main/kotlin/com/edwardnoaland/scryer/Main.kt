@@ -22,7 +22,7 @@ fun runCli(args: Array<String>, out: PrintStream, err: PrintStream): Int {
             out.println("Build: ${build.tool} ${build.version ?: "unknown (no recognized wrapper version)"} [${build.definition}]")
         }
         out.println()
-        out.println("Declared dependencies (root only; not a resolved/transitive graph):")
+        out.println("Declared dependencies (local declarations; not a resolved/transitive graph):")
         if (facts.dependencies.isEmpty()) out.println("  No supported declarations found; this is not proof of no dependencies.")
         facts.dependencies.forEach { dep ->
             out.println("  [${dep.configuration}] ${dep.notation}  ${dep.versionDisplay} (${dep.kind}; ${dep.source})")

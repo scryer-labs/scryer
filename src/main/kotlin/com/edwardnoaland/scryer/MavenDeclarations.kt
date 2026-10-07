@@ -45,7 +45,8 @@ internal object MavenDeclarations {
                 val group = expand(dep.text("groupId")) ?: "<missing groupId>"
                 val name = expand(dep.text("artifactId")) ?: "<missing artifactId>"
                 DependencyDeclaration(expand(dep.text("scope")) ?: "compile", "$group:$name",
-                    expand(dep.text("version")), "pom.xml", kind)
+                    expand(dep.text("version")), "pom.xml", kind, declaredVersion = dep.text("version"),
+                    rawDeclaration = "${dep.text("groupId")}:${dep.text("artifactId")}:${dep.text("version") ?: "<unspecified>"}")
             }.orEmpty()
         val managedContainer = project.child("dependencyManagement")?.child("dependencies")
         val managed = dependencies(managedContainer, "managed declaration")
@@ -62,7 +63,9 @@ internal object MavenDeclarations {
                         expand(element.text("classifier")) == expand(definition.text("classifier"))
                 }
                 val match = matches.singleOrNull()?.value
-                dep.copy(version = match?.version, kind = if (match?.version != null) "dependency (local management)" else "dependency")
+                dep.copy(version = match?.version, declaredVersion = dep.declaredVersion,
+                    managementSource = if (match?.version != null) "pom.xml dependencyManagement" else null,
+                    kind = if (match?.version != null) "dependency (local management)" else "dependency")
             }
         }
         val plugins = project.child("build")?.child("plugins")?.children("plugin")?.map { plugin ->

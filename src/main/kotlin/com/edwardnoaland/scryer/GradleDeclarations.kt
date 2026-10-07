@@ -39,7 +39,9 @@ internal object GradleDeclarations {
                         expandProperties("$" + "{" + it + "}", properties)
                     }
                     dependencies += DependencyDeclaration(config, "${mapValues["group"]}:${mapValues["name"]}",
-                        version, filename)
+                        version, filename,
+                        declaredVersion = Regex("\\bversion\\s*:\\s*(['\"])(.*?)\\1").find(leadingArgument)?.groupValues?.get(2) ?: versionExpression,
+                        rawDeclaration = statement)
                     continue
                 }
                 // Only a leading literal or supported platform(literal); don't mine nested closures.
@@ -49,7 +51,8 @@ internal object GradleDeclarations {
                 val parts = coordinate?.split(':')
                 if (parts != null && parts.size in 2..3 && parts.take(2).all { it.isNotBlank() }) {
                     dependencies += DependencyDeclaration(config, parts.take(2).joinToString(":"),
-                        parts.getOrNull(2), filename, if (literal.groupValues[1].isEmpty()) "dependency" else "platform")
+                        parts.getOrNull(2), filename, if (literal.groupValues[1].isEmpty()) "dependency" else "platform",
+                        declaredVersion = literal.groupValues[3].split(':').getOrNull(2), rawDeclaration = statement)
                 } else {
                     notes += "$filename: unsupported dependency declaration: ${statement.take(120)}"
                 }
