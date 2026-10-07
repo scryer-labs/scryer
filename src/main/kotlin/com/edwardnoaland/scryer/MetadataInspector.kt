@@ -74,8 +74,12 @@ internal fun inspectMetadata(root: Path, modules: List<ModuleFacts>, dependencie
     if (Regex("org\\.junit\\.(?:Test|runner|Assert)|junit:junit").containsMatchIn(testText + joined)) testFrameworks += "JUnit 4"
     if ("org.junit.jupiter" in testText || "junit-jupiter" in joined || "test-junit5" in buildText) testFrameworks += "JUnit 5"
     if ("org.testng" in testText || "testng:testng" in joined) testFrameworks += "TestNG"
-    val reports = modules.flatMap { module -> listOf("build/reports/jacoco/test/jacocoTestReport.xml", "build/reports/jacoco/test/html/index.html", "target/site/jacoco/jacoco.xml")
-        .map { root.resolve(module.directory).resolve(it) }.filter { it.isRegularFile() }.map(::rel) }
+    val reports = modules.flatMap { module ->
+        listOf("build/reports/jacoco", "build/reports/evidence", "target/site/jacoco").map { root.resolve(module.directory).resolve(it) }
+            .filter { it.isDirectory() }.flatMap { directory -> Files.walk(directory).use { paths -> paths.filter { path ->
+                path.isRegularFile() && !Files.isSymbolicLink(path) && (path.extension == "xml" || path.fileName.toString() == "index.html")
+            }.map(::rel).toList() } }
+    }.distinct().sorted()
     val tools = listOf("surefire", "failsafe", "jacoco", "checkstyle", "spotbugs", "pmd", "sonar").filter { it in buildText.lowercase() }
     val taskSignals = Regex("(?:tasks\\.(?:create|register)|task)\\s*\\(?\\s*['\"]?(\\w*[Tt]est\\w*)").findAll(buildText).map { it.groupValues[1] }.distinct().toList()
     val testing = TestingFacts(testFrameworks.toList(), coordinates.filter { "mockito" in it }, coordinates.filter { "assertj" in it || "hamcrest" in it },

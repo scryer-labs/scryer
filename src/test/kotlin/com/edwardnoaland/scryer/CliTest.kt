@@ -28,11 +28,11 @@ class CliTest {
     @Test fun `scan accepts paths containing spaces and reports versions`() {
         val directory = root.resolve("legacy project").createDirectories()
         directory.resolve("build.gradle").writeText("dependencies { compile 'commons-lang:commons-lang:2.6' }")
-        val (code, output, error) = invoke("scan", directory.toString())
+        val (code, output, error) = invoke("scan", directory.toString(), "--static", "--dependencies")
         assertEquals(0, code)
         assertEquals("", error)
-        assertContains(output, "commons-lang:commons-lang  2.6")
-        assertContains(output, "not a resolved/transitive graph")
+        assertContains(output, "commons-lang:commons-lang:2.6")
+        assertContains(output, "Direct dependencies")
     }
 
     @Test fun `missing repository exits with useful error`() {

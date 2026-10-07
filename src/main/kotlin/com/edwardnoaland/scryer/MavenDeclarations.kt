@@ -46,7 +46,9 @@ internal object MavenDeclarations {
                 val name = expand(dep.text("artifactId")) ?: "<missing artifactId>"
                 DependencyDeclaration(expand(dep.text("scope")) ?: "compile", "$group:$name",
                     expand(dep.text("version")), "pom.xml", kind, declaredVersion = dep.text("version"),
-                    rawDeclaration = "${dep.text("groupId")}:${dep.text("artifactId")}:${dep.text("version") ?: "<unspecified>"}")
+                    rawDeclaration = "${dep.text("groupId")}:${dep.text("artifactId")}:${dep.text("version") ?: "<unspecified>"}",
+                    type = expand(dep.text("type")) ?: "jar", classifier = expand(dep.text("classifier")),
+                    optional = expand(dep.text("optional"))?.toBooleanStrictOrNull())
             }.orEmpty()
         val managedContainer = project.child("dependencyManagement")?.child("dependencies")
         val managed = dependencies(managedContainer, "managed declaration")

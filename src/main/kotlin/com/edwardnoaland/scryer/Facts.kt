@@ -54,9 +54,9 @@ data class GraphEdge(
     val selectedVersion: String?,
     val direct: Boolean,
     val reasons: List<String> = emptyList(),
-    val conflict: Boolean = false,
-    val forced: Boolean = false,
-    val changedSelection: Boolean = false,
+    val conflict: Boolean? = false,
+    val forced: Boolean? = false,
+    val changedSelection: Boolean? = false,
     val unresolved: String? = null,
     val constraint: Boolean = false,
     val scope: String? = null,
@@ -88,9 +88,9 @@ data class ResolutionFacts(
     val resolvedComponentCount: Int? get() = if (configurations.none { it.nodes.isNotEmpty() }) null else configurations
         .flatMap { it.nodes }.filter { it.group != null }.map { "${it.group}:${it.artifact}:${it.version}" }.distinct().size
     val conflictCount: Int? get() = if (configurations.none { it.nodes.isNotEmpty() } || metadata["conflictReasons"] == "unavailable") null else configurations.flatMap { graph ->
-        graph.edges.filter { it.conflict }.map { "${graph.module}|${it.to}" }
+        graph.edges.filter { it.conflict == true }.map { "${graph.module}|${it.to}" }
     }.distinct().size
     val overrideCount: Int? get() = if (configurations.none { it.nodes.isNotEmpty() } || metadata["overrideReasons"] == "unavailable") null else configurations.flatMap { graph ->
-        graph.edges.filter { it.forced }.map { "${graph.module}|${it.to}" }
+        graph.edges.filter { it.forced == true }.map { "${graph.module}|${it.to}" }
     }.distinct().size
 }

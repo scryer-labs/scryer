@@ -1,0 +1,80 @@
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.component.ModuleComponentSelector
+
+// Runs only this metadata task; does not depend on compile/test/package tasks.
+gradle.projectsEvaluated {
+    rootProject.tasks.create('scryerCollectFacts') {
+        doLast {
+            def result = [projects: [], configurations: []]
+            rootProject.allprojects.each { p ->
+                def sourceSets = p.extensions.findByName('sourceSets')
+                def javaExtension = p.extensions.findByName('java')
+                def direct = []
+                def sources = [:]
+                if (sourceSets != null) sourceSets.each { s -> sources[s.name] = s.allSource.srcDirs.collect { it.absolutePath } }
+                def toolchain = null
+                try { if (javaExtension != null && javaExtension.hasProperty('toolchain')) toolchain = javaExtension.toolchain.languageVersion.orNull?.asInt()?.toString() }
+                catch (Exception ignored) { }
+                result.projects << [toolchainVersion: toolchain, id: p.path, directory: p.projectDir.absolutePath,
+                    sourceVersion: p.hasProperty('sourceCompatibility') ? p.sourceCompatibility.toString() : null,
+                    targetVersion: p.hasProperty('targetCompatibility') ? p.targetCompatibility.toString() : null,
+                    plugins: p.plugins.collect { it.class.name },
+                    repositories: p.repositories.collect { r -> r.hasProperty('url') ? r.url.toString() : r.name },
+                    sourceSets: sources, testTasks: p.tasks.withType(org.gradle.api.tasks.testing.Test).collect { it.path },
+                    declaredDependencies: direct,
+                    managementSources: (p.plugins.hasPlugin('io.spring.dependency-management') ? ['io.spring.dependency-management plugin'] : [])]
+                p.configurations.findAll { it.canBeResolved }.each { c ->
+                    def graph = [module: p.path, configuration: c.name, root: null, nodes: [], edges: [], status: 'complete', error: null]
+                    try {
+                        def rr = c.incoming.resolutionResult
+                        def seen = new HashSet()
+                        def traverse
+                        traverse = { component ->
+                            def id = component.id.displayName
+                            if (!seen.add(id)) return
+                            def mc = component.id instanceof ModuleComponentIdentifier
+                            graph.nodes << [id: id, group: mc ? component.id.group : null,
+                                artifact: mc ? component.id.module : null, version: mc ? component.id.version : null,
+                                kind: mc ? 'module' : 'project']
+                            component.dependencies.each { dep ->
+                                def requestedVersion = dep.requested instanceof ModuleComponentSelector ? (dep.requested.version ?: null) : null
+                                if (dep instanceof ResolvedDependencyResult) {
+                                    def selected = dep.selected
+                                    def version = selected.id instanceof ModuleComponentIdentifier ? selected.id.version : null
+                                    def reason = selected.selectionReason
+                                    def reasons = reason.descriptions.collect { it.description }
+                                    graph.edges << [from: id, to: selected.id.displayName, requested: dep.requested.displayName,
+                                        requestedVersion: requestedVersion, selectedVersion: version,
+                                        direct: id == graph.root, reasons: reasons, conflict: reason.conflictResolution,
+                                        forced: reason.forced, constraint: dep.hasProperty('constraint') ? dep.constraint : false,
+                                        changedSelection: requestedVersion != null && version != null && requestedVersion != version,
+                                        unresolved: null]
+                                    traverse(selected)
+                                } else if (dep instanceof UnresolvedDependencyResult) {
+                                    graph.status = 'partial'
+                                    graph.edges << [from: id, to: null, requested: dep.requested.displayName,
+                                        requestedVersion: requestedVersion, selectedVersion: null, direct: id == graph.root,
+                                        reasons: [], conflict: null, forced: null, constraint: false, changedSelection: null,
+                                        unresolved: dep.failure.message]
+                                }
+                            }
+                        }
+                        graph.root = rr.root.id.displayName
+                        traverse(rr.root)
+                    } catch (Exception e) { graph.status = 'failed'; graph.error = e.message }
+                    result.configurations << graph
+                }
+                p.configurations.each { c ->
+                    c.dependencies.each { dep ->
+                        direct << [configuration: c.name, group: dep.group, artifact: dep.name, version: dep.version,
+                            kind: dep.hasProperty('dependencyProject') ? 'project' : 'dependency']
+                    }
+                }
+            }
+            new File(System.getProperty('scryer.output')).text = JsonOutput.toJson(result)
+        }
+    }
+}

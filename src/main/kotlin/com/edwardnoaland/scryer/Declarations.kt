@@ -13,6 +13,9 @@ data class DependencyDeclaration(
     val rawDeclaration: String? = null,
     val resolvedVersions: List<String> = emptyList(),
     val direct: Boolean = kind != "managed declaration",
+    val type: String? = null,
+    val classifier: String? = null,
+    val optional: Boolean? = null,
 ) {
     val group: String get() = notation.substringBefore(':')
     val artifact: String get() = notation.substringAfter(':', "")

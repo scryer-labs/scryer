@@ -1,78 +1,98 @@
 # Scryer
 
-A Kotlin CLI for collecting local Java repository facts. Later, `analyze --before <ref> --after <ref>` will examine change impact and test evidence. This first version implements only `scan`.
+`scan` is a repository facts collector for Java repositories. It reports declarations, evaluated build-model facts and lightweight source signals. It does not recommend upgrades, plan transformations or produce a confidence score.
 
 ## Run
 
-Scryer itself uses Java 21, Kotlin 2.2.21 and Gradle Wrapper 8.14.3. Scanned repositories may use Java 8 or other versions: scan never runs their code. No global Gradle or Kotlin installation is needed.
-
-With your existing mise Java 21 active:
+Scryer uses Java 21, Kotlin 2.2.21 and its Gradle 8.14.3 Wrapper. Target repositories may use older JDKs and build tools.
 
 ```sh
 export JAVA_HOME="$(mise where java)"
 ./gradlew test installDist
-./build/install/scryer/bin/scryer scan ../legacy-java-fixture
+export PATH="$PWD/build/install/scryer/bin:$PATH"
+scryer scan ../legacy-java-fixture
 ```
 
-To invoke it as `scryer scan <path>` from elsewhere:
+Default scan shows a concise summary, attempts dependency resolution with the target repository's Wrapper, and retains the full model internally. This evaluates target build configuration and may download dependency metadata/plugins; it does **not** compile, test or package the target. Arbitrary build configuration code can have its own side effects. Use `--static` to inspect local declarations/source signals without executing target configuration or downloading anything.
 
 ```sh
-export PATH="$PWD/build/install/scryer/bin:$PATH"
-scryer scan /path/to/project
+scryer scan . --dependencies        # all observed direct declarations, grouped by module/configuration
+scryer scan . --dependency-tree     # resolved graph per module/configuration, rendered as a tree
+scryer scan . --json                # complete versioned facts model, no presentation truncation
+scryer scan . --static              # local facts only; resolution is not_requested
+scryer scan . --color always        # force styled output
 ```
 
-`--help` prints usage. Exit codes: 0 successful scan (possibly incomplete, with notes); 1 invalid/unreadable repository or metadata; 2 invalid CLI arguments. Quote paths containing spaces. Supply the directory containing the build definition; scan does not search parent directories or all descendant repositories.
+Flags may be combined. JSON always remains plain machine-readable JSON even with `--color always`; dependency/tree view flags do not trim JSON. `--color auto|always|never` defaults to auto, which enables color only for an interactive stdout and honors `NO_COLOR`. Explicit always overrides automatic detection. Styling uses Mordant, with cyan/bold headings, dim metadata, green complete/configured values, yellow signals/conflicts/partial collection and red unknown/unresolved values. Shared graph nodes use `[already shown]` references; JSON retains every edge.
 
-## Current output
+Quote paths with spaces. The supplied path must contain a recognized build/settings definition; scan does not search arbitrary ancestor repositories. Exit codes: 0 facts collected (possibly partial); 1 invalid/unreadable input; 2 invalid CLI arguments. Check `resolution.status`/notes rather than treating exit 0 as full resolution or a passing target build.
 
-For the Order Service fixture, the scanner finds:
+## Summary and count semantics
 
-```text
-Build: Gradle 4.10.3 [build.gradle]
+The default view groups Project, Dependencies, Key dependencies (at most five), Testing, Code Characteristics, Verification and collection notes. It does not print the entire transitive graph. `--json` retains all notes and facts; the terminal summary shows at most four notes.
 
-Declared dependencies (root only; not a resolved/transitive graph):
-  [compile] org.springframework.boot:spring-boot-starter-web  unspecified (possibly managed; not resolved)
-  [compile] commons-lang:commons-lang  2.6
-  [compile] com.google.guava:guava  20.0
-  [testCompile] org.springframework.boot:spring-boot-starter-test  unspecified (possibly managed; not resolved)
+For the legacy fixture, scan observes Java source/target 8, Gradle 4.10.3, one module, Spring Boot plugin 2.1.18.RELEASE, JUnit 4, JaCoCo configuration, javax usage and reflection. Actual resolved Spring starters are 2.1.18.RELEASE and Mockito is 2.23.4.
 
-Declared build plugins:
-  org.springframework.boot  2.1.18.RELEASE
-  io.spring.dependency-management  1.0.11.RELEASE
+- Direct (observed): unique module/group/artifact declarations across configurations, including dependencies added by evaluated build configuration. Dependency detail retains each configuration and declaration expression. Managed-only entries are not counted as direct dependencies; explicitly declared platforms are.
+- Resolved components: unique group/artifact/version across collected configurations. Includes build-tool configurations such as JaCoCo, not only application runtime.
+- Transitive-only: resolved component identities not selected as a direct root edge in any collected configuration. A library may be direct in one configuration and transitive in another; per-edge `direct` records that distinction. Counts of declarations, selected component versions and graph edges are different measures and need not sum.
+- Conflict selections / forced overrides: unique module/selected-component with the corresponding Gradle selection reason, deduplicated across configurations. Each edge's requested/selected versions and reasons remain in JSON. A different selected version is not automatically called a conflict or forced override.
+- Empty/unavailable collection uses null/unknown, not invented zero counts. Partial counts describe observed configurations, not proven completeness.
+- Testing counts are statically classified **source files**, not JUnit method counts, tests run, assertion quality or confidence. Integration classification uses conventional integration roots and `*IntegrationTest` / `*IT` filenames. Custom test task/root metadata is also retained from the evaluated Gradle model.
+
+## Full facts model
+
+`RepositoryFacts` is separate from `ScanRenderer`; JSON exports schemaVersion 1 and all collector data, not terminal strings. The model includes:
+
+- Build definitions, wrapper presence/version, modules, parent POM coordinates, declared plugins, repository signals and custom build files.
+- Declared/evaluated Java source, target and toolchain versions; preview-feature signal; Java/Kotlin/Groovy source presence; JPMS descriptor paths.
+- Dependency group/artifact, original declared version/expression, expanded local version, selected versions, module/configuration, declaration kind, local management provenance and raw declaration.
+- Evaluated Gradle projects, source sets, test tasks, repositories, plugin implementation classes, configured direct dependencies and management-plugin sources.
+- Per-configuration nodes and edges: requested versions, selected versions, parent/child relationships, direct/transitive context, constraint flag, selection descriptions, conflict/forced flags and unresolved failures. Maven nodes additionally preserve type/classifier/optional and edges preserve scope.
+- Framework/testing signals, Mockito/AssertJ/Hamcrest coordinates, source layouts, existing generated roots, ignored/disabled annotation signals, JaCoCo configuration and existing report paths.
+- Annotation-processor declarations (including Maven compiler paths), Lombok/codegen signals, reflection, Class.forName, class loading, ServiceLoader, proxy annotations, JNI, serialization and bytecode-library signals with source locations.
+- Build/test/package command conventions, CI filenames and quality-tool signals.
+
+Signals are lexical observations, not AST analysis, proof of framework activation or runtime execution. Commands are inferred conventions, not verified build/test evidence. Report paths are existing files, not coverage percentages or evidence bound to the current revision. Generated roots distinguish existing directories from configured Gradle source-set metadata; scan does not run code generation.
+
+## Build-model adapters and limits
+
+### Gradle
+
+A bundled init script adds one standalone model task using Gradle's `ResolutionResult`. It evaluates all projects and attempts each `canBeResolved` configuration, recording individual failures. It does not add dependencies on compile/test tasks or edit target source/build files. Project caches use a temporary directory; dependency caches use an existing target `.tooling/gradle` when available, otherwise `SCRYER_CACHE_HOME` or a cache below the system temporary directory.
+
+Gradle dependencies can be computed by arbitrary code, so static DSL parsing remains a best-effort fallback. Literal Groovy/Kotlin declarations, map notation, properties, local variables, platforms and simple module/projectDir declarations are supported. Evaluated projects/declarations can fill gaps such as version catalogs/custom source sets. Composite builds and remote convention/plugin/buildscript dependency graphs are not fully modeled. Selection reasons and the management plugin are retained, but Gradle does not always expose which exact BOM entry produced a version; the collector does not invent it.
+
+Scryer runs on Java 21. For an older target Wrapper, set a compatible JVM for the child process:
+
+```sh
+SCRYER_JAVA_HOME=/path/to/jdk8 scryer scan /path/to/legacy-project
 ```
 
-Actual output additionally shows declaration kind/source. Spring Boot's plugin version is not presented as the resolved starter version. Unknown or unspecified values remain visible rather than being guessed.
+For the existing fixture, a project-local Java 8 under `.tooling/mise/data/installs/java` is auto-detected. A toolchain declaration is distinct from the JVM used to evaluate the build. Missing/incompatible target JVM, timeout or resolution failure produces unavailable/partial facts with notes. Global Java settings are not changed.
 
-## Supported facts and limits
+### Maven
 
-- Detects `build.gradle`, `build.gradle.kts`, and `pom.xml`. If both tools are present, reports both.
-- Reads Gradle distribution version from `gradle/wrapper/gradle-wrapper.properties`, Maven distribution version from `.mvn/wrapper/maven-wrapper.properties`. It does not confuse Maven Wrapper's own version with Maven's version. Missing/unrecognized wrapper version is unknown; an installed global tool version is not repository evidence.
-- Gradle: module literal dependencies in common Groovy/Kotlin DSL syntax, legacy `compile`/`testCompile`, string-valued Groovy map notation, platform declarations, simple string variable assignments and `gradle.properties` substitutions. Lists literal versioned plugins separately.
-- Maven: module dependency declarations, scopes, project properties, local dependencyManagement entries and versioned build plugins. Parent coordinates are reported as a note. The XML reader rejects DTD/external entity declarations and never fetches XML resources.
-- No transitive graph, remote parent/BOM resolution, Maven effective model, Gradle execution/model evaluation, profile activation, version catalog resolution, custom configuration execution or computed/composite module expansion. Unsupported Gradle dependency statements are shown as notes; detected modules/profiles explicitly indicate incomplete scope. Managed declarations are distinct from actual dependency declarations.
-- Static Gradle reading is best effort for the documented forms, not a general Groovy/Kotlin parser. Computed coordinates, triple-quoted strings, complex variable scope/control flow, custom DSLs and applied convention scripts can require a future model adapter. Even a scan without notes does not prove completeness. The output always identifies declarations, not an authoritative resolved dependency list.
+Static scanning reads reactor modules, root/module properties, dependencies, local dependencyManagement, parent coordinates and plugins. XML DTD/external entity declarations are rejected.
 
-## How Kotlin scans a Java project
+With `mvnw`, the adapter invokes pinned `maven-dependency-plugin:3.8.1:tree` in JSON mode for each module, preserving selected tree relationships/scopes. Compilation/tests are not run. Dependency and Wrapper caches stay below `SCRYER_CACHE_HOME`/the system temporary cache unless the user supplied `MAVEN_USER_HOME`. Modules that cannot resolve are retained as failed graphs; already-collected graphs are preserved.
 
-This slice doesn't parse Java source yet. Kotlin runs on the JVM and uses ordinary filesystem APIs to read build metadata: `Properties` for wrappers, a small literal reader for Gradle DSL, and a JDK XML parser for POMs. The CLI, fact data classes, scanners and terminal presentation are separate enough to add facts without coupling them to output.
+Maven's JSON tree does not provide authoritative omitted conflict candidates, override reasons or exact effective BOM/parent provenance. Those fields/counts are **unavailable**, and Maven resolution is marked **partial**, even when the selected tree succeeds. Requested root versions are filled only when supported by local declaration/management facts. Reactor dependencies not installed/resolvable independently, remote parent properties, activated profiles and effective compiler configuration can need a later richer Maven adapter. Static source-version hints and evaluated Gradle defaults have different provenance and should not be confused.
 
-Relevant code:
+Neither adapter silently falls back to a global Maven/Gradle installation. Model subprocesses have a 120-second timeout. The JSON graph is selected-model evidence, not artifact compilation or build health.
 
-- `Main.kt`: CLI arguments, exit codes and text output.
-- `RepositoryScanner.kt`: root validation, tool detection and wrapper versions.
-- `Declarations.kt`: dependency/plugin facts and conservative property expansion.
-- `GradleDeclarations.kt` / `MavenDeclarations.kt`: local build declarations.
+## Review / verification
 
-Java symbols/AST/bytecode and state-bound coverage belong to the future analyze engine, not this facts collector.
+Small commits separate static model/topology collection from build-model adapters and presentation. Tests cover existing declaration behavior, module discovery/remaps/boundaries, source/test/code signals, raw versus managed versions, null versus zero, concise summary/full JSON, flags/colors, graph cycles/shared nodes, scopes and conflict rendering.
 
-## Verification and next steps
+Real integration smoke checks use:
 
-Tests cover wrapper versions, legacy/Kotlin declarations, properties, unknown expressions, comments/exclusions, explicit unsupported declarations, Maven namespaces/local management/parent limitations, malformed XML/external entities, CLI errors and paths with spaces. The installed CLI is also checked against the real legacy fixture. Tests create tiny temporary build files, not another Maven fixture repository.
+- The healthy Java 8 / Gradle 4.10.3 legacy fixture: 65 resolved components in the current validation environment, actual starter/Mockito versions, valid full JSON.
+- A disposable Gradle 8.14.3 project: JUnit 4.12 requested → 4.13.2 selected by conflict, Guava 20.0 → 21.0 forced; reasons distinguish both.
+- A disposable Maven 3.9.9 project: JUnit 4.12 → Hamcrest 1.3 with test scope; missing conflict reasons remain null.
 
-Coverage is deferred: a useful confidence report needs the code state, an actual test run and attributable coverage. CI capability inspection is later nice-to-have. Planned `--remote-list` and `-o <OUTPUT_FILE>` Markdown output are not accepted CLI options yet. No plan/apply, recipe orchestration, remote queries or confidence score is included.
+These smoke projects are temporary checks, not a new maintained Maven fixture. No source changes are made to the legacy fixture by Scryer; target configuration itself remains ordinary executable build code.
 
-Build compatibility reference: [Kotlin Gradle configuration](https://kotlinlang.org/docs/gradle-configure-project.html). Wrapper format references: [Gradle Wrapper](https://docs.gradle.org/8.14.3/userguide/gradle_wrapper.html), [Maven Wrapper](https://maven.apache.org/tools/wrapper/index.html).
+Future: remote latest-version enrichment (`--remote-list`), Markdown export (`-o`), richer Maven effective-model provenance, and `analyze --before --after`. These are not implemented CLI options. No modernization strategy or single confidence score is produced.
 
-## Expanded repository facts model
-
-The facts model now discovers literal Gradle modules and Maven reactor modules, records wrapper presence, and preserves dependency declaration expressions and local management provenance. It collects Java source/target/toolchain declarations, existing source roots, framework/testing/code-generation signals, ignored annotations, JPMS descriptors, repositories, parent POMs, verification command conventions and CI/quality config signals. Source-file counts and lexical signals are not execution evidence. Computed/composite modules and external parent/BOM inheritance remain explicit limits. Graph types are prepared for the next resolved-model/CLI slice.
+Implementation references: [Gradle ResolutionResult](https://docs.gradle.org/8.14.3/javadoc/org/gradle/api/artifacts/result/ResolutionResult.html), [Maven dependency tree JSON](https://maven.apache.org/components/plugins-archives/maven-dependency-plugin-3.8.1/tree-mojo.html), [Mordant styling](https://ajalt.github.io/mordant/guide/).

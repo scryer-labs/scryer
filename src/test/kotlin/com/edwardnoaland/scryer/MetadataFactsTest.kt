@@ -56,4 +56,11 @@ class MetadataFactsTest {
         assertEquals("pom.xml dependencyManagement", dep.managementSource)
     }
 
+    @Test fun `Maven compiler processor paths are distinct from runtime dependencies`() {
+        write("pom.xml", """<project><build><plugins><plugin><artifactId>maven-compiler-plugin</artifactId><configuration><annotationProcessorPaths><path><groupId>org.mapstruct</groupId><artifactId>mapstruct-processor</artifactId><version>1.5.5.Final</version></path></annotationProcessorPaths></configuration></plugin></plugins></build></project>""")
+        val facts = RepositoryScanner().scan(root)
+        assertTrue(facts.dependencies.isEmpty())
+        assertEquals("org.mapstruct:mapstruct-processor", facts.compileTooling.annotationProcessors.single().notation)
+        assertContains(facts.compileTooling.codeGenerationSignals, "mapstruct")
+    }
 }
