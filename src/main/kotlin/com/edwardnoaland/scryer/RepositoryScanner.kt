@@ -7,7 +7,13 @@ import kotlin.io.path.isDirectory
 import kotlin.io.path.isRegularFile
 
 data class BuildFacts(val tool: String, val version: String?, val definition: String)
-data class RepositoryFacts(val root: Path, val builds: List<BuildFacts>)
+data class RepositoryFacts(
+    val root: Path,
+    val builds: List<BuildFacts>,
+    val dependencies: List<DependencyDeclaration> = emptyList(),
+    val plugins: List<PluginDeclaration> = emptyList(),
+    val notes: List<String> = emptyList(),
+)
 
 class ScanException(message: String) : RuntimeException(message)
 
@@ -27,7 +33,11 @@ class RepositoryScanner {
                 Regex("apache-maven-(.+)-bin\\.(?:zip|tar\\.gz)")), "pom.xml")
         }
         if (builds.isEmpty()) throw ScanException("No build.gradle, build.gradle.kts or pom.xml found in $root")
-        return RepositoryFacts(root, builds)
+        val declarations = builds.map { build ->
+            if (build.tool == "Gradle") GradleDeclarations.read(root, build.definition) else MavenDeclarations.read(root)
+        }
+        return RepositoryFacts(root, builds, declarations.flatMap { it.dependencies },
+            declarations.flatMap { it.plugins }, declarations.flatMap { it.notes })
     }
 
     private fun wrapperVersion(file: Path, pattern: Regex): String? {
