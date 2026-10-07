@@ -56,7 +56,7 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
         }
         row("Annotation processors", (facts.compileTooling.annotationProcessors + directDependencies(facts).filter { "annotationProcessor" in it.configuration || "kapt" in it.configuration }).map { it.notation }.distinct().size.toString() + " observed")
         row("Generated roots", facts.sources.generatedRoots.size.toString() + " existing")
-        header("\nVerification")
+        header("\nVerification (suggested commands; may be incomplete or inaccurate)")
         row("Build", facts.verification.buildCommands.joinToString(" / "))
         row("Test", facts.verification.testCommands.joinToString(" / "))
         row("CI configs", facts.verification.ciFiles.size.toString() + " found")
