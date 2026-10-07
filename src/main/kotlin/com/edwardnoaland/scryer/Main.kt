@@ -31,7 +31,7 @@ fun runCli(args: Array<String>, out: PrintStream, err: PrintStream): Int {
     return try {
         var facts = RepositoryScanner().scan(Path.of(options.path))
         if (!options.static) {
-            val resolution = DependencyResolver().resolve(facts)
+            val resolution = DependencyResolver(progress = { err.println("scryer: $it") }).resolve(facts)
             facts = withResolution(facts, resolution)
         }
         if (options.json) {

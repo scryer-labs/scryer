@@ -10,7 +10,10 @@ import kotlin.io.path.*
 internal val jsonMapper = jacksonObjectMapper()
 
 /** A build-tool adapter, not a recipe runner. Output logs never contaminate JSON/stdout. */
-class DependencyResolver(private val timeoutSeconds: Long = 120) {
+class DependencyResolver(
+    private val timeoutSeconds: Long = System.getenv("SCRYER_RESOLUTION_TIMEOUT_SECONDS")?.toLongOrNull()?.takeIf { it > 0 } ?: 600,
+    private val progress: (String) -> Unit = {},
+) {
     fun resolve(facts: RepositoryFacts): ResolutionFacts {
         if (facts.builds.map { it.tool }.distinct().size != 1) return ResolutionFacts("unavailable", notes = listOf("Multiple build tools: resolved graph is ambiguous; select a single-build repository."))
         val temporary = Files.createTempDirectory("scryer-resolution-")
@@ -54,6 +57,7 @@ class DependencyResolver(private val timeoutSeconds: Long = 120) {
         val graphs = mutableListOf<ConfigurationGraph>()
         // One module invocation per output avoids overwriting a reactor's shared JSON file.
         for (module in facts.modules.filter { it.definition == "pom.xml" }) {
+            progress("Resolving Maven dependencies for ${module.id} (first scan may download dependencies; timeout ${timeoutSeconds}s)…")
             val output = temp.resolve("maven-${graphs.size}.json")
             val cache = Path.of(System.getenv("SCRYER_CACHE_HOME") ?: System.getProperty("java.io.tmpdir") + "/scryer-cache").resolve("maven")
             try {
@@ -74,7 +78,8 @@ class DependencyResolver(private val timeoutSeconds: Long = 120) {
 
         }
         return ResolutionFacts(if (graphs.any { it.nodes.isNotEmpty() }) "partial" else "unavailable", "Maven dependency:tree 3.8.1", graphs,
-            notes = listOf("Resolved Maven trees collected. Exact conflict/override reasons and effective BOM provenance are unavailable from JSON tree; null counts do not mean zero."),
+            notes = graphs.mapNotNull { it.error?.let { error -> "Maven module ${it.module}: $error" } } +
+                if (graphs.any { it.nodes.isNotEmpty() }) listOf("Resolved Maven trees collected. Exact conflict/override reasons and effective BOM provenance are unavailable from JSON tree; null counts do not mean zero.") else emptyList(),
             metadata = mapOf("conflictReasons" to "unavailable", "overrideReasons" to "unavailable"))
     }
 
@@ -85,15 +90,26 @@ class DependencyResolver(private val timeoutSeconds: Long = 120) {
         builder.environment().putAll(environment)
         builder.environment().putIfAbsent("MAVEN_USER_HOME", Path.of(System.getenv("SCRYER_CACHE_HOME") ?: System.getProperty("java.io.tmpdir") + "/scryer-cache").resolve("maven-home").toString())
         val process = builder.start()
-        if (!process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-            process.toHandle().descendants().forEach { it.destroyForcibly() }
+        val started = System.nanoTime()
+        var completed = false
+        while ((System.nanoTime() - started) / 1_000_000_000 < timeoutSeconds) {
+            val remaining = timeoutSeconds - (System.nanoTime() - started) / 1_000_000_000
+            if (process.waitFor(minOf(15, remaining.coerceAtLeast(1)), TimeUnit.SECONDS)) { completed = true; break }
+            progress("Still collecting build/dependency facts (${(System.nanoTime() - started) / 1_000_000_000}s elapsed)…")
+        }
+        if (!completed) {
+            // Some sandboxed macOS processes cannot enumerate descendants; retain the timeout diagnosis.
+            runCatching { process.toHandle().descendants().use { children -> children.forEach { it.destroyForcibly() } } }
             process.destroyForcibly()
             process.waitFor(5, TimeUnit.SECONDS)
-            throw ScanException("Build-model collection timed out after ${timeoutSeconds}s")
+            throw ScanException("Build-model collection timed out after ${timeoutSeconds}s. " +
+                "Downloads are cached; retry or set SCRYER_RESOLUTION_TIMEOUT_SECONDS. Last output: " + logTail(log))
         }
         if (process.exitValue() != 0) throw ScanException("Build-model collection failed (exit ${process.exitValue()}): " +
-            log.readText().takeLast(1800).replace(Regex("\\u001B\\[[;\\d]*m"), ""))
+            logTail(log))
     }
+
+    private fun logTail(log: Path) = log.readText().takeLast(1800).replace(Regex("\\u001B\\[[;\\d]*m"), "")
 
     private fun chooseJava(facts: RepositoryFacts): String {
         System.getenv("SCRYER_JAVA_HOME")?.let { return it }

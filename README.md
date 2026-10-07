@@ -79,7 +79,7 @@ With `mvnw`, the adapter invokes pinned `maven-dependency-plugin:3.8.1:tree` in 
 
 Maven's JSON tree does not provide authoritative omitted conflict candidates, override reasons or exact effective BOM/parent provenance. Those fields/counts are **unavailable**, and Maven resolution is marked **partial**, even when the selected tree succeeds. Requested root versions are filled only when supported by local declaration/management facts. Reactor dependencies not installed/resolvable independently, remote parent properties, activated profiles and effective compiler configuration can need a later richer Maven adapter. Static source-version hints and evaluated Gradle defaults have different provenance and should not be confused.
 
-Neither adapter silently falls back to a global Maven/Gradle installation. Model subprocesses have a 120-second timeout. The JSON graph is selected-model evidence, not artifact compilation or build health.
+Neither adapter silently falls back to a global Maven/Gradle installation. Each model subprocess has a 600-second timeout, configurable with `SCRYER_RESOLUTION_TIMEOUT_SECONDS` (positive seconds). Cold Maven scans can download hundreds of dependency descriptors and query every repository declared by the project. Progress goes to stderr every 15 seconds, keeping JSON stdout clean. Failed modules display their error and the last build-tool output; a failed scan does not claim that trees were collected. Successful downloads are cached for subsequent scans. Repository order, mirrors and dependency declarations are not changed to speed up collection. The JSON graph is selected-model evidence, not artifact compilation or build health.
 
 ## Review / verification
 

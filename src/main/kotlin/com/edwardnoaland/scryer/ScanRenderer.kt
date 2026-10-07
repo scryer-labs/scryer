@@ -33,6 +33,9 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
         row("Conflict selections", facts.resolution.conflictCount?.let { if (it > 0) warning(it.toString()) else it.toString() } ?: bad("unavailable"))
         row("Forced overrides", facts.resolution.overrideCount?.let { if (it > 0) warning(it.toString()) else it.toString() } ?: bad("unavailable"))
         row("Resolution", if (facts.resolution.status == "complete") good("complete") else warning(facts.resolution.status))
+        graphs.filter { it.error != null }.forEach {
+            row("Resolution failure", bad("${it.module}: ${it.error}"))
+        }
         val key = directDependencies(facts).distinctBy { it.notation }.filter {
             Regex("spring|hibernate|jackson|servlet|guava|commons-lang").containsMatchIn(it.notation)
         }.take(5)

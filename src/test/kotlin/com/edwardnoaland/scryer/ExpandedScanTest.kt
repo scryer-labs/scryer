@@ -71,6 +71,33 @@ class ExpandedScanTest {
         assertEquals(null, ResolutionFacts(configurations = listOf(graph), metadata = mapOf("conflictReasons" to "unavailable")).conflictCount)
     }
 
+    @Test fun `failed Maven collection exposes error without claiming success`() {
+        write("pom.xml", "<project><modelVersion>4.0.0</modelVersion><groupId>example</groupId><artifactId>app</artifactId><version>1</version></project>")
+        write("mvnw", "#!/bin/sh\necho 'Repository unavailable'\nexit 2\n")
+        val facts = RepositoryScanner().scan(root)
+        val progress = mutableListOf<String>()
+        val resolution = DependencyResolver(5, progress::add).resolve(facts)
+        assertEquals("unavailable", resolution.status)
+        assertNull(resolution.resolvedComponentCount)
+        assertTrue(progress.isNotEmpty())
+        assertTrue(resolution.notes.none { "trees collected" in it })
+        val output = ByteArrayOutputStream()
+        ScanRenderer(PrintStream(output), false).summary(withResolution(facts, resolution))
+        assertContains(output.toString(), "Resolution failure")
+        assertContains(output.toString(), "Repository unavailable")
+    }
+
+    @Test fun `Maven timeout preserves last activity and retry guidance`() {
+        write("pom.xml", "<project><modelVersion>4.0.0</modelVersion><groupId>example</groupId><artifactId>app</artifactId><version>1</version></project>")
+        write("mvnw", "#!/bin/sh\necho 'Downloading dependency descriptor'\nexec sleep 30\n")
+        val resolution = DependencyResolver(1).resolve(RepositoryScanner().scan(root))
+        assertEquals("unavailable", resolution.status)
+        val error = resolution.configurations.single().error!!
+        assertContains(error, "timed out after 1s")
+        assertContains(error, "Downloading dependency descriptor")
+        assertContains(error, "SCRYER_RESOLUTION_TIMEOUT_SECONDS")
+    }
+
     @Test fun `tree renders shared nodes and conflicts while keeping raw JSON edges`() {
         val graph = ConfigurationGraph(":", "testRuntimeClasspath", "project :", listOf(
             GraphNode("project :", null, null, null, "project"), GraphNode("g:a:2", "g", "a", "2")), listOf(
