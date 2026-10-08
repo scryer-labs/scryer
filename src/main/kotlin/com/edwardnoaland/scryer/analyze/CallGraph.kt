@@ -20,7 +20,7 @@ data class SymbolId(val owner: String, val name: String, val descriptor: String)
     override fun toString(): String = "$owner#$name$descriptor"
 }
 data class SymbolLocation(val id: SymbolId, val path: String, val line: Int, val sourceSignature: String, val role: SourceRole = sourceRole(path))
-enum class CallKind { DIRECT, POSSIBLE_DISPATCH, METHOD_REFERENCE }
+enum class CallKind { DIRECT, POSSIBLE_DISPATCH, METHOD_REFERENCE, REFLECTION }
 data class CallEdge(val caller: SymbolId, val callee: SymbolId, val kind: CallKind)
 data class CallBoundary(val caller: SymbolId?, val path: String, val line: Long, val expression: String, val reason: String)
 data class CallGraph(val symbols: List<SymbolLocation>, val edges: List<CallEdge>, val boundaries: List<CallBoundary>, val notes: List<String>)
@@ -104,7 +104,18 @@ internal class CallGraphCollector {
             val ambiguous = locations.groupBy { it.id }.filterValues { it.size > 1 }.keys +
                 methods.keys.filter { it.owner in duplicateOwners }
             ambiguous.forEach { methods.remove(it) }
+            val reflection = LiteralReflection(trees, ::descriptor) { ownerName, name, parameters, declared ->
+                val owner = elements.getTypeElement(ownerName.replace('$', '.'))
+                val candidates = if (owner == null) emptyList() else
+                    (if (declared) owner.enclosedElements else elements.getAllMembers(owner))
+                        .filterIsInstance<ExecutableElement>()
+                        .filter { it.simpleName.toString() == name && (declared || Modifier.PUBLIC in it.modifiers) }
+                        .mapNotNull(::symbol)
+                        .filter { it in methods && it.descriptor.startsWith("(${parameters.joinToString("")})") }
+                candidates.distinct().singleOrNull()
+            }
             for (unit in units) {
+                val reflected = reflection.resolve(unit)
                 val path = root.relativize(Path.of(unit.sourceFile.toUri())).toString()
                 var caller: SymbolId? = null
                 object : TreePathScanner<Unit, Unit>() {
@@ -124,16 +135,17 @@ internal class CallGraphCollector {
                     private fun record(node: Tree, reference: Boolean = false, superCall: Boolean = false) {
                         val position = trees.sourcePositions.getStartPosition(unit, node)
                         if (position < 0) return
-                        val target = trees.getElement(currentPath) as? ExecutableElement
-                        val id = target?.let(::symbol)
+                        val reflectedId = (node as? MethodInvocationTree)?.let { reflected[it] }
+                        val target = reflectedId?.let { methods[it] } ?: (trees.getElement(currentPath) as? ExecutableElement)
+                        val id = reflectedId ?: target?.let(::symbol)
                         val source = caller
                         if (source == null || id == null || id !in methods) {
                             boundaries += CallBoundary(source, path, unit.lineMap.getLineNumber(position), node.toString(),
                                 if (source == null) "Initializer or unresolved caller" else if (id == null) "Unresolved call" else if (id in ambiguous) "Ambiguous source target: $id" else "External target: $id")
                             return
                         }
-                        edges += CallEdge(source, id, if (reference) CallKind.METHOD_REFERENCE else CallKind.DIRECT)
-                        if (!superCall && target.simpleName.toString() != "<init>" &&
+                        edges += CallEdge(source, id, if (reflectedId != null) CallKind.REFLECTION else if (reference) CallKind.METHOD_REFERENCE else CallKind.DIRECT)
+                        if (!superCall && target != null && target.simpleName.toString() != "<init>" &&
                             target.modifiers.none { it in setOf(Modifier.STATIC, Modifier.PRIVATE, Modifier.FINAL) }) {
                             for ((candidateId, candidate) in methods) {
                                 val owner = candidate.enclosingElement as? TypeElement ?: continue
@@ -159,7 +171,7 @@ internal class CallGraphCollector {
                 }.scan(unit, Unit)
             }
             val errors = diagnostics.diagnostics.filter { it.kind == Diagnostic.Kind.ERROR }
-            val notes = mutableListOf("Partial source call graph: no target dependency classpath, build model, generated sources, framework wiring or reflection resolution.",
+            val notes = mutableListOf("Partial source call graph: no target dependency classpath, build model, generated sources, framework wiring or dynamic reflection resolution. Literal Class.forName/getMethod/invoke chains are supported.",
                 "Virtual dispatch includes possible source overrides; lambda/method-reference edges are potential calls, not execution evidence.")
             if (errors.isNotEmpty()) notes += "Javac attribution reported ${errors.size} errors; unresolved calls/signatures remain boundaries. Example: ${errors.first().getMessage(null)}"
             if (ambiguous.isNotEmpty()) notes += "${ambiguous.size} duplicate source symbol identities were excluded; module classpaths are not separated yet."

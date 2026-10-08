@@ -146,4 +146,84 @@ class ImpactAnalysisTest {
         assertEquals(SourceRole.TEST, sourceRole("module\\src\\test\\java\\Example.java"))
     }
 
+    @Test fun `literal reflection resolves overloads and inherited public methods`() {
+        initialize()
+        val source = """
+            class Base { public int target(int value) { return 1; } public int target(String value) { return 0; } }
+            class Child extends Base { }
+            class Example {
+              Object invoke() throws Exception {
+                Class<?> type = Class.forName("Child");
+                java.lang.reflect.Method method = type.getMethod("target", int.class);
+                return method.invoke(new Child(), 1);
+              }
+            }
+        """.trimIndent()
+        val before = commit(source)
+        val after = commit(source.replace("return 1;", "return 2;"))
+        val impact = ImpactAnalyzer().analyze(GitComparer().compare(root, before, after)).after
+        val edge = impact.graph.edges.single { it.kind == CallKind.REFLECTION }
+        assertEquals(SymbolId("Base", "target", "(I)I"), edge.callee)
+        assertEquals("invoke", edge.caller.name)
+        assertTrue(impact.affected.any { it.name == "invoke" })
+    }
+
+    @Test fun `dynamic reflection and reassigned method variables stay boundaries`() {
+        initialize()
+        val source = """
+            class Example {
+              public int target() { return 1; }
+              Object dynamic(String name) throws Exception {
+                Class<?> type = Class.forName(name);
+                java.lang.reflect.Method method = type.getMethod("target");
+                return method.invoke(this);
+              }
+              Object reassigned(java.lang.reflect.Method other) throws Exception {
+                Class<?> type = Class.forName("Example");
+                java.lang.reflect.Method method = type.getMethod("target");
+                method = other;
+                return method.invoke(this);
+              }
+              Object branched(boolean flag) throws Exception {
+                Class<?> type = Class.forName("Example");
+                java.lang.reflect.Method method = type.getMethod("target");
+                if (flag) method = null;
+                return method.invoke(this);
+              }
+            }
+        """.trimIndent()
+        val before = commit(source)
+        val after = commit(source.replace("return 1;", "return 2;"))
+        val graph = ImpactAnalyzer().analyze(GitComparer().compare(root, before, after)).after.graph
+        assertTrue(graph.edges.none { it.kind == CallKind.REFLECTION })
+        assertTrue(graph.boundaries.any { it.expression.contains("method.invoke") })
+    }
+
+    @Test fun `declared reflection supports private methods but public lookup does not`() {
+        initialize()
+        val source = """
+            class Example {
+              private int target() { return 1; }
+              Object declared() throws Exception {
+                try {
+                  Class<?> type = Class.forName("Example");
+                  java.lang.reflect.Method method = type.getDeclaredMethod("target");
+                  method.setAccessible(true);
+                  return method.invoke(this);
+                } catch (Exception e) { throw e; }
+              }
+              Object publicLookup() throws Exception {
+                Class<?> type = Class.forName("Example");
+                java.lang.reflect.Method method = type.getMethod("target");
+                return method.invoke(this);
+              }
+            }
+        """.trimIndent()
+        val before = commit(source)
+        val after = commit(source.replace("return 1;", "return 2;"))
+        val graph = ImpactAnalyzer().analyze(GitComparer().compare(root, before, after)).after.graph
+        assertEquals("declared", graph.edges.single { it.kind == CallKind.REFLECTION }.caller.name)
+        assertTrue(graph.boundaries.any { it.caller?.name == "publicLookup" && it.expression.contains("method.invoke") })
+    }
+
 }

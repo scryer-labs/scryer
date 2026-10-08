@@ -74,3 +74,11 @@ The GitHub Actions workflow runs separate `clean`, `test` and `build` steps on U
 - New tests cover erased generic/array descriptors, overloads, nested owners, constructor calls, transitive/recursive callers, interface dispatch, super/static calls, deleted symbols, unresolved dependencies/signatures, method references, initializer boundaries and duplicate module identities.
 - Installed CLI analyzes all seven fixture ref pairs. Case 01 reaches quoteOrder, submitOrder, controller and direct source-test callers. Case 02 identifies the gateway symbol but cannot follow reflection yet; this remains an explicit graph limitation. Other scenarios retain resolved changed symbols, including syntax-valid compile-failure and runtime-regression examples.
 - Before and after graphs remain separate; no target build, test execution, coverage or safety/confidence score is inferred.
+
+## Conservative impact, source roles and literal reflection increments
+
+- Separate commits expand conservative branches, label source roles and resolve bounded literal reflection.
+- 70 tests pass; Wrapper `build installDist` succeeds on JDK 21. Tests cover A→B→C with sibling D/E branches and recursive descendants, unrelated exclusions, role conventions/UNKNOWN, exact reflected overloads, inherited public lookup, private declared lookup, dynamic names and reassignment/control-flow invalidation.
+- All seven disposable fixture ref pairs succeed with resolved changed symbols. Reports include all discovered scope edges and indirect inclusion reasons. Production/test tags are validated in case 01.
+- Case 02 now includes the REFLECTION edge from LegacyPaymentClient.charge to LegacyPaymentGateway.charge and reverse impact on OrderService.submitOrder. OrderController.create still has an unresolved servlet parameter type without target dependencies and is reported as a boundary, not a fabricated resolved symbol.
+- Reflection resolution is static only. Other reflection API operations, dynamic targets, framework wiring and missing target classpaths remain boundaries. No test execution or coverage evidence is claimed.
