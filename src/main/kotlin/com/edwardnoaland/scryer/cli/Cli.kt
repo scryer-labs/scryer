@@ -2,13 +2,14 @@ package com.edwardnoaland.scryer.cli
 
 import com.edwardnoaland.scryer.cli.output.ScanRenderer
 import com.edwardnoaland.scryer.cli.output.renderJson
+import com.edwardnoaland.scryer.cli.output.writeMarkdownReport
 import com.edwardnoaland.scryer.scan.ScanService
 import com.edwardnoaland.scryer.scan.model.RepositoryFacts
 import com.edwardnoaland.scryer.scan.resolve.DependencyResolver
 import java.io.PrintStream
 import java.nio.file.Path
 
-private const val USAGE = "Usage: scryer scan <path> [--dependencies] [--dependency-tree] [--json] [--static] [--color auto|always|never]"
+private const val USAGE = "Usage: scryer scan <path> [--dependencies] [--dependency-tree] [--json] [--static] [--color auto|always|never] [-o <OUTPUT_FILE>]"
 
 private data class Options(
     val path: String,
@@ -17,6 +18,7 @@ private data class Options(
     val json: Boolean,
     val staticOnly: Boolean,
     val color: String,
+    val outputFile: String?,
 )
 
 private fun parseOptions(args: Array<String>): Options? {
@@ -29,6 +31,7 @@ private fun parseOptions(args: Array<String>): Options? {
     var json = false
     var staticOnly = false
     var color = "auto"
+    var outputFile: String? = null
     var index = 2
 
     while (index < args.size) {
@@ -37,6 +40,13 @@ private fun parseOptions(args: Array<String>): Options? {
             "--dependency-tree" -> tree = true
             "--json" -> json = true
             "--static" -> staticOnly = true
+            "-o", "--output" -> {
+                index++
+                if (index >= args.size || args[index].isBlank() || args[index].startsWith('-')) {
+                    return null
+                }
+                outputFile = args[index]
+            }
             "--color" -> {
                 index++
                 if (index >= args.size || args[index] !in listOf("auto", "always", "never")) {
@@ -49,7 +59,7 @@ private fun parseOptions(args: Array<String>): Options? {
         index++
     }
 
-    return Options(args[1], dependencies, tree, json, staticOnly, color)
+    return Options(args[1], dependencies, tree, json, staticOnly, color, outputFile)
 }
 
 fun runCli(args: Array<String>, out: PrintStream, err: PrintStream): Int {
@@ -68,6 +78,11 @@ fun runCli(args: Array<String>, out: PrintStream, err: PrintStream): Int {
         val resolver = DependencyResolver(progress = { message -> err.println("scryer: $message") })
         val service = ScanService(resolver = resolver)
         val facts = service.scan(Path.of(options.path), staticOnly = options.staticOnly)
+        options.outputFile?.let { filename ->
+            val destination = Path.of(filename).toAbsolutePath().normalize()
+            writeMarkdownReport(facts, destination, includeTree = options.tree)
+            err.println("scryer: Markdown report written to $destination")
+        }
         render(facts, options, out)
         0
     } catch (exception: Exception) {

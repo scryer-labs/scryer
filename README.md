@@ -23,7 +23,11 @@ scryer scan . --dependency-tree     # resolved graph per module/configuration, r
 scryer scan . --json                # complete versioned facts model, no presentation truncation
 scryer scan . --static              # local facts only; resolution is not_requested
 scryer scan . --color always        # force styled output
+scryer scan . -o reports/scan.md    # also write a Markdown report
+scryer scan . --json -o scan.md     # JSON stdout plus a Markdown file
 ```
+
+`-o <OUTPUT_FILE>` (alias `--output`) writes UTF-8 Markdown, creates missing parent directories and replaces an existing report. The terminal/JSON output is retained; the file confirmation goes to stderr. Markdown includes modules, all observed direct dependencies with declared/selected versions, source/test facts, suggested commands and all collection notes/failures. `--dependency-tree` additionally includes a plain-text tree in the file. Reports have no terminal color codes. Collection status and unknown facts remain explicit; exporting a report does not verify the target build or tests.
 
 Flags may be combined. JSON always remains plain machine-readable JSON even with `--color always`; dependency/tree view flags do not trim JSON. `--color auto|always|never` defaults to auto, which enables color only for an interactive stdout and honors `NO_COLOR`. Explicit always overrides automatic detection. Styling uses Mordant, with cyan/bold headings, dim metadata, green complete/configured values, yellow signals/conflicts/partial collection and red unknown/unresolved values. Shared graph nodes use `[already shown]` references; JSON retains every edge.
 
@@ -95,6 +99,6 @@ Real integration smoke checks use:
 
 These smoke projects are temporary checks, not a new maintained Maven fixture. No source changes are made to the legacy fixture by Scryer; target configuration itself remains ordinary executable build code.
 
-Future: remote latest-version enrichment (`--remote-list`), Markdown export (`-o`), richer Maven effective-model provenance, and `analyze --before --after`. These are not implemented CLI options. No modernization strategy or single confidence score is produced.
+Future: remote latest-version enrichment (`--remote-list`), richer Maven effective-model provenance, and `analyze --before --after`. These are not implemented CLI options. No modernization strategy or single confidence score is produced.
 
 Implementation references: [Gradle ResolutionResult](https://docs.gradle.org/8.14.3/javadoc/org/gradle/api/artifacts/result/ResolutionResult.html), [Maven dependency tree JSON](https://maven.apache.org/components/plugins-archives/maven-dependency-plugin-3.8.1/tree-mojo.html), [Mordant styling](https://ajalt.github.io/mordant/guide/).

@@ -6,14 +6,14 @@ Scryer remains a single Gradle module. Packages separate the current scan respon
 |---|---|
 | `com.edwardnoaland.scryer` | Thin executable entry point |
 | `cli` | Argument parsing, exit codes, composition of the scan service and progress sink |
-| `cli.output` | Console sections, styles, dependency tree and JSON output |
+| `cli.output` | Console sections, styles, dependency tree, JSON output and Markdown report rendering/writing |
 | `scan` | `ScanService` coordinates local inspection, optional resolution and enrichment |
 | `scan.model` | Facts, declarations, graphs and scan errors; preserves unknown values and provenance |
 | `scan.inspect` | Local build declarations, modules, source signals and conventional verification commands |
 | `scan.resolve` | Gradle and Maven collectors, Maven tree parsing, child-process lifecycle and target JDK selection |
 | `serialization` | Shared Jackson configuration for adapter input and JSON output |
 
-The normal flow is `Main → CLI → ScanService → RepositoryScanner → optional DependencyResolver → enrichment → output`. `--static` stops after local inspection. A collector returns facts; it never prints a report. Progress is an injected callback wired to stderr by the CLI, while JSON/report output goes to stdout.
+The normal flow is `Main → CLI → ScanService → RepositoryScanner → optional DependencyResolver → enrichment → output`. `--static` stops after local inspection. A collector returns facts; it never prints a report. Progress is an injected callback wired to stderr by the CLI, while JSON/console output goes to stdout. Optional Markdown export renders the same facts without ANSI styling; the file writer uses a temporary sibling file and replacement to avoid truncating an existing report before rendering succeeds.
 
 `DependencyResolver` owns the temporary workspace and chooses the build-tool collector. `GradleModelCollector` and `MavenDependencyCollector` own their respective commands and model formats. `BuildToolProcess` owns environment setup, timeout, logs and process cleanup. Each Maven module can fail independently without discarding successful graphs.
 
