@@ -2,6 +2,8 @@
 
 `scan` is a repository facts collector for Java repositories. It reports declarations, evaluated build-model facts and lightweight source signals. It does not recommend upgrades, plan transformations or produce a confidence score.
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for package responsibilities, the scan flow and code-style guidelines.
+
 ## Run
 
 Scryer uses Java 21, Kotlin 2.2.21 and its Gradle 8.14.3 Wrapper. Target repositories may use older JDKs and build tools.

@@ -1,10 +1,12 @@
 package com.edwardnoaland.scryer
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
+import com.edwardnoaland.scryer.scan.inspect.RepositoryScanner
+import com.edwardnoaland.scryer.scan.inspect.text
 import java.nio.file.Path
 import kotlin.io.path.*
 import kotlin.test.*
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 class MetadataFactsTest {
     @TempDir lateinit var root: Path

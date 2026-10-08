@@ -1,5 +1,8 @@
-package com.edwardnoaland.scryer
+package com.edwardnoaland.scryer.scan.inspect
 
+import com.edwardnoaland.scryer.scan.model.Declarations
+import com.edwardnoaland.scryer.scan.model.DependencyDeclaration
+import com.edwardnoaland.scryer.scan.model.PluginDeclaration
 import java.nio.file.Path
 import java.util.Properties
 import kotlin.io.path.isRegularFile

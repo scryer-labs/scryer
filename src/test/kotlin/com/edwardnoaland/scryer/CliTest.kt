@@ -1,13 +1,14 @@
 package com.edwardnoaland.scryer
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
+import com.edwardnoaland.scryer.cli.runCli
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.writeText
 import kotlin.test.*
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 class CliTest {
     @TempDir lateinit var root: Path

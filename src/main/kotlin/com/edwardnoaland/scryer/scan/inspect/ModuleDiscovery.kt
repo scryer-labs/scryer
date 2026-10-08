@@ -1,12 +1,15 @@
-package com.edwardnoaland.scryer
+package com.edwardnoaland.scryer.scan.inspect
 
+import com.edwardnoaland.scryer.scan.model.BuildFacts
+import com.edwardnoaland.scryer.scan.model.ModuleFacts
+import com.edwardnoaland.scryer.scan.model.ScanException
 import java.nio.file.Path
 import javax.xml.XMLConstants
 import javax.xml.parsers.DocumentBuilderFactory
+import kotlin.io.path.*
 import org.w3c.dom.Element
 import org.xml.sax.SAXParseException
 import org.xml.sax.helpers.DefaultHandler
-import kotlin.io.path.*
 
 internal fun readPom(file: Path): Element {
     val factory = DocumentBuilderFactory.newInstance().apply {

@@ -1,5 +1,7 @@
-package com.edwardnoaland.scryer
+package com.edwardnoaland.scryer.cli.output
 
+import com.edwardnoaland.scryer.scan.model.DependencyDeclaration
+import com.edwardnoaland.scryer.scan.model.RepositoryFacts
 import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.rendering.TextStyles
 import java.io.PrintStream
@@ -14,6 +16,15 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
     private fun unknown(value: String?) = value ?: bad("unknown")
 
     fun summary(facts: RepositoryFacts) {
+        renderProject(facts)
+        renderDependencySummary(facts)
+        renderTesting(facts)
+        renderCodeCharacteristics(facts)
+        renderVerification(facts)
+        renderNotes(facts)
+    }
+
+    private fun renderProject(facts: RepositoryFacts) {
         header("Project")
         row("Repository", dim(facts.root.toString()))
         row("Java source / target", "${unknown(facts.language.sourceVersions.takeIf { it.isNotEmpty() }?.joinToString())} / ${unknown(facts.language.targetVersions.takeIf { it.isNotEmpty() }?.joinToString())}")
@@ -23,6 +34,9 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
         row("Modules", (facts.resolution.projects.map { it.id }.distinct().size.takeIf { it > 0 }
             ?: facts.modules.map { it.directory }.distinct().size).toString())
         facts.plugins.firstOrNull { it.id == "org.springframework.boot" }?.let { row("Spring Boot (plugin)", unknown(it.version)) }
+    }
+
+    private fun renderDependencySummary(facts: RepositoryFacts) {
         header("\nDependencies")
         row("Direct (observed)", directDependencies(facts).map { "${it.module}|${it.notation}" }.distinct().size.toString())
         row("Resolved components", unknown(facts.resolution.resolvedComponentCount?.toString()))
@@ -43,6 +57,9 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
             header("\nKey dependencies")
             key.forEach { row(it.artifact, selectedVersions(facts, it).ifEmpty { unknown(it.version) }) }
         }
+    }
+
+    private fun renderTesting(facts: RepositoryFacts) {
         header("\nTesting")
         row("Framework", facts.testing.frameworks.joinToString().ifEmpty { "not detected" })
         row("Mockito", resolvedLibrary(facts, "org.mockito", "mockito-core") ?: facts.testing.mockLibraries.joinToString().ifEmpty { "not detected" })
@@ -51,6 +68,9 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
         row("JaCoCo", if (facts.testing.jacocoConfigured) good("configured") else "not detected")
         row("Disabled signals", facts.testing.disabledAnnotationSignals.toString())
         out.println(dim("  Test counts are static source-file classifications, not execution evidence."))
+    }
+
+    private fun renderCodeCharacteristics(facts: RepositoryFacts) {
         header("\nCode Characteristics")
         for (name in listOf("javax usage", "jakarta usage", "Lombok", "Reflection", "ServiceLoader")) {
             val detected = facts.signals.any { it.name == name && it.locations.isNotEmpty() } ||
@@ -59,11 +79,17 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
         }
         row("Annotation processors", (facts.compileTooling.annotationProcessors + directDependencies(facts).filter { "annotationProcessor" in it.configuration || "kapt" in it.configuration }).map { it.notation }.distinct().size.toString() + " observed")
         row("Generated roots", facts.sources.generatedRoots.size.toString() + " existing")
+    }
+
+    private fun renderVerification(facts: RepositoryFacts) {
         header("\nVerification (suggested commands; may be incomplete or inaccurate)")
         row("Build", facts.verification.buildCommands.joinToString(" / "))
         row("Test", facts.verification.testCommands.joinToString(" / "))
         row("CI configs", facts.verification.ciFiles.size.toString() + " found")
         out.println(dim("  Commands inferred from build conventions; scan does not verify build/test success."))
+    }
+
+    private fun renderNotes(facts: RepositoryFacts) {
         val notes = (facts.notes + facts.resolution.notes).distinct()
         if (notes.isNotEmpty()) {
             header("\nCollection notes")

@@ -1,4 +1,4 @@
-# Scan verification — 2026-10-07
+# Scan verification — 2026-10-08
 
 Scryer build/test/distribution command:
 
@@ -24,3 +24,7 @@ No new maintained Maven fixture repository was created. Temporary smoke projects
 Regression tests exercise a failed Maven Wrapper and a timed-out subprocess. Both retain actionable errors in JSON/summary; failed collection no longer reports successful tree collection. The timeout is configurable, and progress uses stderr so JSON stdout remains parseable.
 
 Petclinic was also scanned using a fresh, empty dependency cache. Collection completed in approximately six minutes (beyond the old 120-second cutoff), with the same 152 components and no failed modules. Its POM queries Spring snapshot/milestone repositories before Central, and first-time descriptor/plugin downloads dominate this run. No repository order or mirrors were rewritten. Both cold and warm JSON outputs were parsed and checked for counts/status and module failures. Petclinic's working tree remained clean.
+
+## Package and readability refactor
+
+The package split and extracted scan service/collectors were verified with all 38 tests and `installDist`. Before/after JSON was compared structurally for the legacy fixture's static scan and Petclinic's resolved scan; both remained identical, including schema, declarations, notes and graphs. The extracted Gradle collector was also exercised against the legacy fixture: complete resolution, 65 components and 17 configurations. Target working trees remained clean. Architecture responsibilities and code-style guidelines are recorded in `ARCHITECTURE.md`.

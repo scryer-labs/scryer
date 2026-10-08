@@ -1,12 +1,26 @@
 package com.edwardnoaland.scryer
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
+import com.edwardnoaland.scryer.cli.output.ScanRenderer
+import com.edwardnoaland.scryer.cli.runCli
+import com.edwardnoaland.scryer.scan.inspect.RepositoryScanner
+import com.edwardnoaland.scryer.scan.inspect.children
+import com.edwardnoaland.scryer.scan.inspect.text
+import com.edwardnoaland.scryer.scan.model.ConfigurationGraph
+import com.edwardnoaland.scryer.scan.model.GraphEdge
+import com.edwardnoaland.scryer.scan.model.GraphNode
+import com.edwardnoaland.scryer.scan.model.RepositoryFacts
+import com.edwardnoaland.scryer.scan.model.ResolutionFacts
+import com.edwardnoaland.scryer.scan.resolve.DependencyResolver
+import com.edwardnoaland.scryer.scan.resolve.readMavenTree
+import com.edwardnoaland.scryer.scan.withResolution
+import com.edwardnoaland.scryer.serialization.jsonMapper
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.file.Path
 import kotlin.io.path.*
 import kotlin.test.*
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 class ExpandedScanTest {
     @TempDir lateinit var root: Path

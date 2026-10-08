@@ -1,4 +1,4 @@
-package com.edwardnoaland.scryer
+package com.edwardnoaland.scryer.scan.model
 
 /** Unknowns stay null/empty with provenance/status; neither is a claim that a fact is absent. */
 data class LanguageFacts(
@@ -85,12 +85,35 @@ data class ResolutionFacts(
     val metadata: Map<String, String> = emptyMap(),
     val projects: List<EvaluatedProject> = emptyList(),
 ) {
-    val resolvedComponentCount: Int? get() = if (configurations.none { it.nodes.isNotEmpty() }) null else configurations
-        .flatMap { it.nodes }.filter { it.group != null }.map { "${it.group}:${it.artifact}:${it.version}" }.distinct().size
-    val conflictCount: Int? get() = if (configurations.none { it.nodes.isNotEmpty() } || metadata["conflictReasons"] == "unavailable") null else configurations.flatMap { graph ->
-        graph.edges.filter { it.conflict == true }.map { "${graph.module}|${it.to}" }
-    }.distinct().size
-    val overrideCount: Int? get() = if (configurations.none { it.nodes.isNotEmpty() } || metadata["overrideReasons"] == "unavailable") null else configurations.flatMap { graph ->
-        graph.edges.filter { it.forced == true }.map { "${graph.module}|${it.to}" }
-    }.distinct().size
+    val resolvedComponentCount: Int?
+        get() {
+            if (configurations.none { it.nodes.isNotEmpty() }) {
+                return null
+            }
+            return configurations.flatMap { it.nodes }
+                .filter { it.group != null }
+                .map { "${it.group}:${it.artifact}:${it.version}" }
+                .distinct()
+                .size
+        }
+
+    val conflictCount: Int?
+        get() {
+            if (configurations.none { it.nodes.isNotEmpty() } || metadata["conflictReasons"] == "unavailable") {
+                return null
+            }
+            return configurations.flatMap { graph ->
+                graph.edges.filter { it.conflict == true }.map { "${graph.module}|${it.to}" }
+            }.distinct().size
+        }
+
+    val overrideCount: Int?
+        get() {
+            if (configurations.none { it.nodes.isNotEmpty() } || metadata["overrideReasons"] == "unavailable") {
+                return null
+            }
+            return configurations.flatMap { graph ->
+                graph.edges.filter { it.forced == true }.map { "${graph.module}|${it.to}" }
+            }.distinct().size
+        }
 }

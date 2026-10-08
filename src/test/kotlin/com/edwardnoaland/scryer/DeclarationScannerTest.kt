@@ -1,11 +1,16 @@
 package com.edwardnoaland.scryer
 
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.io.TempDir
+import com.edwardnoaland.scryer.scan.inspect.RepositoryScanner
+import com.edwardnoaland.scryer.scan.inspect.expandProperties
+import com.edwardnoaland.scryer.scan.inspect.text
+import com.edwardnoaland.scryer.scan.model.RepositoryFacts
+import com.edwardnoaland.scryer.scan.model.ScanException
 import java.nio.file.Path
 import kotlin.io.path.createDirectories
 import kotlin.io.path.writeText
 import kotlin.test.*
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 class DeclarationScannerTest {
     @TempDir lateinit var root: Path

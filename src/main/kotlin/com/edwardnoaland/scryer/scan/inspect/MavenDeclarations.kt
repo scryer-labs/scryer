@@ -1,11 +1,15 @@
-package com.edwardnoaland.scryer
+package com.edwardnoaland.scryer.scan.inspect
 
-import org.w3c.dom.Element
-import org.xml.sax.SAXParseException
-import org.xml.sax.helpers.DefaultHandler
+import com.edwardnoaland.scryer.scan.model.Declarations
+import com.edwardnoaland.scryer.scan.model.DependencyDeclaration
+import com.edwardnoaland.scryer.scan.model.PluginDeclaration
+import com.edwardnoaland.scryer.scan.model.ScanException
 import java.nio.file.Path
 import javax.xml.XMLConstants
 import javax.xml.parsers.DocumentBuilderFactory
+import org.w3c.dom.Element
+import org.xml.sax.SAXParseException
+import org.xml.sax.helpers.DefaultHandler
 
 /** Reads local POM declarations only; no Maven execution, parent/BOM download or profile activation. */
 internal object MavenDeclarations {
