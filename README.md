@@ -1,6 +1,6 @@
 # Scryer
 
-`scan` is a repository facts collector for Java repositories. It reports declarations, evaluated build-model facts and lightweight source signals. It does not recommend upgrades, plan transformations or produce a confidence score.
+`scan` is a repository facts collector for Java repositories. It reports declarations, evaluated build-model facts and lightweight source signals. It does not recommend upgrades, plan transformations or produce a confidence score. `analyze` currently exposes the initial command placeholder only.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package responsibilities, the scan flow and code-style guidelines.
 
@@ -11,6 +11,15 @@ Commit subjects follow `<type>: <summary>` with `feat`, `refactor`, `tests`, `do
 ## Run
 
 Scryer uses Java 21, Kotlin 2.2.21 and its Gradle 8.14.3 Wrapper. Target repositories may use older JDKs and build tools.
+
+The first analyze increment accepts the command shape:
+
+```sh
+scryer analyze --before HEAD~1 --after HEAD
+scryer analyze --help
+```
+
+A valid invocation currently prints only `Analyzing…` and exits successfully. Both nonblank reference arguments are required; duplicate/unknown options or missing values exit with code 2. References are not yet resolved, and no Git comparison, checkout, build or test execution occurs. JSON/Markdown analyze reports belong to later increments.
 
 ```sh
 export JAVA_HOME="$(mise where java)"
@@ -104,6 +113,6 @@ Real integration smoke checks use:
 
 These smoke projects are temporary checks, not a new maintained Maven fixture. No source changes are made to the legacy fixture by Scryer; target configuration itself remains ordinary executable build code.
 
-Future: remote latest-version enrichment (`--remote-list`), richer Maven effective-model provenance, and `analyze --before --after`. These are not implemented CLI options. No modernization strategy or single confidence score is produced.
+Future: remote latest-version enrichment (`--remote-list`), richer Maven effective-model provenance, and the analysis behind `analyze --before --after`. Only the analyze command placeholder is currently implemented. No modernization strategy or single confidence score is produced.
 
 Implementation references: [Gradle ResolutionResult](https://docs.gradle.org/8.14.3/javadoc/org/gradle/api/artifacts/result/ResolutionResult.html), [Maven dependency tree JSON](https://maven.apache.org/components/plugins-archives/maven-dependency-plugin-3.8.1/tree-mojo.html), [Mordant styling](https://ajalt.github.io/mordant/guide/).

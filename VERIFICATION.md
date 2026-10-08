@@ -6,7 +6,7 @@ Scryer build/test/distribution command:
 JAVA_HOME="$(mise where java)" ./gradlew test installDist
 ```
 
-Development verification used an ignored local Gradle cache and project-cache directory. **47 tests passed, 0 failures/errors/skips**. The static facts commit was also compiled/tested as an independent staged snapshot before committing.
+Development verification used an ignored local Gradle cache and project-cache directory. **50 tests passed, 0 failures/errors/skips**. The static facts commit was also compiled/tested as an independent staged snapshot before committing.
 
 Installed CLI smoke checks:
 
@@ -47,3 +47,7 @@ Both static and resolved JSON/Markdown reports were generated outside the target
 ## CI configuration
 
 The GitHub Actions workflow runs separate `clean`, `test` and `build` steps on Ubuntu with Temurin 21 and the repository Wrapper. Official actions are pinned to verified commit SHAs. The workflow was checked with actionlint 1.7.12, and the same task sequence was executed locally: all 47 tests passed and the build succeeded. A hosted GitHub run has not yet been verified. No executable release/publishing stage is configured; Gradle's existing standard build outputs are unchanged.
+
+## Analyze increment 1: command placeholder
+
+`analyze --before <ref> --after <ref>` validates required, nonblank arguments and rejects duplicates/unsupported options. Global and analyze-specific help list the command. Three additional CLI tests cover valid argument order (including unresolved reference names), invalid argument combinations and help. All 50 tests passed, and the installed CLI was exercised for the placeholder and help. A valid invocation prints only `Analyzing…`; no refs are resolved and no comparison, checkout, build or tests are performed by analyze yet.

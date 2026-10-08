@@ -9,7 +9,9 @@ import com.edwardnoaland.scryer.scan.resolve.DependencyResolver
 import java.io.PrintStream
 import java.nio.file.Path
 
-private const val USAGE = "Usage: scryer scan <path> [--dependencies] [--dependency-tree] [--json] [--static] [--color auto|always|never] [-o <OUTPUT_FILE>]"
+private const val SCAN_USAGE = "Usage: scryer scan <path> [--dependencies] [--dependency-tree] [--json] [--static] [--color auto|always|never] [-o <OUTPUT_FILE>]"
+
+private val USAGE = "$SCAN_USAGE\n$ANALYZE_USAGE"
 
 private data class Options(
     val path: String,
@@ -66,6 +68,10 @@ fun runCli(args: Array<String>, out: PrintStream, err: PrintStream): Int {
     if (args.contentEquals(arrayOf("--help")) || args.contentEquals(arrayOf("-h"))) {
         out.println(USAGE)
         return 0
+    }
+
+    if (args.firstOrNull() == "analyze") {
+        return runAnalyzeCommand(args.drop(1).toTypedArray(), out, err)
     }
 
     val options = parseOptions(args)
