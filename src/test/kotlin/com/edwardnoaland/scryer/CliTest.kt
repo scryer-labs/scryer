@@ -22,7 +22,7 @@ class CliTest {
 
     @Test fun `help succeeds and invalid flags are rejected`() {
         assertEquals(0, invoke("--help").first)
-        assertEquals(2, invoke("scan", ".", "--remote-list").first)
+        assertEquals(2, invoke("scan", ".", "--unknown-option").first)
         assertEquals(2, invoke("scan", ".", "-o").first)
     }
 

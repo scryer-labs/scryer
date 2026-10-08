@@ -21,6 +21,7 @@ data class RepositoryFacts(
     val resolution: ResolutionFacts = ResolutionFacts(),
     val schemaVersion: Int = 1,
     val parentPoms: List<ParentPomFact> = emptyList(),
+    val remoteVersions: com.edwardnoaland.scryer.scan.model.RemoteVersions? = null,
     val compileTooling: CompileToolingFacts = CompileToolingFacts(),
 )
 

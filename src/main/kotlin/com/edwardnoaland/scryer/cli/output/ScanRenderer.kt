@@ -15,6 +15,22 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
     private fun row(key: String, value: String) { out.println("  ${dim(key.padEnd(25) + " ")}$value") }
     private fun unknown(value: String?) = value ?: bad("unknown")
 
+    fun remoteVersions(versions: com.edwardnoaland.scryer.scan.model.RemoteVersions) {
+        header("\nRemote dependency releases")
+        out.println("  ${versions.source}")
+        out.println("  Checked: ${versions.checkedAt}")
+        versions.dependencies.forEach { dependency ->
+            val comparison = "${dependency.current ?: "unknown"} → ${dependency.latest ?: "unavailable"} [${dependency.status}]"
+            val styled = when (dependency.status) {
+                "CURRENT" -> good(comparison)
+                "UPDATE_AVAILABLE", "CURRENT_AHEAD" -> warning(comparison)
+                else -> bad(comparison)
+            }
+            out.println("  ${dependency.coordinate} (${dependency.module}, ${dependency.configuration}; ${dependency.currentSource}): $styled")
+            dependency.note?.let { out.println("    $it") }
+        }
+    }
+
     fun summary(facts: RepositoryFacts) {
         renderProject(facts)
         renderDependencySummary(facts)
