@@ -64,7 +64,7 @@ jobs:
           done
           for launcher in "$package_check_dir"/*/*/bin/scryer; do
             bash "$launcher" --help
-            bash "$launcher" scan "$(dirname "$(dirname "$launcher")")" --static
+            bash "$launcher" scan . --static
             bash "$launcher" analyze --help
           done
           cd build/distributions
