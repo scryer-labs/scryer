@@ -97,3 +97,12 @@ The GitHub Actions workflow runs separate `clean`, `test` and `build` steps on U
 - Real fixture execution uses its Gradle 4.10.3 Wrapper and existing local Zulu JDK 8; Scryer remains on JDK 21. Baseline returns command SUCCEEDED/CLI 0. Case 06 returns FAILED/CLI 1 with missingCalculation compile diagnostics. Case 07 returns FAILED/CLI 1 with test assertion failures. Logs survive worktree cleanup under the selected cache. The original fixture remains Git-clean.
 - Final Gradle commands use clean test with --rerun-tasks and --no-build-cache; --skip-tests reports SKIPPED and executes no target command.
 - Command success is not per-test/coverage evidence. JaCoCo/test-report acquisition follows; module dependency classpaths must be added before impact/evidence matching. Custom test commands remain planned.
+
+## Execution artifact collection increment
+
+- 89 tests pass; Wrapper `test build installDist` succeeds on JDK 21. JaCoCo core 0.8.14 reads configured target execution data; no instrumentation/plugin is injected into the customer build.
+- Tests obtain real probes from instrumented compiled Java code, then validate hit/untouched methods and class-ID mismatches. Other tests cover separate datasets, fresh/stale files, all testcase outcomes, malformed artifacts, JaCoCo doctypes without external fetching, entity isolation, untrusted run statuses and service-level collection before cleanup.
+- Retained artifacts are hash-checked and listed in an internal manifest with after SHA, run status, normalized facts and raw artifact provenance. Exec analysis uses retained class copies. This is not the future CLI JSON output feature.
+- Real Gradle 4.10.3/JDK 8 fixture baseline: 6 passed testcase records, 8 matching production classes, 22 method records and 18 methods with instruction hits. The final manifest verifies calculateTotal has hits while quoteOrder and applyDiscount have none, and remains after checkout cleanup.
+- Case 06: compile failure, test counts unknown and coverage unavailable. Case 07: 2 passed and 4 failed testcase records plus partial aggregate coverage. Missing/corrupt coverage is not reported as zero.
+- No test-to-method causal attribution or impact/evidence matching is inferred. Next add dependency/module classpaths before implementing evidence/gap matching.

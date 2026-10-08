@@ -1,6 +1,7 @@
 package com.edwardnoaland.scryer.cli
 
 import com.edwardnoaland.scryer.cli.output.renderImpactGraph
+import com.edwardnoaland.scryer.cli.output.renderExecutionEvidence
 import java.io.PrintStream
 import java.nio.file.Path
 import com.edwardnoaland.scryer.analyze.GitComparer
@@ -63,7 +64,8 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
         out.println("  Duration: ${execution.durationMillis}ms")
         execution.log?.let { out.println("  Log: $it") }
         execution.notes.forEach { out.println("  Note: $it") }
-        out.println("Static potential impact; per-test execution and coverage evidence are not collected yet.")
+        renderExecutionEvidence(result.evidence, out)
+        out.println("Static potential impact and execution artifacts; impact/evidence matching is not implemented yet.")
         if (execution.status in setOf(TestRunStatus.SUCCEEDED, TestRunStatus.SKIPPED)) 0 else 1
     } catch (exception: Exception) {
         err.println("scryer: ${exception.message ?: exception.javaClass.simpleName}")

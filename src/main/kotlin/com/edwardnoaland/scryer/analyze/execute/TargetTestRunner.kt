@@ -39,7 +39,7 @@ internal class TargetTestRunner(
     internal fun execute(root: Path, plan: TestRunPlan, log: Path, afterSha: String, timeout: Long): TestExecution {
         val started = System.nanoTime()
         val notes = listOf("Conventional Wrapper lifecycle only; custom test tasks/commands are not discovered yet.",
-            "Command exit status is not per-test execution, build packaging or coverage evidence. Reports/JaCoCo collection comes next.")
+            "Command exit status is not per-test execution, build packaging or coverage evidence. Fresh reports/JaCoCo data are collected separately; no test-to-method attribution is inferred from command status.")
         var process: Process? = null
         try {
             val builder = ProcessBuilder(plan.command).directory(root.toFile()).redirectErrorStream(true).redirectOutput(log.toFile())
