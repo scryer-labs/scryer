@@ -29,8 +29,10 @@ The fact model is shared by collectors and renderers. It does not depend on CLI,
 - Do not compress multiple statements or nested branches into one line.
 - Separate independent concerns rather than creating a class for every function.
 
-This is a package-level design, not a plugin framework or a set of independently published modules. No analyzer, recipe runner or AI layer is added. Introduce interfaces or further Gradle modules when a concrete replacement, testing need or ownership boundary requires them; future `analyze` should not be forced into scan's collectors.
+This is a package-level design, not a plugin framework or a set of independently published modules. No recipe runner or AI layer is added. Introduce interfaces or further Gradle modules when a concrete replacement, testing need or ownership boundary requires them; `analyze` remains separate from scan's collectors.
 
 Local declaration readers remain best-effort lexical/XML inspection. Moving them into a package does not expand their supported syntax or turn source signals into execution evidence. Verification suggestions retain the existing fixture-specific script convention explicitly.
 
 `analyze.GitComparer` resolves commit refs and collects snapshot file/line differences through Git. It reads the target repository without checkout or mutation; CLI formatting remains in `AnalyzeCommand.kt`.
+
+`analyze.MethodAnalyzer` coordinates isolated snapshots and method matching. `IsolatedSnapshots` owns a temporary shared clone and detached worktrees, with cleanup on success/failure. `JavaMethods` uses JDK compiler parsing only (no compilation, classpath resolution or annotation processing). `GitProcess` owns Git subprocess execution and timeouts. Method keys are source signatures; resolved symbol identities and call graphs belong to the next increment.

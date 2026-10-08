@@ -4,6 +4,7 @@ import java.io.PrintStream
 import java.nio.file.Path
 import com.edwardnoaland.scryer.analyze.GitComparer
 import com.edwardnoaland.scryer.analyze.LineRange
+import com.edwardnoaland.scryer.analyze.MethodAnalyzer
 
 internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref>"
 
@@ -23,6 +24,7 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
 
     return try {
         val comparison = GitComparer().compare(Path.of("."), options.before, options.after)
+        val analysis = MethodAnalyzer().analyze(comparison)
         out.println("Repository: ${comparison.repository}")
         out.println("Before: ${comparison.before}")
         out.println("After: ${comparison.after}")
@@ -37,7 +39,15 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
             }
             if (file.lines.isEmpty()) out.println("  No textual line changes (for example rename, binary or mode change)")
         }
-        out.println("Git snapshot differences only; symbols, build and test evidence are not collected yet.")
+        out.println("Changed Java methods: ${analysis.methods.size}")
+        analysis.methods.forEach { change ->
+            val method = change.after ?: requireNotNull(change.before)
+            out.println("${change.kind} ${method.signature}")
+            change.before?.let { out.println("  before ${change.beforePath}: ${formatRange(it.lines)}") }
+            change.after?.let { out.println("  after ${change.afterPath}: ${formatRange(it.lines)}") }
+        }
+        analysis.notes.forEach { out.println("Note: $it") }
+        out.println("Source syntax comparison only; call graphs, build and test evidence are not collected yet.")
         0
     } catch (exception: Exception) {
         err.println("scryer: ${exception.message ?: exception.javaClass.simpleName}")

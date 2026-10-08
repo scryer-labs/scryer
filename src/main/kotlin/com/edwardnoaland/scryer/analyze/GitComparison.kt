@@ -1,7 +1,6 @@
 package com.edwardnoaland.scryer.analyze
 
 import java.nio.file.Path
-import java.util.concurrent.TimeUnit
 
 /** A zero-length range represents an insertion/deletion boundary, not an executed line. */
 data class LineRange(val start: Int, val count: Int)
@@ -11,10 +10,10 @@ data class GitComparison(val repository: Path, val before: String, val after: St
 
 class GitComparer {
     fun compare(directory: Path, beforeRef: String, afterRef: String): GitComparison {
-        val root = Path.of(git(directory, "rev-parse", "--show-toplevel").trim())
+        val root = Path.of(GitProcess.run(directory, "rev-parse", "--show-toplevel").trim())
         val before = resolve(root, beforeRef)
         val after = resolve(root, afterRef)
-        val entries = git(root, "diff", "--no-color", "--no-ext-diff", "--no-textconv", "--name-status", "-z", "--find-renames", before, after, "--")
+        val entries = GitProcess.run(root, "diff", "--no-color", "--no-ext-diff", "--no-textconv", "--name-status", "-z", "--find-renames", before, after, "--")
             .split('\u0000').dropLastWhile { it.isEmpty() }
         val files = mutableListOf<ChangedFile>()
         var index = 0
@@ -25,7 +24,7 @@ class GitComparer {
             val oldPath = first.takeUnless { status == "A" }
             val newPath = second.takeUnless { status == "D" }
             val paths = listOfNotNull(oldPath, newPath).distinct()
-            val patch = git(root, "diff", "--no-color", "--no-ext-diff", "--no-textconv", "--unified=0", "--find-renames", before, after, "--", *paths.toTypedArray())
+            val patch = GitProcess.run(root, "diff", "--no-color", "--no-ext-diff", "--no-textconv", "--unified=0", "--find-renames", before, after, "--", *paths.toTypedArray())
             val lines = HUNK.findAll(patch).map { match ->
                 ChangedLines(
                     LineRange(match.groupValues[1].toInt(), match.groupValues[2].ifEmpty { "1" }.toInt()),
@@ -38,24 +37,7 @@ class GitComparer {
     }
 
     private fun resolve(root: Path, ref: String): String =
-        git(root, "rev-parse", "--verify", "--end-of-options", "$ref^{commit}").trim()
-
-    private fun git(directory: Path, vararg args: String): String {
-        val output = java.nio.file.Files.createTempFile("scryer-git-", ".log")
-        try {
-            val process = ProcessBuilder(listOf("git", "--no-pager", "--literal-pathspecs", "-C", directory.toAbsolutePath().toString()) + args)
-                .redirectErrorStream(true).redirectOutput(output.toFile()).start()
-            if (!process.waitFor(30, TimeUnit.SECONDS)) {
-                process.destroyForcibly().waitFor()
-                error("Git comparison timed out")
-            }
-            val text = java.nio.file.Files.readString(output)
-            check(process.exitValue() == 0) { "Git command failed: ${text.trim()}" }
-            return text
-        } finally {
-            java.nio.file.Files.deleteIfExists(output)
-        }
-    }
+        GitProcess.run(root, "rev-parse", "--verify", "--end-of-options", "$ref^{commit}").trim()
 
     private companion object {
         val HUNK = Regex("(?m)^@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@")

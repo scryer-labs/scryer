@@ -1,6 +1,6 @@
 # Scryer
 
-`scan` is a repository facts collector for Java repositories. It reports declarations, evaluated build-model facts and lightweight source signals. It does not recommend upgrades, plan transformations or produce a confidence score. `analyze` currently compares two Git commit snapshots and reports changed files and line ranges.
+`scan` is a repository facts collector for Java repositories. It reports declarations, evaluated build-model facts and lightweight source signals. It does not recommend upgrades, plan transformations or produce a confidence score. `analyze` currently compares two Git commit snapshots and reports changed files, line ranges and Java method declaration changes.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package responsibilities, the scan flow and code-style guidelines.
 
@@ -21,7 +21,11 @@ scryer analyze --help
 
 References resolve to commit SHAs through Git: SHA IDs, branches, tags and expressions such as `HEAD~1` are accepted. The comparison is a direct before-to-after snapshot diff, not a merge-base diff. Working tree changes are excluded. Output lists statuses, before/after paths (including detected renames), and zero-context old/new line ranges. A zero-length range is an insertion/deletion boundary. Binary, mode-only and pure rename changes can have no textual ranges. Rename detection uses Git similarity heuristics.
 
-Both reference arguments are required; invalid arguments exit with code 2. Invalid refs, a non-Git current directory or Git failures exit with code 1. This increment does not check out code, identify Java symbols, execute builds/tests or collect coverage. JSON/Markdown analyze reports belong to later increments.
+Both reference arguments are required; invalid arguments exit with code 2. Invalid refs, a non-Git current directory or Git failures exit with code 1. Analysis creates a temporary shared clone and two detached worktrees, reads changed `.java` files with the JDK Java parser, and removes the temporary workspace afterwards. The target repository's working tree and worktree registrations remain unchanged. Git and a full JDK 21 are required.
+
+Methods and constructors are matched by package, enclosing class, name and source parameter types. Output distinguishes ADDED, MODIFIED and DELETED declarations with before/after locations. Overloads and named nested classes are supported. Signature changes appear as deletion plus addition; a pure file rename with identical declarations produces no method changes. AST comparison ignores comments and formatting and includes declaration annotations, return types and method bodies. Test methods are included too; production/test classification comes later.
+
+This is source syntax comparison, not resolved symbol identity or semantic impact analysis. Imports, fields, initializer blocks and inheritance changes are reported as a context-analysis limitation for changed Java files; they can affect unchanged methods. Anonymous classes and ambiguous local-class method identities fail explicitly rather than producing a misleading result. Parse errors also exit with code 1. Parsing uses JDK 21 syntax; unsupported newer syntax, generated sources, submodule contents and Git LFS content are not materialized/analyzed as Java source in this increment. No target builds/tests are executed and no coverage or call graph is collected. JSON/Markdown analyze reports belong to later increments.
 
 ```sh
 export JAVA_HOME="$(mise where java)"
@@ -115,6 +119,6 @@ Real integration smoke checks use:
 
 These smoke projects are temporary checks, not a new maintained Maven fixture. No source changes are made to the legacy fixture by Scryer; target configuration itself remains ordinary executable build code.
 
-Future: remote latest-version enrichment (`--remote-list`), richer Maven effective-model provenance, and the analysis behind `analyze --before --after`. Analyze currently implements Git ref resolution and file/line differences only. No modernization strategy or single confidence score is produced.
+Future: remote latest-version enrichment (`--remote-list`), richer Maven effective-model provenance, and the analysis behind `analyze --before --after`. Analyze currently implements Git snapshot differences and source-level Java method changes. No modernization strategy or single confidence score is produced.
 
 Implementation references: [Gradle ResolutionResult](https://docs.gradle.org/8.14.3/javadoc/org/gradle/api/artifacts/result/ResolutionResult.html), [Maven dependency tree JSON](https://maven.apache.org/components/plugins-archives/maven-dependency-plugin-3.8.1/tree-mojo.html), [Mordant styling](https://ajalt.github.io/mordant/guide/).

@@ -59,3 +59,11 @@ The GitHub Actions workflow runs separate `clean`, `test` and `build` steps on U
 - Uncommitted working tree changes are excluded from commit comparisons.
 - Installed CLI smoke test compares `HEAD~1` with `HEAD` and prints resolved SHAs and old/new line ranges.
 - No symbol analysis, checkout, target build/test execution or coverage collection occurs yet.
+
+## Analyze increment 3: isolated Java method comparison
+
+- 58 tests pass; Wrapper `test build installDist` succeeds on JDK 21.
+- Temporary repository tests cover constructor/body changes, overloads, nested classes, additions/deletions, signature changes, annotations/return types, formatting/comments, pure renames and field-only context gaps.
+- User working-tree content and worktree registrations remain unchanged. Temporary clone/worktrees are removed on success and action failure. Parse errors and unsupported anonymous identities fail explicitly.
+- Installed CLI successfully analyzes all seven fixture acceptance ref pairs in a disposable repository. Cases 01–04 identify their expected production methods; case 05 additionally finds two added test methods; cases 06–07 identify the modified production method without claiming build/test evidence.
+- Target compilation, tests, coverage, symbol resolution and call graphs remain outside this increment.
