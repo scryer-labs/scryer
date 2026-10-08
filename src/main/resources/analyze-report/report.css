@@ -1132,3 +1132,11 @@ footer {
     scroll-behavior: auto !important;
   }
 }
+
+.brand-logo {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+  background: #f5f8ff;
+  border-radius: 12px;
+}

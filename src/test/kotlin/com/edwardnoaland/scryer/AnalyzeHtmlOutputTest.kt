@@ -27,6 +27,9 @@ class AnalyzeHtmlOutputTest {
         assertContains(html, "connect-src 'none'")
         assertContains(html, "Search symbols or source paths")
         assertContains(html, "<dialog")
+        val logo = Regex("src=\"data:image/png;base64,([^\"]+)\"").find(html)!!.groupValues[1]
+        val bundledLogo = checkNotNull(javaClass.getResourceAsStream("/analyze-report/scryer-logo.png")).use { it.readBytes() }
+        assertContentEquals(bundledLogo, java.util.Base64.getDecoder().decode(logo))
     }
 
     @Test fun `repository content cannot break script boundaries and round trips without loss`() {
