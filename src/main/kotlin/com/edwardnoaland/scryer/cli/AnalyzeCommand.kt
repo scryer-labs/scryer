@@ -108,12 +108,17 @@ private fun renderImpact(label: String, impact: SnapshotImpact, out: PrintStream
     out.println("$label symbol impact (partial):")
     impact.changed.forEach { out.println("  CHANGED $it") }
     (impact.affected - impact.changed).sortedBy { it.toString() }.forEach { out.println("  AFFECTED CALLER $it") }
-    impact.graph.edges.filter { it.callee in impact.affected && it.caller in impact.affected }.forEach {
+    impact.indirect.sortedBy { it.toString() }.forEach {
+        out.println("  POTENTIAL INDIRECT $it (via ${impact.indirectReasons.getValue(it).caller})")
+    }
+    val scope = impact.affected + impact.indirect
+    out.println("  Call chains: all resolved edges in this impact scope; cycles retained, no path truncation")
+    impact.graph.edges.filter { it.callee in scope && it.caller in scope }.forEach {
         out.println("  ${it.kind}: ${it.caller} -> ${it.callee}")
     }
     impact.unmatched.forEach { out.println("  UNRESOLVED CHANGED SYMBOL $it") }
     out.println("  Call boundaries: ${impact.graph.boundaries.size}")
-    impact.graph.boundaries.filter { it.caller == null || it.caller in impact.affected }.forEach {
+    impact.graph.boundaries.filter { it.caller == null || it.caller in scope }.forEach {
         out.println("  BOUNDARY ${it.path}:${it.line}: ${it.reason}: ${it.expression.replace('\n', ' ')}")
     }
     impact.graph.notes.forEach { out.println("  Note: $it") }

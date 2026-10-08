@@ -126,4 +126,16 @@ class ImpactAnalysisTest {
         assertTrue(result.graph.boundaries.any { it.reason == "Unresolved declaration signature" })
     }
 
+    @Test fun `expands sibling branches transitively without promoting them to callers`() {
+        initialize()
+        val source = "class Example { int c() { return 1; } int b() { e(); return c(); } int a() { d(); return b(); } void d() { f(); } void e() {} void f() { d(); } void unrelated() {} }"
+        val before = commit(source)
+        val after = commit(source.replace("return 1;", "return 2;"))
+        val impact = ImpactAnalyzer().analyze(GitComparer().compare(root, before, after)).after
+        assertEquals(setOf("a", "b", "c"), impact.affected.map { it.name }.toSet())
+        assertEquals(setOf("d", "e", "f"), impact.indirect.map { it.name }.toSet())
+        assertEquals("a", impact.indirectReasons.entries.single { it.key.name == "d" }.value.caller.name)
+        assertFalse((impact.affected + impact.indirect).any { it.name == "unrelated" })
+    }
+
 }

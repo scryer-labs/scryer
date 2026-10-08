@@ -1,6 +1,6 @@
 package com.edwardnoaland.scryer.analyze
 
-data class SnapshotImpact(val graph: CallGraph, val changed: Set<SymbolId>, val affected: Set<SymbolId>, val unmatched: List<String>)
+data class SnapshotImpact(val graph: CallGraph, val changed: Set<SymbolId>, val affected: Set<SymbolId>, val unmatched: List<String>, val indirect: Set<SymbolId>, val indirectReasons: Map<SymbolId, CallEdge>)
 data class ImpactAnalysis(val methods: MethodAnalysis, val before: SnapshotImpact, val after: SnapshotImpact)
 
 class ImpactAnalyzer {
@@ -29,6 +29,18 @@ class ImpactAnalyzer {
                 if (affected.add(edge.caller)) pending.addLast(edge.caller)
             }
         }
-        return SnapshotImpact(graph, changed, affected, unmatched)
+        val expanded = affected.toMutableSet()
+        val reasons = linkedMapOf<SymbolId, CallEdge>()
+        val callees = graph.edges.groupBy { it.caller }
+        pending.addAll(affected)
+        while (pending.isNotEmpty()) {
+            callees[pending.removeFirst()].orEmpty().forEach { edge ->
+                if (expanded.add(edge.callee)) {
+                    reasons[edge.callee] = edge
+                    pending.addLast(edge.callee)
+                }
+            }
+        }
+        return SnapshotImpact(graph, changed, affected, unmatched, expanded - affected, reasons)
     }
 }
