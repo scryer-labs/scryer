@@ -19,7 +19,7 @@ The normal flow is `Main → CLI → ScanService → RepositoryScanner → optio
 
 The fact model is shared by collectors and renderers. It does not depend on CLI, file inspection or subprocess execution. It remains a serializable DTO model with the existing Jackson `JsonIgnore` annotation on one convenience property; no separate transport model is introduced yet. Declared and selected versions remain distinct, and unavailable facts are not substituted with zero.
 
-`Cli.kt` owns global help and command dispatch. `ScanCommand.kt` owns scan arguments, service composition and output selection; `AnalyzeCommand.kt` owns analyze arguments and its current placeholder execution. Each command receives arguments without the command name.
+`Cli.kt` owns global help and command dispatch. `ScanCommand.kt` owns scan arguments, service composition and output selection; `AnalyzeCommand.kt` owns analyze arguments and Git comparison output. Each command receives arguments without the command name.
 
 ## Code style
 
@@ -32,3 +32,5 @@ The fact model is shared by collectors and renderers. It does not depend on CLI,
 This is a package-level design, not a plugin framework or a set of independently published modules. No analyzer, recipe runner or AI layer is added. Introduce interfaces or further Gradle modules when a concrete replacement, testing need or ownership boundary requires them; future `analyze` should not be forced into scan's collectors.
 
 Local declaration readers remain best-effort lexical/XML inspection. Moving them into a package does not expand their supported syntax or turn source signals into execution evidence. Verification suggestions retain the existing fixture-specific script convention explicitly.
+
+`analyze.GitComparer` resolves commit refs and collects snapshot file/line differences through Git. It reads the target repository without checkout or mutation; CLI formatting remains in `AnalyzeCommand.kt`.

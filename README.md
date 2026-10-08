@@ -1,6 +1,6 @@
 # Scryer
 
-`scan` is a repository facts collector for Java repositories. It reports declarations, evaluated build-model facts and lightweight source signals. It does not recommend upgrades, plan transformations or produce a confidence score. `analyze` currently exposes the initial command placeholder only.
+`scan` is a repository facts collector for Java repositories. It reports declarations, evaluated build-model facts and lightweight source signals. It does not recommend upgrades, plan transformations or produce a confidence score. `analyze` currently compares two Git commit snapshots and reports changed files and line ranges.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package responsibilities, the scan flow and code-style guidelines.
 
@@ -12,14 +12,16 @@ Commit subjects follow `<type>: <summary>` with `feat`, `refactor`, `tests`, `do
 
 Scryer uses Java 21, Kotlin 2.2.21 and its Gradle 8.14.3 Wrapper. Target repositories may use older JDKs and build tools.
 
-The first analyze increment accepts the command shape:
+Run analyze from inside the target Git repository (or a subdirectory):
 
 ```sh
 scryer analyze --before HEAD~1 --after HEAD
 scryer analyze --help
 ```
 
-A valid invocation currently prints only `Analyzing…` and exits successfully. Both nonblank reference arguments are required; duplicate/unknown options or missing values exit with code 2. References are not yet resolved, and no Git comparison, checkout, build or test execution occurs. JSON/Markdown analyze reports belong to later increments.
+References resolve to commit SHAs through Git: SHA IDs, branches, tags and expressions such as `HEAD~1` are accepted. The comparison is a direct before-to-after snapshot diff, not a merge-base diff. Working tree changes are excluded. Output lists statuses, before/after paths (including detected renames), and zero-context old/new line ranges. A zero-length range is an insertion/deletion boundary. Binary, mode-only and pure rename changes can have no textual ranges. Rename detection uses Git similarity heuristics.
+
+Both reference arguments are required; invalid arguments exit with code 2. Invalid refs, a non-Git current directory or Git failures exit with code 1. This increment does not check out code, identify Java symbols, execute builds/tests or collect coverage. JSON/Markdown analyze reports belong to later increments.
 
 ```sh
 export JAVA_HOME="$(mise where java)"
@@ -113,6 +115,6 @@ Real integration smoke checks use:
 
 These smoke projects are temporary checks, not a new maintained Maven fixture. No source changes are made to the legacy fixture by Scryer; target configuration itself remains ordinary executable build code.
 
-Future: remote latest-version enrichment (`--remote-list`), richer Maven effective-model provenance, and the analysis behind `analyze --before --after`. Only the analyze command placeholder is currently implemented. No modernization strategy or single confidence score is produced.
+Future: remote latest-version enrichment (`--remote-list`), richer Maven effective-model provenance, and the analysis behind `analyze --before --after`. Analyze currently implements Git ref resolution and file/line differences only. No modernization strategy or single confidence score is produced.
 
 Implementation references: [Gradle ResolutionResult](https://docs.gradle.org/8.14.3/javadoc/org/gradle/api/artifacts/result/ResolutionResult.html), [Maven dependency tree JSON](https://maven.apache.org/components/plugins-archives/maven-dependency-plugin-3.8.1/tree-mojo.html), [Mordant styling](https://ajalt.github.io/mordant/guide/).

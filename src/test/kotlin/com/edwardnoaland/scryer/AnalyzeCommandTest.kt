@@ -15,16 +15,19 @@ class AnalyzeCommandTest {
         return Triple(code, output.toString(Charsets.UTF_8), error.toString(Charsets.UTF_8))
     }
 
-    @Test fun `valid command accepts either option order without resolving refs`() {
+    @Test fun `valid command resolves refs in either option order`() {
         for (args in listOf(
-            arrayOf("analyze", "--before", "HEAD~1", "--after", "HEAD"),
-            arrayOf("analyze", "--after", "not-yet-a-real-ref", "--before", "fixture-baseline"),
+            arrayOf("analyze", "--before", "HEAD", "--after", "HEAD"),
+            arrayOf("analyze", "--after", "HEAD", "--before", "HEAD"),
         )) {
             val (code, output, error) = invoke(*args)
             assertEquals(0, code)
-            assertEquals("Analyzing…${System.lineSeparator()}", output)
+            assertContains(output, "Changed files: 0")
             assertEquals("", error)
         }
+        val (code, _, error) = invoke("analyze", "--before", "not-a-real-ref", "--after", "HEAD")
+        assertEquals(1, code)
+        assertContains(error, "Git command failed")
     }
 
     @Test fun `missing blank duplicate and unsupported arguments are rejected`() {

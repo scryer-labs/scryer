@@ -51,3 +51,11 @@ The GitHub Actions workflow runs separate `clean`, `test` and `build` steps on U
 ## Analyze increment 1: command placeholder
 
 `analyze --before <ref> --after <ref>` validates required, nonblank arguments and rejects duplicates/unsupported options. Global and analyze-specific help list the command. Three additional CLI tests cover valid argument order (including unresolved reference names), invalid argument combinations and help. All 50 tests passed, and the installed CLI was exercised for the placeholder and help. A valid invocation prints only `Analyzing…`; no refs are resolved and no comparison, checkout, build or tests are performed by analyze yet.
+
+## Analyze increment 2: Git snapshot differences
+
+- 52 tests pass; Wrapper `test installDist` succeeds on JDK 21.
+- Temporary Git repositories verify SHA/tag/HEAD~1 resolution, changed line ranges, additions, deletions, renames with spaces, identical states, invalid refs and non-repository errors.
+- Uncommitted working tree changes are excluded from commit comparisons.
+- Installed CLI smoke test compares `HEAD~1` with `HEAD` and prints resolved SHAs and old/new line ranges.
+- No symbol analysis, checkout, target build/test execution or coverage collection occurs yet.
