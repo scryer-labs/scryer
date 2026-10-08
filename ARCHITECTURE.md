@@ -5,7 +5,7 @@ Scryer remains a single Gradle module. Packages separate the current scan respon
 | Package | Responsibility |
 |---|---|
 | `com.edwardnoaland.scryer` | Thin executable entry point |
-| `cli` | Argument parsing, exit codes, composition of the scan service and progress sink |
+| `cli` | Command dispatch, command-specific argument parsing, exit codes and service composition |
 | `cli.output` | Console sections, styles, dependency tree, JSON output and Markdown report rendering/writing |
 | `scan` | `ScanService` coordinates local inspection, optional resolution and enrichment |
 | `scan.model` | Facts, declarations, graphs and scan errors; preserves unknown values and provenance |
@@ -18,6 +18,8 @@ The normal flow is `Main → CLI → ScanService → RepositoryScanner → optio
 `DependencyResolver` owns the temporary workspace and chooses the build-tool collector. `GradleModelCollector` and `MavenDependencyCollector` own their respective commands and model formats. `BuildToolProcess` owns environment setup, timeout, logs and process cleanup. Each Maven module can fail independently without discarding successful graphs.
 
 The fact model is shared by collectors and renderers. It does not depend on CLI, file inspection or subprocess execution. It remains a serializable DTO model with the existing Jackson `JsonIgnore` annotation on one convenience property; no separate transport model is introduced yet. Declared and selected versions remain distinct, and unavailable facts are not substituted with zero.
+
+`Cli.kt` owns global help and command dispatch. `ScanCommand.kt` owns scan arguments, service composition and output selection; `AnalyzeCommand.kt` owns analyze arguments and its current placeholder execution. Each command receives arguments without the command name.
 
 ## Code style
 
