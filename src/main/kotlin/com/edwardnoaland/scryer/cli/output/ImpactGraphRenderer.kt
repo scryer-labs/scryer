@@ -1,28 +1,32 @@
 package com.edwardnoaland.scryer.cli.output
 
-import com.edwardnoaland.scryer.analyze.CallEdge
+import com.edwardnoaland.scryer.analyze.report.ReportEdge
+import com.edwardnoaland.scryer.analyze.report.ReportSnapshot
+import com.edwardnoaland.scryer.analyze.report.snapshotReport
 import com.edwardnoaland.scryer.analyze.SnapshotImpact
-import com.edwardnoaland.scryer.analyze.SymbolId
 import java.io.PrintStream
 
 /** Expand each node once; references retain every edge without infinite recursive paths. */
 internal fun renderImpactGraph(impact: SnapshotImpact, out: PrintStream) {
-    val scope = impact.affected + impact.indirect
-    if (scope.isEmpty()) {
+    renderImpactGraph(snapshotReport(impact), out)
+}
+
+internal fun renderImpactGraph(impact: ReportSnapshot, out: PrintStream) {
+    if (impact.nodes.isEmpty()) {
         out.println("  (no resolved changed symbols)")
         return
     }
-    val locations = impact.graph.symbols.associateBy { it.id }
-    val nodes = scope.sortedBy { it.toString() }
+    val locations = impact.nodes.associateBy { it.id }
+    val nodes = locations.keys.sorted()
     val numbers = nodes.withIndex().associate { it.value to it.index + 1 }
-    val edges = impact.graph.edges.filter { it.caller in scope && it.callee in scope }
+    val edges = impact.edges
     val outgoing = edges.groupBy { it.caller }
-    val boundaries = impact.graph.boundaries.filter { it.caller in scope }.groupBy { it.caller }
+    val boundaries = impact.boundaries.filter { it.caller != null }.groupBy { it.caller }
     val targets = edges.map { it.callee }.toSet()
     val roots = nodes.filter { it !in targets }
-    val visited = mutableSetOf<SymbolId>()
-    val active = mutableSetOf<SymbolId>()
-    data class Visit(val node: SymbolId, val indent: String, val edge: CallEdge? = null, val exit: Boolean = false)
+    val visited = mutableSetOf<String>()
+    val active = mutableSetOf<String>()
+    data class Visit(val node: String, val indent: String, val edge: ReportEdge? = null, val exit: Boolean = false)
     val pending = ArrayDeque<Visit>()
 
     out.println("  Arrows: caller -> callee; # references share a node; CYCLE closes a recursive edge")
@@ -34,13 +38,9 @@ internal fun renderImpactGraph(impact: SnapshotImpact, out: PrintStream) {
             if (visit.exit) { active.remove(visit.node); continue }
             val node = visit.node
             val prefix = visit.edge?.let { "|-- ${it.kind} -> " }.orEmpty()
-            val category = when (node) {
-                in impact.changed -> "CHANGED"
-                in impact.affected -> "CALLER"
-                else -> "POTENTIAL INDIRECT"
-            }
             val location = locations[node]
-            val name = location?.sourceSignature ?: node.toString()
+            val category = location?.impact?.replace('_', ' ') ?: "UNKNOWN"
+            val name = location?.signature ?: node
             val reference = when {
                 node in active -> " [CYCLE -> #${numbers[node]}]"
                 node in visited -> " [see #${numbers[node]}]"
@@ -55,7 +55,7 @@ internal fun renderImpactGraph(impact: SnapshotImpact, out: PrintStream) {
                 out.println("${childIndent}|-- ? BOUNDARY $boundaryCount site(s); details below")
             }
             pending.addLast(Visit(node, visit.indent, exit = true))
-            outgoing[node].orEmpty().sortedWith(compareBy<CallEdge> { it.callee.toString() }.thenBy { it.kind.name })
+            outgoing[node].orEmpty().sortedWith(compareBy<ReportEdge> { it.callee }.thenBy { it.kind })
                 .asReversed().forEach { pending.addLast(Visit(it.callee, childIndent, it)) }
         }
     }
