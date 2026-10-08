@@ -1,5 +1,6 @@
 package com.edwardnoaland.scryer.cli
 
+import com.edwardnoaland.scryer.cli.output.renderImpactGraph
 import java.io.PrintStream
 import java.nio.file.Path
 import com.edwardnoaland.scryer.analyze.GitComparer
@@ -106,21 +107,12 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
 
 private fun renderImpact(label: String, impact: SnapshotImpact, out: PrintStream) {
     out.println("$label symbol impact (partial):")
-    val roles = impact.graph.symbols.associate { it.id to it.role }
-    out.println("  Source roles: conventional paths only; TEST callers are not execution evidence")
-    impact.changed.forEach { out.println("  CHANGED [${roles[it]}] $it") }
-    (impact.affected - impact.changed).sortedBy { it.toString() }.forEach { out.println("  AFFECTED CALLER [${roles[it]}] $it") }
-    impact.indirect.sortedBy { it.toString() }.forEach {
-        out.println("  POTENTIAL INDIRECT [${roles[it]}] $it (via ${impact.indirectReasons.getValue(it).caller})")
-    }
-    val scope = impact.affected + impact.indirect
-    out.println("  Call chains: all resolved edges in this impact scope; cycles retained, no path truncation")
-    impact.graph.edges.filter { it.callee in scope && it.caller in scope }.forEach {
-        out.println("  ${it.kind}: ${it.caller} -> ${it.callee}")
-    }
+    out.println("  Roles follow source-path conventions; TEST is not execution evidence")
+    out.println("  CHANGED = modified symbol; CALLER = reverse impact; POTENTIAL INDIRECT = conservative branch")
+    renderImpactGraph(impact, out)
     impact.unmatched.forEach { out.println("  UNRESOLVED CHANGED SYMBOL $it") }
     out.println("  Call boundaries: ${impact.graph.boundaries.size}")
-    impact.graph.boundaries.filter { it.caller == null || it.caller in scope }.forEach {
+    impact.graph.boundaries.filter { it.caller == null || it.caller in impact.affected || it.caller in impact.indirect }.forEach {
         out.println("  BOUNDARY ${it.path}:${it.line}: ${it.reason}: ${it.expression.replace('\n', ' ')}")
     }
     impact.graph.notes.forEach { out.println("  Note: $it") }

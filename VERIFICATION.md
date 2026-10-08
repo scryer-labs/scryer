@@ -82,3 +82,10 @@ The GitHub Actions workflow runs separate `clean`, `test` and `build` steps on U
 - All seven disposable fixture ref pairs succeed with resolved changed symbols. Reports include all discovered scope edges and indirect inclusion reasons. Production/test tags are validated in case 01.
 - Case 02 now includes the REFLECTION edge from LegacyPaymentClient.charge to LegacyPaymentGateway.charge and reverse impact on OrderService.submitOrder. OrderController.create still has an unresolved servlet parameter type without target dependencies and is reported as a boundary, not a fabricated resolved symbol.
 - Reflection resolution is static only. Other reflection API operations, dynamic targets, framework wiring and missing target classpaths remain boundaries. No test execution or coverage evidence is claimed.
+
+## Terminal impact graph
+
+- 72 tests pass; Wrapper `test build installDist` succeeds on JDK 21.
+- Renderer tests verify every resolved edge appears, including branching, shared nodes, cycles, disconnected recursive components, isolated changed symbols, roles and boundary counts.
+- Fixture case 01 installed-CLI smoke test verifies changed markers, production/test labels, indirect branches and reflection arrows.
+- Nodes expand once, with numbered shared/cycle references; boundary details remain available below the graph. Analyze Markdown/Mermaid export is deferred.
