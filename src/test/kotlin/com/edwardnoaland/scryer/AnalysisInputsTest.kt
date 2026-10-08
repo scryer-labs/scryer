@@ -34,9 +34,12 @@ class AnalysisInputsTest {
     }
 
     @Test fun `reactor sources link callers across modules without requiring compiled reactor artifacts`() {
-        source("library/java/Library.java", "package lib; public class Library { public int changed() { return 1; } }")
-        source("application/java/Entry.java", "package app; class Entry { int run(lib.Library lib) { return lib.changed(); } }")
-        val library = AnalysisModule(":library", root.resolve("library"), listOf(AnalysisSourceRoot(root.resolve("library/java"), SourceRole.PRODUCTION)), emptyList())
+        val dependency = source("dependency/External.java", "package dep; public class External {}")
+        val classes = Files.createDirectories(root.resolve("external-classes"))
+        assertEquals(0, ToolProvider.getSystemJavaCompiler().run(null, null, null, "-d", classes.toString(), dependency.toString()))
+        source("library/java/Library.java", "package lib; public class Library { public int changed(dep.External value) { return 1; } }")
+        source("application/java/Entry.java", "package app; class Entry { int run(lib.Library lib) { return lib.changed(null); } }")
+        val library = AnalysisModule(":library", root.resolve("library"), listOf(AnalysisSourceRoot(root.resolve("library/java"), SourceRole.PRODUCTION)), listOf(classes))
         val application = AnalysisModule(":application", root.resolve("application"), listOf(AnalysisSourceRoot(root.resolve("application/java"), SourceRole.PRODUCTION)), emptyList(), listOf(":library"))
         val graph = CallGraphCollector().collect(root, AnalysisInputs(listOf(library, application)))
         assertTrue(graph.edges.any { it.caller.owner == "app.Entry" && it.callee.owner == "lib.Library" })

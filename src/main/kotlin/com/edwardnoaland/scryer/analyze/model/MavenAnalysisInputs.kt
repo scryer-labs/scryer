@@ -41,18 +41,22 @@ internal class MavenAnalysisInputs(
             local.text("artifactId")
         }
         val coordinates = byArtifact.filterValues { it.size == 1 }.mapValues { it.value.single() }
+        val reactorCoordinates = projects.map { it.text("groupId") to it.text("artifactId") }.toSet()
         val modules = projects.mapIndexedNotNull { index, project ->
             val artifact = project.text("artifactId")
             val directory = coordinates[artifact] ?: return@mapIndexedNotNull null
             val build = project.child("build")
             fun source(name: String, fallback: String) = directory.resolve(build?.text(name)?.takeIf { it.isNotBlank() } ?: fallback).normalize()
             val classpathFile = run.resolve("classpath-$index.txt")
-            val command = plan.command.dropLast(2) + listOf("-N", "-f", directory.resolve("pom.xml").toString(),
+            val classpathPom = run.resolve("classpath-$index.pom.xml")
+            writeExternalClasspathPom(project, classpathPom, reactorCoordinates)
+            val command = plan.command.dropLast(2) + listOf("-N", "-f", classpathPom.toString(),
                 "org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath", "-DincludeScope=test", "-Dmdep.outputFile=$classpathFile")
             val result = runner.execute(root, plan.copy(command = command), run.resolve("module-$index.log"), sha, timeout, "module classpath")
             val classpath = if (result.status == TestRunStatus.SUCCEEDED && Files.isRegularFile(classpathFile))
                 Files.readString(classpathFile).trim().split(java.io.File.pathSeparator).filter { it.isNotBlank() }.map(Path::of) else emptyList()
             val dependencies = project.child("dependencies")?.children("dependency").orEmpty().mapNotNull {
+                if ((it.text("groupId") to it.text("artifactId")) !in reactorCoordinates) return@mapNotNull null
                 coordinates[it.text("artifactId")]?.let { path -> root.relativize(path).toString().ifEmpty { ":" } }
             }
             AnalysisModule(root.relativize(directory).toString().ifEmpty { ":" }, directory,
@@ -60,7 +64,7 @@ internal class MavenAnalysisInputs(
                     AnalysisSourceRoot(source("testSourceDirectory", "src/test/java"), SourceRole.TEST)), classpath, dependencies,
                 if (result.status == TestRunStatus.SUCCEEDED) emptyList() else listOf("Dependency classpath unavailable (${result.status}); log: ${result.log}"))
         }
-        return AnalysisInputs(modules, listOf("Maven effective-POM source roots and test-scope dependency classpath. Reactor dependencies use source attribution; generated roots, duplicate artifact IDs and profile-only modules may remain unavailable.") + if (byArtifact.any { it.value.size > 1 }) listOf("Duplicate reactor artifact IDs excluded from module association.") else emptyList())
+        return AnalysisInputs(modules, listOf("Maven effective-POM source roots and test-scope dependency classpath. Reactor artifacts are excluded from temporary classpath POMs and use source attribution; generated roots, duplicate artifact IDs and profile-only modules may remain unavailable.") + if (byArtifact.any { it.value.size > 1 }) listOf("Duplicate reactor artifact IDs excluded from module association.") else emptyList())
     }
 
     private fun Element.children(name: String): List<Element> = (0 until childNodes.length).mapNotNull { childNodes.item(it) as? Element }.filter { it.tagName == name }

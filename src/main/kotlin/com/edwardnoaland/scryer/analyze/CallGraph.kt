@@ -39,7 +39,7 @@ internal class CallGraphCollector {
             }
             val modules = inputs.modules.filter { it.id in supporting }
             val sources = modules.flatMap { it.sources }.map { it.path }
-            collectSources(root, sources, module.classpath, modules).let { graph ->
+            collectSources(root, sources, modules.flatMap { it.classpath }.distinct(), modules).let { graph ->
                 val owned = graph.symbols.filter { it.module == module.id }.map { it.id }.toSet()
                 graph.copy(symbols = graph.symbols.filter { it.module == module.id },
                     edges = graph.edges.filter { it.caller in owned },
