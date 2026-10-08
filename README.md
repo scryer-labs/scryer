@@ -211,3 +211,14 @@ scryer analyze --before HEAD~1 --after HEAD -o report.html
 ```
 
 Graph algorithm checks use Node's built-in test runner: `node --test scripts/test-report-graph.cjs`; CI runs these alongside Kotlin tests and validates browser scripts. Node is needed only for these frontend checks, not to run Scryer or open its reports. The checks cover cycles, shared descendants, collapse/restore, focus/filter subsets, edge kinds and a 12,000-node chain.
+
+## Next increments
+
+Completed: compact symbol/path presentation in HTML and Markdown, with separate purple/dashed test nodes in the HTML impact map. Full identities remain in details and the Markdown symbol index.
+1. Add `scan --remote-list` current/latest dependency comparisons to stdout, with explicit lookup failures and color support.
+2. Export remote dependency comparisons to Markdown.
+3. Support an explicit custom test command for analyze, retaining command/provenance, timeout and fresh-evidence handling.
+
+Reflection analysis needs continued work beyond bounded local literal tracking. Prioritize concrete fixture cases and conservative unresolved boundaries; do not treat guessed dynamic targets as resolved calls. Report usability will continue to evolve independently of analysis evidence.
+
+The longer-term direction is Go orchestration and language-specific analyzers: Kotlin for Java/Kotlin, with future C++ inspection and architecture checks. The current Kotlin implementation validates the Java MVP. Keep collection/analysis, execution, report models and rendering separate; the versioned JSON report is a useful starting point for a future process boundary. It is not yet a Go adapter protocol. Define request/version/error/cancellation contracts when the first real Go caller is introduced, rather than migrating analysis logic or adding unused interfaces now.
