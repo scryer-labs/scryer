@@ -142,7 +142,7 @@ internal class CallGraphCollector {
             val reflection = LiteralReflection(trees, ::descriptor) { ownerName, name, parameters, declared ->
                 val owner = elements.getTypeElement(ownerName.replace('$', '.'))
                 val candidates = if (owner == null) emptyList() else
-                    (if (declared) owner.enclosedElements else elements.getAllMembers(owner))
+                    (if (declared || name == "<init>") owner.enclosedElements else elements.getAllMembers(owner))
                         .filterIsInstance<ExecutableElement>()
                         .filter { it.simpleName.toString() == name && (declared || Modifier.PUBLIC in it.modifiers) }
                         .mapNotNull(::symbol)
