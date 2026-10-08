@@ -1,5 +1,7 @@
 package com.edwardnoaland.scryer.analyze
 
+import com.edwardnoaland.scryer.analyze.match.ImpactEvidenceMatcher
+import com.edwardnoaland.scryer.analyze.match.ImpactEvidenceReport
 import com.edwardnoaland.scryer.analyze.model.AnalysisInputCollector
 import com.edwardnoaland.scryer.analyze.model.AnalysisInputs
 import com.edwardnoaland.scryer.analyze.evidence.ArtifactInventory
@@ -9,7 +11,7 @@ import com.edwardnoaland.scryer.analyze.execute.TargetTestRunner
 import com.edwardnoaland.scryer.analyze.execute.TestExecution
 import com.edwardnoaland.scryer.analyze.execute.TestRunStatus
 
-data class AnalyzeResult(val impact: ImpactAnalysis, val execution: TestExecution, val evidence: ExecutionEvidence)
+data class AnalyzeResult(val impact: ImpactAnalysis, val execution: TestExecution, val evidence: ExecutionEvidence, val matching: ImpactEvidenceReport)
 
 /** Owns the common snapshot lifetime; execution follows static analysis in the same after checkout. */
 class AnalyzeService(private val progress: (String) -> Unit = {}) {
@@ -26,6 +28,7 @@ class AnalyzeService(private val progress: (String) -> Unit = {}) {
         val evidence = runCatching { EvidenceCollector().collect(after, execution, previousArtifacts) }.getOrElse {
             ExecutionEvidence(comparison.after, execution.status, notes = listOf("Cannot collect execution artifacts: ${it.message}"))
         }
-        AnalyzeResult(impact, execution, evidence)
+        val matching = ImpactEvidenceMatcher().match(impact, evidence)
+        AnalyzeResult(impact, execution, evidence, matching)
     }
 }

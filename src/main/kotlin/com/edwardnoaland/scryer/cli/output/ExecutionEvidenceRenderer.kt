@@ -28,5 +28,5 @@ internal fun renderExecutionEvidence(evidence: ExecutionEvidence, out: PrintStre
     evidence.manifest?.let { out.println("  Artifact manifest: $it") }
     evidence.notes.forEach { out.println("  Note: $it") }
     evidence.tests.firstOrNull()?.let { out.println("  Retained test report: ${it.artifact.retained}") }
-    out.println("  No per-test coverage attribution, impact gaps or safety percentage is inferred.")
+    out.println("  No per-test attribution or safety percentage is inferred from artifact collection alone.")
 }

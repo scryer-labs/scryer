@@ -41,6 +41,12 @@ internal class AnalysisInputCollector(private val progress: (String) -> Unit = {
                 GitProcess.run(root, "diff", "--cached", "HEAD", "--").isBlank()) { "Module collection changed the requested snapshot" }
             inputs
         } catch (exception: Exception) {
+            val intact = runCatching {
+                GitProcess.run(root, "rev-parse", "HEAD").trim() == sha &&
+                    GitProcess.run(root, "diff", "HEAD", "--").isBlank() &&
+                    GitProcess.run(root, "diff", "--cached", "HEAD", "--").isBlank()
+            }.getOrDefault(false)
+            check(intact) { "Cannot analyze requested snapshot after build-model source/index/HEAD mutation: ${exception.message}" }
             AnalysisInputs(notes = listOf("Module/classpath resolution unavailable: ${exception.message}. Falling back to partial source attribution."))
         }
     }

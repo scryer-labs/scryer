@@ -2,6 +2,7 @@ package com.edwardnoaland.scryer.cli
 
 import com.edwardnoaland.scryer.cli.output.renderImpactGraph
 import com.edwardnoaland.scryer.cli.output.renderExecutionEvidence
+import com.edwardnoaland.scryer.cli.output.renderImpactEvidence
 import java.io.PrintStream
 import java.nio.file.Path
 import com.edwardnoaland.scryer.analyze.GitComparer
@@ -65,7 +66,7 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
         execution.log?.let { out.println("  Log: $it") }
         execution.notes.forEach { out.println("  Note: $it") }
         renderExecutionEvidence(result.evidence, out)
-        out.println("Static potential impact and execution artifacts; impact/evidence matching is not implemented yet.")
+        renderImpactEvidence(result.matching, out)
         if (execution.status in setOf(TestRunStatus.SUCCEEDED, TestRunStatus.SKIPPED)) 0 else 1
     } catch (exception: Exception) {
         err.println("scryer: ${exception.message ?: exception.javaClass.simpleName}")
@@ -127,7 +128,7 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
 
 private fun renderImpact(label: String, impact: SnapshotImpact, out: PrintStream) {
     out.println("$label symbol impact (partial):")
-    out.println("  Roles follow source-path conventions; TEST is not execution evidence")
+    out.println("  Roles follow build source roots or path conventions; TEST is not execution evidence")
     out.println("  CHANGED = modified symbol; CALLER = reverse impact; POTENTIAL INDIRECT = conservative branch")
     renderImpactGraph(impact, out)
     impact.unmatched.forEach { out.println("  UNRESOLVED CHANGED SYMBOL $it") }

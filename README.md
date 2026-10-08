@@ -166,7 +166,7 @@ JUnit results preserve each testcase record (including parameterized names, fail
 
 No instrumentation is injected: projects without usable configured JaCoCo data report coverage unavailable, not 0%. Command failure can yield partial reports; timeout, skip, unavailable command and changed-snapshot results yield no authoritative evidence. Successful command exit without fresh XML reports leaves test counts unknown.
 
-Coverage scope remains aggregate/unknown. Session IDs and XML report filenames do not establish which individual test executed a production method, and separate datasets are never silently merged. Direct versus indirect test evidence, affected-path gaps and coverage percentages remain future work.
+Coverage scope remains aggregate/unknown. Session IDs and XML report filenames do not establish which individual test executed a production method, and separate datasets are never silently merged. Direct versus indirect execution attribution remains unavailable from aggregate datasets; method impact matching and its explicitly scoped method-execution percentage are described below.
 
 ## Analyze module/classpath inputs
 
@@ -175,3 +175,15 @@ Before static attribution, default analyze resolves each snapshot's own build in
 Javac attribution is separated per module. Reactor dependency sources support cross-module calls even before class outputs exist; supporting sources do not become duplicate graph nodes. Source-set classpaths are combined within a module in this increment, so contradictory main/test dependency versions are a limitation. Configured main/test roots provide role labels; unknown custom source-set semantics stay UNKNOWN. Independent modules declaring the same binary symbol are explicitly excluded as ambiguous rather than conflated.
 
 Resolution failures preserve partial source analysis and notes. Annotation processors are disabled; generated sources, framework wiring, included builds, exact target-JDK boot APIs and ambiguous reactor artifact IDs are not fully modeled. `--skip-tests` also skips model subprocesses and uses partial source-only attribution. No global Java configuration or original repository files are modified.
+
+## Impact / execution matching
+
+Analyze now matches **after production methods** in changed, reverse-caller and potential-indirect scope against each fresh coverage dataset independently. Identity uses binary owner, method name, erased JVM descriptor and module output provenance. Only class-ID-matched JaCoCo execution records yield EXECUTED, PARTIALLY_EXECUTED or NOT_EXECUTED. Missing class/method records, class-ID mismatch, unverified XML, absent module provenance and methods without instructions remain UNKNOWN. Test/unknown-role symbols are excluded from production method metrics; unresolved changes are listed separately. Deleted before methods have no applicable after coverage.
+
+The report preserves instruction/branch gaps and displays method execution percentage: methods with instruction hits divided by assessable production methods in that dataset. UNKNOWN is excluded and counted visibly. Even 100% here proves neither all paths nor safety; a changed method can have hits while an affected caller remains NOT_EXECUTED. Potential-indirect branches retain their conservative classification.
+
+Static direct/indirect test routes are shown as **candidates**, alongside independent passed JUnit class-record counts. These are not direct/integration execution attribution: aggregate JaCoCo cannot identify which test produced a hit, and a test method or class with passing records may never execute the changed path. HTTP/Spring wiring can produce real hits without a resolved static test route. Coverage scope is never inferred from report filenames or session IDs. Per-test attribution and path execution proof remain unknown until separately collected.
+
+Failed commands can still supply valid partial execution observations, but do not establish a passing build. Skipped/timed-out/unavailable/mutated snapshots and SHA mismatches cannot supply authoritative matching evidence. No single confidence/safety score is computed, and call boundaries remain visible.
+
+Matching smoke validation used all seven legacy-fixture refs: tested change with uncovered caller; integration-only executed change; unused method; misleading test class; added unit/HTTP characterization evidence; compile failure; and executed regression. The first scenario observes 8/11 assessed production methods with hits while retaining quote/discount gaps. Added tests observe 12/12 with hits, with partial branches and unresolved boundaries still disclosed. Compile failure has unavailable coverage, and regression retains failed test outcomes despite instruction hits. A disposable Maven Wrapper project also validates effective custom source roots and JUnit attribution boundaries; without JaCoCo it correctly reports UNKNOWN coverage.

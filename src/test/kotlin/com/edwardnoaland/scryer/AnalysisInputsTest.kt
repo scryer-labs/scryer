@@ -61,4 +61,38 @@ class AnalysisInputsTest {
         assertEquals(listOf(":lib"), inputs.modules.single().dependencies)
         assertEquals(listOf("test compileClasspath unavailable"), inputs.modules.single().notes)
     }
+    private fun repository(): GitComparison {
+        fun git(vararg arguments: String): String {
+            val process = ProcessBuilder(listOf("git", "-C", root.toString()) + arguments).redirectErrorStream(true).start()
+            val output = process.inputStream.bufferedReader().readText()
+            check(process.waitFor() == 0) { output }
+            return output.trim()
+        }
+        git("init")
+        git("config", "user.name", "Fixture")
+        git("config", "user.email", "fixture@example.com")
+        git("add", ".")
+        git("commit", "-m", "fixture")
+        val sha = git("rev-parse", "HEAD")
+        return GitComparison(root, sha, sha, emptyList())
+    }
+
+    @Test fun `model commands cannot silently replace the requested source snapshot`() {
+        source("Tracked.java", "class Tracked {}")
+        source("gradlew", "#!/bin/sh\necho mutated > Tracked.java\nexit 1\n")
+        val comparison = repository()
+        val exception = assertFailsWith<IllegalStateException> {
+            AnalysisInputCollector().collect(root, comparison, comparison.after)
+        }
+        assertContains(exception.message.orEmpty(), "source/index/HEAD mutation")
+    }
+
+    @Test fun `missing wrapper keeps source-only fallback when snapshot remains intact`() {
+        source("Tracked.java", "class Tracked {}")
+        val comparison = repository()
+        val inputs = AnalysisInputCollector().collect(root, comparison, comparison.after)
+        assertTrue(inputs.modules.isEmpty())
+        assertTrue(inputs.notes.any { it.contains("resolution unavailable") })
+    }
+
 }

@@ -1,5 +1,8 @@
 package com.edwardnoaland.scryer.analyze
 
+import com.edwardnoaland.scryer.analyze.model.AnalysisInputs
+import java.nio.file.Path
+
 data class SnapshotImpact(val graph: CallGraph, val changed: Set<SymbolId>, val affected: Set<SymbolId>, val unmatched: List<String>, val indirect: Set<SymbolId>, val indirectReasons: Map<SymbolId, CallEdge>)
 data class ImpactAnalysis(val methods: MethodAnalysis, val before: SnapshotImpact, val after: SnapshotImpact)
 
@@ -8,7 +11,13 @@ class ImpactAnalyzer {
         analyzeSnapshots(comparison, beforeRoot, afterRoot)
     }
 
-    internal fun analyzeSnapshots(comparison: GitComparison, beforeRoot: java.nio.file.Path, afterRoot: java.nio.file.Path, beforeInputs: com.edwardnoaland.scryer.analyze.model.AnalysisInputs = com.edwardnoaland.scryer.analyze.model.AnalysisInputs(), afterInputs: com.edwardnoaland.scryer.analyze.model.AnalysisInputs = com.edwardnoaland.scryer.analyze.model.AnalysisInputs()): ImpactAnalysis {
+    internal fun analyzeSnapshots(
+        comparison: GitComparison,
+        beforeRoot: Path,
+        afterRoot: Path,
+        beforeInputs: AnalysisInputs = AnalysisInputs(),
+        afterInputs: AnalysisInputs = AnalysisInputs(),
+    ): ImpactAnalysis {
         val methods = MethodAnalyzer().analyzeSnapshots(comparison, beforeRoot, afterRoot)
         val collector = CallGraphCollector()
         return ImpactAnalysis(methods,
