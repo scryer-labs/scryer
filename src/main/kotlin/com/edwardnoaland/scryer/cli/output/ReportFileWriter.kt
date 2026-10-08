@@ -9,8 +9,13 @@ import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import kotlin.io.path.isDirectory
 
 internal fun writeMarkdownReport(facts: RepositoryFacts, destination: Path, includeTree: Boolean) {
+    writeReportFile(destination) { MarkdownReport().render(facts, includeTree) }
+}
+
+internal fun writeReportFile(path: Path, render: () -> String) {
+    val destination = path.toAbsolutePath().normalize()
     require(!destination.isDirectory()) { "Output path is a directory: $destination" }
-    val content = MarkdownReport().render(facts, includeTree)
+    val content = render()
     Files.createDirectories(destination.parent)
     val temporary = Files.createTempFile(destination.parent, ".scryer-report-", ".tmp")
     try {

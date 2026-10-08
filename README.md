@@ -191,3 +191,5 @@ Matching smoke validation used all seven legacy-fixture refs: tested change with
 ## Analyze reports
 
 Default terminal output now leads with command/test outcomes and method evidence gaps. `--verbose` includes full before/after scope graphs, file ranges, boundaries, artifact provenance, test records and interpretation notes. Concise lists explicitly indicate omitted entries. All report formats use one versioned report model; production/test roles, independent datasets, unknowns and the distinction between method hits and path/test attribution are preserved.
+
+`analyze --json` writes the complete report to stdout (`schemaVersion: 1`), with progress/errors only on stderr. `-o report.json` saves the same model with atomic file replacement; it can be combined with `--json`. JSON uses plain string paths and symbol identities, arrays for scope nodes/edges, explicit nullable unknown metrics and independent coverage/matching datasets. `--verbose` and `--json` are mutually exclusive. Failed test outcomes still export a report and retain exit code 1; report-writing failure also exits 1.

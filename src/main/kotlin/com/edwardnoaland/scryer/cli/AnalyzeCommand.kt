@@ -1,6 +1,8 @@
 package com.edwardnoaland.scryer.cli
 
 import com.edwardnoaland.scryer.cli.output.renderAnalyzeTerminal
+import com.edwardnoaland.scryer.cli.output.renderAnalyzeJson
+import com.edwardnoaland.scryer.cli.output.writeReportFile
 import com.edwardnoaland.scryer.analyze.report.buildAnalyzeReport
 import java.io.PrintStream
 import java.nio.file.Path
@@ -8,9 +10,9 @@ import com.edwardnoaland.scryer.analyze.GitComparer
 import com.edwardnoaland.scryer.analyze.AnalyzeService
 import com.edwardnoaland.scryer.analyze.execute.TestRunStatus
 
-internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref> [--skip-tests] [--verbose]"
+internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref> [--skip-tests] [--verbose | --json] [-o <report.json>]"
 
-private data class AnalyzeOptions(val before: String, val after: String, val skipTests: Boolean, val verbose: Boolean)
+private data class AnalyzeOptions(val before: String, val after: String, val skipTests: Boolean, val verbose: Boolean, val json: Boolean, val output: Path?)
 
 internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: PrintStream): Int {
     if (args.contentEquals(arrayOf("--help")) || args.contentEquals(arrayOf("-h"))) {
@@ -27,7 +29,12 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
     return try {
         val comparison = GitComparer().compare(Path.of("."), options.before, options.after)
         val result = AnalyzeService(progress = { err.println("scryer: $it") }).analyze(comparison, runTests = !options.skipTests)
-        renderAnalyzeTerminal(buildAnalyzeReport(result), out, options.verbose)
+        val report = buildAnalyzeReport(result)
+        if (options.json) out.print(renderAnalyzeJson(report)) else renderAnalyzeTerminal(report, out, options.verbose)
+        options.output?.let { destination ->
+            writeReportFile(destination) { renderAnalyzeJson(report) }
+            err.println("scryer: Report saved to $destination")
+        }
         val execution = result.execution
         if (execution.status in setOf(TestRunStatus.SUCCEEDED, TestRunStatus.SKIPPED)) 0 else 1
     } catch (exception: Exception) {
@@ -43,6 +50,8 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
     var index = 0
     var skipTests = false
     var verbose = false
+    var json = false
+    var output: Path? = null
 
     while (index < args.size) {
         val flag = args[index]
@@ -58,7 +67,13 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
             index++
             continue
         }
-        if (flag !in listOf("--before", "--after")) {
+        if (flag == "--json") {
+            if (json) return null
+            json = true
+            index++
+            continue
+        }
+        if (flag !in listOf("--before", "--after", "-o")) {
             return null
         }
         if (index + 1 >= args.size) {
@@ -70,6 +85,11 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
         }
 
         when (flag) {
+            "-o" -> {
+                if (output != null) return null
+                output = runCatching { Path.of(reference).toAbsolutePath().normalize() }.getOrNull() ?: return null
+                if (!output.fileName.toString().endsWith(".json", ignoreCase = true)) return null
+            }
             "--before" -> {
                 if (before != null) {
                     return null
@@ -86,6 +106,6 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
         index += 2
     }
 
-    return AnalyzeOptions(before ?: return null, after ?: return null, skipTests, verbose)
+    if (json && verbose) return null
+    return AnalyzeOptions(before ?: return null, after ?: return null, skipTests, verbose, json, output)
 }
-

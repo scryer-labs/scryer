@@ -40,7 +40,9 @@ class AnalyzeCommandTest {
             arrayOf("analyze", "--before", "--after", "HEAD"),
             arrayOf("analyze", "--before", "HEAD", "--before", "HEAD~1", "--after", "HEAD"),
             arrayOf("analyze", "--before", "HEAD", "--after", "HEAD", "--after", "HEAD~1"),
-            arrayOf("analyze", "--before", "HEAD", "--after", "HEAD", "--json"),
+            arrayOf("analyze", "--before", "HEAD", "--after", "HEAD", "--json", "--json"),
+            arrayOf("analyze", "--before", "HEAD", "--after", "HEAD", "--json", "--verbose"),
+            arrayOf("analyze", "--before", "HEAD", "--after", "HEAD", "-o", "unsupported.txt"),
             arrayOf("analyze", "--before", "HEAD", "--after", "HEAD", "extra"),
         )
         for (args in invalid) {
