@@ -12,9 +12,9 @@ import com.edwardnoaland.scryer.analyze.GitComparer
 import com.edwardnoaland.scryer.analyze.AnalyzeService
 import com.edwardnoaland.scryer.analyze.execute.TestRunStatus
 
-internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref> [--skip-tests] [--verbose | --json] [-o <report.json|report.md|report.html>]"
+internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref> [--skip-tests | --test-command <command>] [--verbose | --json] [-o <report.json|report.md|report.html>]"
 
-private data class AnalyzeOptions(val before: String, val after: String, val skipTests: Boolean, val verbose: Boolean, val json: Boolean, val output: Path?)
+private data class AnalyzeOptions(val before: String, val after: String, val skipTests: Boolean, val verbose: Boolean, val json: Boolean, val output: Path?, val testCommand: String?)
 
 internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: PrintStream): Int {
     if (args.contentEquals(arrayOf("--help")) || args.contentEquals(arrayOf("-h"))) {
@@ -30,7 +30,7 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
 
     return try {
         val comparison = GitComparer().compare(Path.of("."), options.before, options.after)
-        val result = AnalyzeService(progress = { err.println("scryer: $it") }).analyze(comparison, runTests = !options.skipTests)
+        val result = AnalyzeService(progress = { err.println("scryer: $it") }).analyze(comparison, runTests = !options.skipTests, testCommand = options.testCommand)
         val report = buildAnalyzeReport(result)
         if (options.json) out.print(renderAnalyzeJson(report)) else renderAnalyzeTerminal(report, out, options.verbose)
         options.output?.let { destination ->
@@ -60,6 +60,7 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
     var verbose = false
     var json = false
     var output: Path? = null
+    var testCommand: String? = null
 
     while (index < args.size) {
         val flag = args[index]
@@ -81,7 +82,7 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
             index++
             continue
         }
-        if (flag !in listOf("--before", "--after", "-o")) {
+        if (flag !in listOf("--before", "--after", "-o", "--test-command")) {
             return null
         }
         if (index + 1 >= args.size) {
@@ -93,6 +94,10 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
         }
 
         when (flag) {
+            "--test-command" -> {
+                if (testCommand != null || '\u0000' in reference) return null
+                testCommand = reference
+            }
             "-o" -> {
                 if (output != null) return null
                 output = runCatching { Path.of(reference).toAbsolutePath().normalize() }.getOrNull() ?: return null
@@ -114,6 +119,7 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
         index += 2
     }
 
+    if (skipTests && testCommand != null) return null
     if (json && verbose) return null
-    return AnalyzeOptions(before ?: return null, after ?: return null, skipTests, verbose, json, output)
+    return AnalyzeOptions(before ?: return null, after ?: return null, skipTests, verbose, json, output, testCommand)
 }

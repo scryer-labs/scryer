@@ -8,14 +8,16 @@ import kotlin.io.path.readText
 
 /** Deliberately conventional commands, not discovered custom test-task semantics. */
 internal class TestRunPlanner(private val environment: Map<String, String>) {
-    fun plan(root: Path, originalRepository: Path, cache: Path, run: Path): TestRunPlan {
+    fun plan(root: Path, originalRepository: Path, cache: Path, run: Path, testCommand: String? = null): TestRunPlan {
         val gradle = root.resolve("gradlew").isRegularFile()
         val maven = root.resolve("mvnw").isRegularFile()
-        check(gradle != maven) { "Expected exactly one root Gradle/Maven Wrapper. Custom test commands and nested build roots are not supported yet." }
+        if (testCommand == null) check(gradle != maven) { "Expected exactly one root Gradle/Maven Wrapper; use --test-command for a custom lifecycle." }
+        else require(testCommand.isNotBlank() && '\u0000' !in testCommand) { "Custom test command must be nonblank and contain no NUL characters." }
         check(System.getProperty("os.name").contains("Windows", ignoreCase = true).not()) { "Target test execution currently supports POSIX Wrapper scripts only." }
         val java = chooseJava(root, originalRepository, gradle)
         check(java.resolve("bin/java").isRegularFile()) { "Invalid target JAVA_HOME: $java" }
-        val command = if (gradle) listOf("sh", "./gradlew", "--no-daemon", "--console=plain", "--rerun-tasks", "--no-build-cache", "-g", cache.resolve("gradle").toString(),
+        val command = if (testCommand != null) listOf("sh", "-c", testCommand)
+        else if (gradle) listOf("sh", "./gradlew", "--no-daemon", "--console=plain", "--rerun-tasks", "--no-build-cache", "-g", cache.resolve("gradle").toString(),
             "--project-cache-dir", run.resolve("project-cache").toString(), "clean", "test")
         else listOf("sh", "./mvnw", "-B", "-Dmaven.repo.local=${cache.resolve("maven-repository")}", "clean", "verify")
         val overrides = mapOf("JAVA_HOME" to java.toString(),

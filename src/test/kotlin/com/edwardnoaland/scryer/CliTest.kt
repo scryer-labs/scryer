@@ -24,6 +24,9 @@ class CliTest {
         assertEquals(0, invoke("--help").first)
         assertEquals(2, invoke("scan", ".", "--unknown-option").first)
         assertEquals(2, invoke("scan", ".", "-o").first)
+        assertEquals(2, invoke("analyze", "--before", "missing", "--after", "missing", "--test-command", " ").first)
+        assertEquals(2, invoke("analyze", "--before", "missing", "--after", "missing", "--skip-tests", "--test-command", "echo test").first)
+        assertEquals(2, invoke("analyze", "--before", "missing", "--after", "missing", "--test-command", "echo test", "--test-command", "echo twice").first)
     }
 
     @Test fun `scan accepts paths containing spaces and reports versions`() {

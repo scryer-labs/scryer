@@ -153,4 +153,57 @@ class TargetTestRunnerTest {
         assertEquals(TestRunStatus.SNAPSHOT_CHANGED, result.status)
     }
 
+    @Test fun `custom command preserves quoting runs only in after and retains exact provenance`() {
+        val root = repository()
+        val ref = commit(root, "exit 99")
+        val comparison = GitComparer().compare(root, ref, ref)
+        val command = "printf '%s\\n' 'a value with spaces'; pwd; touch custom-ran"
+        val result = IsolatedSnapshots.use(comparison) { _, snapshot ->
+            val execution = TargetTestRunner(environment()).run(snapshot, comparison, command)
+            assertTrue(Files.exists(snapshot.resolve("custom-ran")))
+            assertContains(Files.readString(execution.log), snapshot.toString())
+            execution
+        }
+        assertEquals(TestRunStatus.SUCCEEDED, result.status)
+        assertEquals(listOf("sh", "-c", command), result.command)
+        assertContains(Files.readString(result.log), "a value with spaces")
+        assertFalse(Files.exists(root.resolve("custom-ran")))
+        assertContains(result.notes.first(), "custom test command")
+    }
+
+    @Test fun `custom lifecycle allows absent wrappers and still invalidates tracked mutations`() {
+        val root = repository()
+        val ref = commit(root, "exit 99")
+        val comparison = GitComparer().compare(root, ref, ref)
+        val planRoot = Files.createDirectory(temporary.resolve("no-wrapper"))
+        val plan = TestRunPlanner(environment()).plan(planRoot, root, temporary, temporary, "printf ok")
+        assertEquals(listOf("sh", "-c", "printf ok"), plan.command)
+        val execution = IsolatedSnapshots.use(comparison) { _, snapshot ->
+            TargetTestRunner(environment()).run(snapshot, comparison, "printf 'mutation' > build.gradle")
+        }
+        assertEquals(TestRunStatus.SNAPSHOT_CHANGED, execution.status)
+    }
+
+    @Test fun `custom timeout and failure retain logs and fresh test artifacts`() {
+        val root = repository()
+        val ref = commit(root, "exit 99")
+        val comparison = GitComparer().compare(root, ref, ref)
+        val timeout = IsolatedSnapshots.use(comparison) { _, snapshot ->
+            TargetTestRunner(environment().apply { put("SCRYER_TEST_TIMEOUT_SECONDS", "1") })
+                .run(snapshot, comparison, "printf starting; sleep 30")
+        }
+        assertEquals(TestRunStatus.TIMED_OUT, timeout.status)
+        val evidence = IsolatedSnapshots.use(comparison) { _, snapshot ->
+            val previous = com.edwardnoaland.scryer.analyze.evidence.ArtifactInventory.capture(snapshot)
+            val command = "mkdir -p build/test-results/test; printf '%s' '<testsuite><testcase classname=\"ExampleTest\" name=\"custom\"/></testsuite>' > build/test-results/test/TEST-custom.xml; exit 7"
+            val execution = TargetTestRunner(environment()).run(snapshot, comparison, command)
+            assertEquals(TestRunStatus.FAILED, execution.status)
+            assertEquals(7, execution.exitCode)
+            com.edwardnoaland.scryer.analyze.evidence.EvidenceCollector().collect(snapshot, execution, previous)
+        }
+        assertEquals(1, evidence.tests.sumOf { it.cases.size })
+        assertEquals("custom", evidence.tests.single().cases.single().name)
+        assertTrue(Files.exists(evidence.tests.single().artifact.retained))
+    }
+
 }

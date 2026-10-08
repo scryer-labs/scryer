@@ -10,7 +10,7 @@ internal class TargetTestRunner(
     private val environment: Map<String, String> = System.getenv(),
     private val progress: (String) -> Unit = {},
 ) {
-    fun run(root: Path, comparison: GitComparison): TestExecution {
+    fun run(root: Path, comparison: GitComparison, testCommand: String? = null): TestExecution {
         val cache = Path.of(environment["SCRYER_CACHE_HOME"] ?: "${System.getProperty("java.io.tmpdir")}/scryer-cache").toAbsolutePath().normalize()
         val configuredTimeout = environment["SCRYER_TEST_TIMEOUT_SECONDS"]
         val timeout = configuredTimeout?.toLongOrNull() ?: if (configuredTimeout == null) 600L else 0L
@@ -22,7 +22,7 @@ internal class TargetTestRunner(
             return TestExecution(comparison.after, TestRunStatus.UNAVAILABLE, notes = listOf("Cannot create test log directory: ${exception.message}"))
         }
         val plan = try {
-            TestRunPlanner(environment).plan(root, comparison.repository, cache, run)
+            TestRunPlanner(environment).plan(root, comparison.repository, cache, run, testCommand)
         } catch (exception: Exception) {
             return TestExecution(comparison.after, TestRunStatus.UNAVAILABLE, notes = listOf(exception.message ?: "Cannot select target test command"))
         }
@@ -38,7 +38,10 @@ internal class TargetTestRunner(
 
     internal fun execute(root: Path, plan: TestRunPlan, log: Path, afterSha: String, timeout: Long, label: String = "after tests"): TestExecution {
         val started = System.nanoTime()
-        val notes = listOf("Conventional Wrapper lifecycle only; custom test tasks/commands are not discovered yet.",
+        val commandNote = if (plan.command.take(2) == listOf("sh", "-c"))
+            "Explicit custom test command; no clean/test flags added. Freshness is checked, but the user must select the intended full test lifecycle."
+        else "Conventional Wrapper lifecycle only; custom test tasks are not discovered."
+        val notes = listOf(commandNote,
             "Command exit status is not per-test execution, build packaging or coverage evidence. Fresh reports/JaCoCo data are collected separately; no test-to-method attribution is inferred from command status.")
         var process: Process? = null
         try {
