@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
+<title>Scryer · Analysis report</title>
+<style>__SCRYER_STYLE__</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to report</a>
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">◈</span><strong>SCRYER</strong><span class="brand-divider"></span><span class="muted">Analysis report</span></div>
+  <div class="header-actions"><span class="offline"><span class="status-dot"></span>Offline report</span><button id="theme-button" type="button" aria-label="Switch color theme">◐ Theme</button><button id="download-json" type="button">↓ JSON</button></div>
+</header>
+<main id="main" tabindex="-1">
+  <section class="intro">
+    <div><div class="eyebrow">JAVA / CHANGE &amp; TEST EVIDENCE</div><h1 id="project-name">Repository analysis</h1><p id="repository" class="repository"></p></div>
+    <div class="run-summary"><span id="run-status" class="badge"></span><span id="generated-at" class="muted small"></span></div>
+  </section>
+  <div class="revision-strip"><span class="muted">BEFORE</span><code id="before-sha"></code><span class="revision-arrow" aria-hidden="true">→</span><span class="muted">AFTER</span><code id="after-sha"></code><span id="change-count" class="revision-count"></span></div>
+  <section class="metrics" aria-label="After method evidence summary" id="metrics"></section>
+  <div class="interpretation"><span aria-hidden="true">ⓘ</span><p><strong>Execution evidence, with its limits.</strong> Method hits do not prove a specific test or caller path. Static test routes are candidates. UNKNOWN is excluded from method execution percentages; percentages are not safety scores.</p></div>
+  <div class="workspace-heading"><div><span class="eyebrow">EXPLORE THE REPORT</span><h2>Changes, impact &amp; evidence</h2></div><label class="dataset-label">After coverage dataset<select id="dataset-select"></select></label></div>
+  <nav class="tabs" role="tablist" aria-label="Report views">
+    <button type="button" role="tab" id="tab-evidence" aria-controls="evidence-panel" aria-selected="true" data-panel="evidence">Evidence <span id="evidence-count"></span></button>
+    <button type="button" role="tab" id="tab-impact" aria-controls="impact-panel" aria-selected="false" tabindex="-1" data-panel="impact">Impact map <span id="impact-count"></span></button>
+    <button type="button" role="tab" id="tab-changes" aria-controls="changes-panel" aria-selected="false" tabindex="-1" data-panel="changes">Changes <span id="changes-count"></span></button>
+    <button type="button" role="tab" id="tab-execution" aria-controls="execution-panel" aria-selected="false" tabindex="-1" data-panel="execution">Execution &amp; artifacts</button>
+  </nav>
+  <div id="filters" class="filters">
+    <label class="search"><span aria-hidden="true">⌕</span><span class="sr-only">Search symbols or source paths</span><input id="search-input" type="search" aria-label="Search symbols or source paths" placeholder="Search symbols or source paths…" autocomplete="off"></label>
+    <label><span class="sr-only">Evidence status filter</span><select id="status-filter"><option value="ALL">All evidence</option><option value="GAPS">Evidence gaps</option><option value="EXECUTED">Executed</option><option value="PARTIALLY_EXECUTED">Partially executed</option><option value="NOT_EXECUTED">Not executed</option><option value="UNKNOWN">Unknown</option></select></label>
+    <label><span class="sr-only">Impact filter</span><select id="impact-filter"><option value="ALL">All impact</option><option value="CHANGED">Changed</option><option value="CALLER">Callers</option><option value="POTENTIAL_INDIRECT">Potential indirect</option></select></label>
+    <label><span class="sr-only">Source role filter</span><select id="role-filter"><option value="ALL">All source roles</option><option value="PRODUCTION">Production</option><option value="TEST">Test</option><option value="UNKNOWN">Unknown role</option></select></label>
+    <button id="reset-filters" type="button">Reset</button>
+  </div>
+  <section id="evidence-panel" class="panel" role="tabpanel" aria-labelledby="tab-evidence">
+    <div class="panel-heading"><h3>After production method evidence</h3><span id="method-count" class="muted small" role="status" aria-live="polite"></span></div>
+    <div class="table-scroll"><table><thead><tr><th>Symbol / source</th><th>Impact</th><th>Evidence</th><th>Instructions hit / missed</th><th>Missed branches</th></tr></thead><tbody id="method-table"></tbody></table></div>
+    <div id="method-empty" class="empty" hidden>No matching production methods. Try resetting filters. Test symbols appear in the impact map.</div>
+  </section>
+  <section id="impact-panel" class="panel" role="tabpanel" aria-labelledby="tab-impact" hidden>
+    <div class="panel-heading"><div><h3>Static potential impact</h3><p class="muted small">Caller → callee. A resolved edge is not execution proof.</p></div><label>Snapshot <select id="snapshot-select"><option value="after">After</option><option value="before">Before</option></select></label></div>
+    <div class="graph-legend"><span class="legend changed">Changed</span><span class="legend caller">Caller</span><span class="legend indirect">Potential indirect</span><span id="graph-count" class="muted small" role="status" aria-live="polite"></span></div>
+    <div id="graph-host" class="graph-host"></div>
+    <details class="edge-details"><summary>Resolved scope edges</summary><div class="table-scroll"><table><thead><tr><th>Caller</th><th>Kind</th><th>Callee</th></tr></thead><tbody id="edge-table"></tbody></table></div></details>
+    <details class="edge-details"><summary id="boundary-summary">Call boundaries</summary><div id="boundary-list"></div></details>
+  </section>
+  <section id="changes-panel" class="panel" role="tabpanel" aria-labelledby="tab-changes" hidden><div class="panel-heading"><h3>Changed declarations</h3><span class="muted small">Source syntax before / after</span></div><div id="file-changes"></div><div id="declaration-changes"></div></section>
+  <section id="execution-panel" class="panel" role="tabpanel" aria-labelledby="tab-execution" hidden><div class="panel-heading"><h3>Execution &amp; provenance</h3><span class="muted small">Retained paths refer to the generating machine</span></div><div id="execution-facts"></div><h3 class="section-title">Test records</h3><div id="test-reports"></div><h3 class="section-title">Coverage datasets</h3><div id="coverage-reports"></div><h3 class="section-title">Retained artifacts</h3><div class="table-scroll"><table><thead><tr><th>Original path</th><th>Retained path</th><th>SHA-256</th></tr></thead><tbody id="artifact-table"></tbody></table></div></section>
+  <details class="limits"><summary>Analysis limits &amp; unresolved changes <span id="limits-count"></span></summary><div id="limits-list"></div></details>
+  <footer><span>SCRYER · deterministic analysis · report schema <span id="schema-version"></span></span><span>No per-test attribution or path safety claim.</span></footer>
+</main>
+<dialog id="symbol-dialog" aria-labelledby="symbol-title"><div class="dialog-header"><span class="eyebrow">SYMBOL DETAILS</span><button id="close-symbol" type="button" aria-label="Close symbol details">✕</button></div><div id="symbol-content"></div></dialog>
+<noscript><div class="noscript">This offline report requires JavaScript for filtering and graph exploration. Use the JSON or Markdown export if JavaScript is disabled.</div></noscript>
+<script id="scryer-data" type="application/json">__SCRYER_DATA__</script>
+<script>__SCRYER_APP__</script>
+<script>__SCRYER_GRAPH__</script>
+</body>
+</html>

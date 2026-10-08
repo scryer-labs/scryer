@@ -3,6 +3,7 @@ package com.edwardnoaland.scryer.cli
 import com.edwardnoaland.scryer.cli.output.renderAnalyzeTerminal
 import com.edwardnoaland.scryer.cli.output.renderAnalyzeJson
 import com.edwardnoaland.scryer.cli.output.renderAnalyzeMarkdown
+import com.edwardnoaland.scryer.cli.output.renderAnalyzeHtml
 import com.edwardnoaland.scryer.cli.output.writeReportFile
 import com.edwardnoaland.scryer.analyze.report.buildAnalyzeReport
 import java.io.PrintStream
@@ -11,7 +12,7 @@ import com.edwardnoaland.scryer.analyze.GitComparer
 import com.edwardnoaland.scryer.analyze.AnalyzeService
 import com.edwardnoaland.scryer.analyze.execute.TestRunStatus
 
-internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref> [--skip-tests] [--verbose | --json] [-o <report.json|report.md>]"
+internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref> [--skip-tests] [--verbose | --json] [-o <report.json|report.md|report.html>]"
 
 private data class AnalyzeOptions(val before: String, val after: String, val skipTests: Boolean, val verbose: Boolean, val json: Boolean, val output: Path?)
 
@@ -34,8 +35,11 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
         if (options.json) out.print(renderAnalyzeJson(report)) else renderAnalyzeTerminal(report, out, options.verbose)
         options.output?.let { destination ->
             writeReportFile(destination) {
-                if (destination.fileName.toString().endsWith(".json", ignoreCase = true)) renderAnalyzeJson(report)
-                else renderAnalyzeMarkdown(report)
+                when (destination.fileName.toString().substringAfterLast('.').lowercase()) {
+                    "json" -> renderAnalyzeJson(report)
+                    "md" -> renderAnalyzeMarkdown(report)
+                    else -> renderAnalyzeHtml(report)
+                }
             }
             err.println("scryer: Report saved to $destination")
         }
@@ -92,7 +96,7 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
             "-o" -> {
                 if (output != null) return null
                 output = runCatching { Path.of(reference).toAbsolutePath().normalize() }.getOrNull() ?: return null
-                if (output.fileName.toString().substringAfterLast('.', "").lowercase() !in setOf("json", "md")) return null
+                if (output.fileName.toString().substringAfterLast('.', "").lowercase() !in setOf("json", "md", "html")) return null
             }
             "--before" -> {
                 if (before != null) {
