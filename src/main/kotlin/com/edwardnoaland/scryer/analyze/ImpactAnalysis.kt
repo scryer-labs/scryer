@@ -1,0 +1,34 @@
+package com.edwardnoaland.scryer.analyze
+
+data class SnapshotImpact(val graph: CallGraph, val changed: Set<SymbolId>, val affected: Set<SymbolId>, val unmatched: List<String>)
+data class ImpactAnalysis(val methods: MethodAnalysis, val before: SnapshotImpact, val after: SnapshotImpact)
+
+class ImpactAnalyzer {
+    fun analyze(comparison: GitComparison): ImpactAnalysis = IsolatedSnapshots.use(comparison) { beforeRoot, afterRoot ->
+        val methods = MethodAnalyzer().analyzeSnapshots(comparison, beforeRoot, afterRoot)
+        val collector = CallGraphCollector()
+        ImpactAnalysis(methods,
+            impact(collector.collect(beforeRoot), methods.methods, before = true),
+            impact(collector.collect(afterRoot), methods.methods, before = false))
+    }
+
+    private fun impact(graph: CallGraph, changes: List<MethodChange>, before: Boolean): SnapshotImpact {
+        val changed = linkedSetOf<SymbolId>()
+        val unmatched = mutableListOf<String>()
+        for (change in changes) {
+            val method = (if (before) change.before else change.after) ?: continue
+            val path = if (before) change.beforePath else change.afterPath
+            val matches = graph.symbols.filter { it.path == path && it.sourceSignature == method.signature }
+            if (matches.size == 1) changed += matches.single().id else unmatched += "$path: ${method.signature}"
+        }
+        val affected = changed.toMutableSet()
+        val callers = graph.edges.groupBy { it.callee }
+        val pending = ArrayDeque(changed)
+        while (pending.isNotEmpty()) {
+            callers[pending.removeFirst()].orEmpty().forEach { edge ->
+                if (affected.add(edge.caller)) pending.addLast(edge.caller)
+            }
+        }
+        return SnapshotImpact(graph, changed, affected, unmatched)
+    }
+}

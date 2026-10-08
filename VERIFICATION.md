@@ -67,3 +67,10 @@ The GitHub Actions workflow runs separate `clean`, `test` and `build` steps on U
 - User working-tree content and worktree registrations remain unchanged. Temporary clone/worktrees are removed on success and action failure. Parse errors and unsupported anonymous identities fail explicitly.
 - Installed CLI successfully analyzes all seven fixture acceptance ref pairs in a disposable repository. Cases 01–04 identify their expected production methods; case 05 additionally finds two added test methods; cases 06–07 identify the modified production method without claiming build/test evidence.
 - Target compilation, tests, coverage, symbol resolution and call graphs remain outside this increment.
+
+## Analyze increment 4: symbols and caller impact
+
+- 65 tests pass; Wrapper `test build installDist` succeeds on JDK 21.
+- New tests cover erased generic/array descriptors, overloads, nested owners, constructor calls, transitive/recursive callers, interface dispatch, super/static calls, deleted symbols, unresolved dependencies/signatures, method references, initializer boundaries and duplicate module identities.
+- Installed CLI analyzes all seven fixture ref pairs. Case 01 reaches quoteOrder, submitOrder, controller and direct source-test callers. Case 02 identifies the gateway symbol but cannot follow reflection yet; this remains an explicit graph limitation. Other scenarios retain resolved changed symbols, including syntax-valid compile-failure and runtime-regression examples.
+- Before and after graphs remain separate; no target build, test execution, coverage or safety/confidence score is inferred.

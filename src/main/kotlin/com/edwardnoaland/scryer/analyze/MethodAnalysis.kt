@@ -8,6 +8,10 @@ data class MethodAnalysis(val comparison: GitComparison, val methods: List<Metho
 
 class MethodAnalyzer {
     fun analyze(comparison: GitComparison): MethodAnalysis = IsolatedSnapshots.use(comparison) { beforeRoot, afterRoot ->
+        analyzeSnapshots(comparison, beforeRoot, afterRoot)
+    }
+
+    internal fun analyzeSnapshots(comparison: GitComparison, beforeRoot: Path, afterRoot: Path): MethodAnalysis {
         val reader = JavaMethods()
         val changes = mutableListOf<MethodChange>()
         val notes = mutableListOf<String>()
@@ -29,7 +33,7 @@ class MethodAnalyzer {
             changes += fileChanges
             notes += "${file.afterPath ?: file.beforePath}: file/class context (imports, fields, initializers, inheritance) is not analyzed for impact yet."
         }
-        MethodAnalysis(comparison, changes, notes)
+        return MethodAnalysis(comparison, changes, notes)
     }
 
     private fun readMethods(reader: JavaMethods, root: Path, path: String?): List<JavaMethod> =

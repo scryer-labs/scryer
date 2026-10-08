@@ -4,7 +4,8 @@ import java.io.PrintStream
 import java.nio.file.Path
 import com.edwardnoaland.scryer.analyze.GitComparer
 import com.edwardnoaland.scryer.analyze.LineRange
-import com.edwardnoaland.scryer.analyze.MethodAnalyzer
+import com.edwardnoaland.scryer.analyze.ImpactAnalyzer
+import com.edwardnoaland.scryer.analyze.SnapshotImpact
 
 internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref>"
 
@@ -24,7 +25,8 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
 
     return try {
         val comparison = GitComparer().compare(Path.of("."), options.before, options.after)
-        val analysis = MethodAnalyzer().analyze(comparison)
+        val impact = ImpactAnalyzer().analyze(comparison)
+        val analysis = impact.methods
         out.println("Repository: ${comparison.repository}")
         out.println("Before: ${comparison.before}")
         out.println("After: ${comparison.after}")
@@ -47,7 +49,9 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
             change.after?.let { out.println("  after ${change.afterPath}: ${formatRange(it.lines)}") }
         }
         analysis.notes.forEach { out.println("Note: $it") }
-        out.println("Source syntax comparison only; call graphs, build and test evidence are not collected yet.")
+        renderImpact("Before", impact.before, out)
+        renderImpact("After", impact.after, out)
+        out.println("Static potential impact only; build and test execution evidence are not collected yet.")
         0
     } catch (exception: Exception) {
         err.println("scryer: ${exception.message ?: exception.javaClass.simpleName}")
@@ -98,4 +102,19 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
     }
 
     return AnalyzeOptions(before ?: return null, after ?: return null)
+}
+
+private fun renderImpact(label: String, impact: SnapshotImpact, out: PrintStream) {
+    out.println("$label symbol impact (partial):")
+    impact.changed.forEach { out.println("  CHANGED $it") }
+    (impact.affected - impact.changed).sortedBy { it.toString() }.forEach { out.println("  AFFECTED CALLER $it") }
+    impact.graph.edges.filter { it.callee in impact.affected && it.caller in impact.affected }.forEach {
+        out.println("  ${it.kind}: ${it.caller} -> ${it.callee}")
+    }
+    impact.unmatched.forEach { out.println("  UNRESOLVED CHANGED SYMBOL $it") }
+    out.println("  Call boundaries: ${impact.graph.boundaries.size}")
+    impact.graph.boundaries.filter { it.caller == null || it.caller in impact.affected }.forEach {
+        out.println("  BOUNDARY ${it.path}:${it.line}: ${it.reason}: ${it.expression.replace('\n', ' ')}")
+    }
+    impact.graph.notes.forEach { out.println("  Note: $it") }
 }
