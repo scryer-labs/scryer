@@ -10,6 +10,20 @@
     if (className) element.className = className;
     return element;
   };
+  const shortSignature = signature => {
+    const separator = signature.indexOf('#');
+    return separator < 0 ? signature : signature.slice(0, separator).split('.').pop() + signature.slice(separator);
+  };
+  const signatures = [...new Set([...report.before.nodes, ...report.after.nodes].map(symbol => symbol.signature))];
+  const labelCounts = new Map();
+  signatures.forEach(signature => labelCounts.set(shortSignature(signature), (labelCounts.get(shortSignature(signature)) || 0) + 1));
+  const label = signature => labelCounts.get(shortSignature(signature)) > 1 ? signature : shortSignature(signature);
+  const sourceLabel = (path, line) => `${(path || 'unknown').split('/').pop()}:${line}`;
+  const sourceNode = (path, line) => {
+    const element = node('span', sourceLabel(path, line), 'source-path');
+    element.title = `${path}:${line}`;
+    return element;
+  };
   const replace = (element, children) => element.replaceChildren(...children);
   const dataset = () => report.matching.datasets[state.dataset];
   const snapshot = () => report[state.snapshot];
@@ -38,8 +52,9 @@
   };
   const filteredNodes = () => snapshot().nodes.filter(matches);
   const symbolButton = (symbol, text, snapshotName = state.snapshot) => {
-    const button = node('button', text, 'symbol-button');
+    const button = node('button', label(text), 'symbol-button');
     button.type = 'button';
+    button.title = text;
     button.addEventListener('click', () => selectSymbol(symbol, snapshotName));
     return button;
   };
@@ -102,7 +117,7 @@
     replace($('method-table'), methods.map(method => {
       const row = node('tr');
       const name = node('td');
-      name.append(symbolButton(method.symbol, method.signature, 'after'), node('span', `${method.path}:${method.line}`, 'source-path'));
+      name.append(symbolButton(method.symbol, method.signature, 'after'), sourceNode(method.path, method.line));
       const impact = node('td'); impact.append(badge(method.impact, impactClass(method.impact)));
       const evidence = node('td'); evidence.append(badge(method.status));
       row.append(name, impact, evidence, node('td', method.instructions ? `${method.instructions.covered} / ${method.instructions.missed}` : 'unknown', 'numeric'), node('td', method.branches?.missed ?? 'unknown', 'numeric'));
@@ -142,11 +157,11 @@
     replace($('file-changes'), [simpleTable(['Status', 'Before path', 'After path', 'Line ranges'], report.files.map(file => [file.status, file.beforePath || '(added)', file.afterPath || '(deleted)', file.lines.map(range => `before ${range.before.start} +${range.before.count} → after ${range.after.start} +${range.after.count}`).join('; ')]))]);
     replace($('declaration-changes'), report.changes.length ? report.changes.map(change => {
       const block = node('article', null, 'change-block');
-      block.append(node('h3', `${change.kind} · ${(change.after || change.before).signature}`));
+      block.append(node('h3', `${change.kind} · ${label((change.after || change.before).signature)}`));
       const pair = node('div', null, 'source-pair');
       for (const [label, method] of [['Before', change.before], ['After', change.after]]) {
         const column = node('div'); column.append(node('h4', label.toUpperCase()));
-        column.append(node('span', method ? `${method.path}:${method.lines.start} · ${method.lines.count} line(s)` : 'Declaration absent', 'source-path'));
+        column.append(node('span', method ? `${sourceLabel(method.path, method.lines.start)} · ${method.lines.count} line(s)` : 'Declaration absent', 'source-path'));
         column.append(node('pre', method?.source || '(absent)')); pair.append(column);
       }
       block.append(pair); return block;
@@ -194,8 +209,8 @@
     const calls = section('Resolved static calls · caller → callee');
     graph.edges.filter(edge => edge.caller === id || edge.callee === id).forEach(edge => {
       const other = edge.caller === id ? edge.callee : edge.caller;
-      const button = node('button', `${edge.caller === id ? 'Calls' : 'Called by'} · ${other} · ${words(edge.kind)}`);
-      button.type = 'button'; button.addEventListener('click', () => selectSymbol(other, snapshotName)); calls.append(button);
+      const button = node('button', `${edge.caller === id ? 'Calls' : 'Called by'} · ${label(graph.nodes.find(node => node.id === other)?.signature || other)} · ${words(edge.kind)}`);
+      button.title = other; button.type = 'button'; button.addEventListener('click', () => selectSymbol(other, snapshotName)); calls.append(button);
     });
     if (calls.childElementCount === 1) calls.append(node('p', 'No resolved scope edges. Unresolved calls remain boundaries.'));
     const boundaries = graph.boundaries.filter(boundary => boundary.caller === id);
@@ -247,6 +262,6 @@
     const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2) + '\n'], {type: 'application/json'}));
     const link = node('a'); link.href = url; link.download = 'scryer-analysis.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
-  window.ScryerReport = {report, state, node, dataset, snapshot, filteredNodes, statusFor, selectSymbol, render, graphRenderer: null};
+  window.ScryerReport = {report, state, node, label, dataset, snapshot, filteredNodes, statusFor, selectSymbol, render, graphRenderer: null};
   renderChanges(); renderExecution(); render();
 })();

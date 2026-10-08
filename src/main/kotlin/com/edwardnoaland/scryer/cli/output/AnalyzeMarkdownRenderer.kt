@@ -3,6 +3,9 @@ package com.edwardnoaland.scryer.cli.output
 import com.edwardnoaland.scryer.analyze.report.*
 
 internal fun renderAnalyzeMarkdown(report: AnalyzeReport): String = buildString {
+    val allNodes = (report.before.nodes + report.after.nodes).distinctBy { it.id }
+    val labels = signatureLabels(allNodes.map { it.signature } + report.matching.datasets.flatMap { it.methods.map { method -> method.signature } })
+    val labelsById = allNodes.associate { it.id to labels.getValue(it.signature) }
     appendLine("# Scryer analysis")
     appendLine()
     table(listOf("Fact", "Value"), listOf(
@@ -22,15 +25,17 @@ internal fun renderAnalyzeMarkdown(report: AnalyzeReport): String = buildString 
         appendLine()
         table(listOf("Status", "Methods"), dataset.counts.map { listOf(it.key, it.value.toString()) })
         table(listOf("Production symbol", "Impact", "Evidence", "Instructions hit / missed", "Missed branches", "Source"), dataset.methods.map { method ->
-            listOf(method.symbol, method.impact, method.status, method.instructions?.let { "${it.covered} / ${it.missed}" } ?: "unknown",
-                method.branches?.missed?.toString() ?: "unknown", "${method.path}:${method.line}")
+            listOf(labels[method.signature] ?: method.signature, method.impact, method.status, method.instructions?.let { "${it.covered} / ${it.missed}" } ?: "unknown",
+                method.branches?.missed?.toString() ?: "unknown", "${compactSource(method.path)}:${method.line}")
         })
         dataset.methods.forEach { method ->
-            appendLine("- **${markdownText(method.signature)}**: ${markdownText(method.reason)}")
+            appendLine("- **${markdownText(labels[method.signature] ?: method.signature)}**: ${markdownText(method.reason)}")
             method.routes.forEach { route -> appendLine("  - ${route.kind}: ${markdownText(route.test)}; ${route.passedClassRecords} passed class records; attribution unknown.") }
         }
         appendLine()
     }
+    appendLine("Compact labels are for reading only. Full symbol identities and source paths are retained in the symbol index below; ambiguous short signatures keep their qualified owner.")
+    appendLine()
     appendLine("## Before / after impact graphs")
     appendLine()
     appendLine("Arrows point from caller to callee. Changed symbols are red, callers blue, and potential indirect branches amber. TEST/UNKNOWN roles remain explicit. All resolved scope edges, including cycles and shared nodes, are retained; unresolved calls remain boundaries.")
@@ -42,7 +47,7 @@ internal fun renderAnalyzeMarkdown(report: AnalyzeReport): String = buildString 
         appendLine()
         appendLine("Boundaries: ${snapshot.boundaries.size} in scope/unknown caller; ${snapshot.totalBoundaryCount} repository sites.")
         appendLine()
-        table(listOf("Caller", "Source", "Reason", "Expression"), snapshot.boundaries.map { listOf(it.caller ?: "unknown", "${it.path}:${it.line}", it.reason, it.expression) })
+        table(listOf("Caller", "Source", "Reason", "Expression"), snapshot.boundaries.map { listOf(labelsById[it.caller] ?: it.caller ?: "unknown", "${compactSource(it.path)}:${it.line}", it.reason, it.expression) })
         snapshot.unresolvedChanges.forEach { appendLine("- Unresolved change: ${markdownText(it)}") }
         snapshot.notes.forEach { appendLine("- ${markdownText(it)}") }
         appendLine()
@@ -53,7 +58,7 @@ internal fun renderAnalyzeMarkdown(report: AnalyzeReport): String = buildString 
         listOf(file.status, file.beforePath ?: "added", file.afterPath ?: "deleted", file.lines.joinToString { "before ${it.before.start} +${it.before.count} → after ${it.after.start} +${it.after.count}" })
     })
     report.changes.forEach { change ->
-        appendLine("### ${change.kind}: ${markdownText((change.after ?: change.before)?.signature.orEmpty())}")
+        appendLine("### ${change.kind}: ${markdownText(compactSignature((change.after ?: change.before)?.signature.orEmpty()))}")
         appendLine()
         listOf("Before" to change.before, "After" to change.after).forEach { (label, method) ->
             if (method != null) {
@@ -87,6 +92,11 @@ internal fun renderAnalyzeMarkdown(report: AnalyzeReport): String = buildString 
     appendLine("## Limits and unresolved changes")
     appendLine()
     report.matching.removed.forEach { appendLine("- Removed before symbol: ${markdownText(it)}; after coverage not applicable.") }
+    appendLine("## Full symbol index")
+    appendLine()
+    table(listOf("Label", "Signature", "Binary identity", "Source"), (report.before.nodes + report.after.nodes).distinctBy { Triple(it.id, it.path, it.line) }.map {
+        listOf(labels[it.signature] ?: it.signature, it.signature, it.id, "${it.path}:${it.line}")
+    })
     report.matching.unresolvedChanges.forEach { appendLine("- Unresolved change: ${markdownText(it)}; excluded from method metrics.") }
     (report.notes + report.execution.notes + report.evidence.notes + report.matching.notes).distinct().forEach { appendLine("- ${markdownText(it)}") }
 }
@@ -94,8 +104,9 @@ internal fun renderAnalyzeMarkdown(report: AnalyzeReport): String = buildString 
 internal fun renderAnalyzeMermaid(snapshot: ReportSnapshot): String = buildString {
     appendLine("flowchart LR")
     val ids = snapshot.nodes.withIndex().associate { it.value.id to "n${it.index}" }
+    val labels = signatureLabels(snapshot.nodes.map { it.signature })
     snapshot.nodes.forEach { node ->
-        val label = "${node.signature} [${node.impact}] [${node.role}]"
+        val label = "${labels.getValue(node.signature)} [${node.impact}] [${node.role}]"
         appendLine("  ${ids.getValue(node.id)}[\"${mermaidText(label)}\"]")
         val style = when (node.impact) { "CHANGED" -> "changed"; "CALLER" -> "caller"; else -> "indirect" }
         appendLine("  class ${ids.getValue(node.id)} $style")

@@ -42,7 +42,7 @@
   </section>
   <section id="impact-panel" class="panel" role="tabpanel" aria-labelledby="tab-impact" hidden>
     <div class="panel-heading"><div><h3>Static potential impact</h3><p class="muted small">Caller → callee. A resolved edge is not execution proof.</p></div><label>Snapshot <select id="snapshot-select"><option value="after">After</option><option value="before">Before</option></select></label></div>
-    <div class="graph-legend"><span class="legend changed">Changed</span><span class="legend caller">Caller</span><span class="legend indirect">Potential indirect</span><span id="graph-count" class="muted small" role="status" aria-live="polite"></span></div>
+    <div class="graph-legend"><span class="legend changed">Changed</span><span class="legend caller">Caller</span><span class="legend indirect">Potential indirect</span><span class="legend test">Test node (impact shown in label)</span><span id="graph-count" class="muted small" role="status" aria-live="polite"></span></div>
     <div id="graph-host" class="graph-host"></div>
     <details class="edge-details"><summary>Resolved scope edges</summary><div class="table-scroll"><table><thead><tr><th>Caller</th><th>Kind</th><th>Callee</th></tr></thead><tbody id="edge-table"></tbody></table></div></details>
     <details class="edge-details"><summary id="boundary-summary">Call boundaries</summary><div id="boundary-list"></div></details>

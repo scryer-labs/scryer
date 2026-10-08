@@ -46,7 +46,7 @@
       inspector.replaceChildren();
       if (current) {
         const information = app.node('div');
-        information.append(app.node('strong', current.signature), app.node('span', `${current.role} · ${current.impact} · ${app.statusFor(current).replaceAll('_', ' ')}`, 'source-path'));
+        information.append(app.node('strong', app.label(current.signature)), app.node('span', `${current.role} · ${current.impact} · ${app.statusFor(current).replaceAll('_', ' ')}`, 'source-path'));
         inspector.append(information, control('Details →', () => app.selectSymbol(current.id, app.state.snapshot)));
       } else inspector.append(app.node('span', 'Select a node to highlight its incoming/outgoing calls and inspect its evidence.', 'muted small'));
     }
@@ -120,7 +120,7 @@
     visible.nodes.forEach((symbol, index) => {
       const position = layout.positions.get(symbol.id);
       const kind = symbol.impact === 'CHANGED' ? 'changed' : symbol.impact === 'CALLER' ? 'caller' : 'indirect';
-      const group = svgNode('g', {transform: `translate(${position.x} ${position.y})`, class: `graph-node ${kind}`, tabindex: 0, role: 'button', 'aria-label': `${symbol.signature} · ${symbol.impact} · ${symbol.role}`, 'data-symbol': symbol.id});
+      const group = svgNode('g', {transform: `translate(${position.x} ${position.y})`, class: `graph-node ${kind} ${symbol.role === 'TEST' ? 'test' : ''}`, tabindex: 0, role: 'button', 'aria-label': `${symbol.signature} · ${symbol.impact} · ${symbol.role}`, 'data-symbol': symbol.id});
       group.style.setProperty('--reveal-delay', `${Math.min(index, 12) * 18}ms`);
       const title = symbol.signature.split('#').pop();
       const shorten = (text, limit) => text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
@@ -129,7 +129,7 @@
       group.append(svgNode('title', {}, `${symbol.signature}\n${symbol.path}:${symbol.line}\n${symbol.impact} · ${symbol.role}\n${statusText}`),
         svgNode('rect', {width: 260, height: 88, rx: 10}),
         svgNode('text', {x: 14, y: 22, class: 'node-title'}, shorten(title, 33)),
-        svgNode('text', {x: 14, y: 40, class: 'node-owner'}, shorten(symbol.owner, 38)),
+        svgNode('text', {x: 14, y: 40, class: 'node-owner'}, shorten(app.label(symbol.signature).split('#')[0], 38)),
         svgNode('text', {x: 14, y: 61, class: 'node-role'}, `${symbol.impact.replaceAll('_', ' ')} · ${symbol.role}`),
         svgNode('circle', {cx: 18, cy: 76, r: 3, class: `node-status ${status.toLowerCase().replaceAll('_', '-')}`}),
         svgNode('text', {x: 27, y: 79, class: 'node-evidence'}, `${graphState.collapsed.has(symbol.id) ? '⊕ ' : ''}${statusText}`));

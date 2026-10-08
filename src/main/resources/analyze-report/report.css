@@ -1140,3 +1140,13 @@ footer {
   background: #f5f8ff;
   border-radius: 12px;
 }
+
+.legend.test { color: #b995f3; }
+.graph-node.test rect {
+  fill: color-mix(in srgb, #a475df 14%, var(--surface2));
+  stroke: #a475df;
+  stroke-dasharray: 5 3;
+}
+.graph-node.test .node-role { fill: #b995f3; }
+:root[data-theme=light] .legend.test,
+:root[data-theme=light] .graph-node.test .node-role { color: #7542a8; fill: #7542a8; }
