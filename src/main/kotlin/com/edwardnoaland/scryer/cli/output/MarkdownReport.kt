@@ -63,6 +63,18 @@ internal class MarkdownReport {
             },
         )
 
+        facts.remoteVersions?.let { remote ->
+            section("Remote dependency releases")
+            appendLine(cell(remote.source))
+            appendLine()
+            appendLine("Checked: ${cell(remote.checkedAt)}. This lookup does not establish upgrade compatibility; metadata releases may include prereleases.")
+            appendLine()
+            table(listOf("Dependency", "Module / configuration", "Current", "Current source", "Remote release", "Comparison", "Metadata / limitation"),
+                remote.dependencies.map { dependency -> listOf(dependency.coordinate, "${dependency.module} / ${dependency.configuration}",
+                    dependency.current ?: "unknown", dependency.currentSource, dependency.latest ?: "unavailable", dependency.status,
+                    listOfNotNull(dependency.metadataUrl, dependency.note).joinToString("; ")) })
+        }
+
         section("Testing")
         table(
             listOf("Fact", "Value"),
