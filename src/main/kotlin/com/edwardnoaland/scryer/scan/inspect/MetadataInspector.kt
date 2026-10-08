@@ -94,7 +94,7 @@ internal fun inspectMetadata(
     val testFrameworks = mutableSetOf<String>()
     val testText = tests.joinToString("\n") { content[it].orEmpty() }
     if (Regex("org\\.junit\\.(?:Test|runner|Assert)|junit:junit").containsMatchIn(testText + joined)) testFrameworks += "JUnit 4"
-    if ("org.junit.jupiter" in testText || "junit-jupiter" in joined || "test-junit5" in buildText) testFrameworks += "JUnit 5"
+    if ("org.junit.jupiter" in testText || "junit-jupiter" in joined || "test-junit5" in buildText) testFrameworks += "JUnit Jupiter"
     if ("org.testng" in testText || "testng:testng" in joined) testFrameworks += "TestNG"
     val reports = modules.flatMap { module ->
         listOf("build/reports/jacoco", "build/reports/evidence", "target/site/jacoco").map { root.resolve(module.directory).resolve(it) }

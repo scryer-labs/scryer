@@ -45,6 +45,7 @@ For the legacy fixture, scan observes Java source/target 8, Gradle 4.10.3, one m
 - Conflict selections / forced overrides: unique module/selected-component with the corresponding Gradle selection reason, deduplicated across configurations. Each edge's requested/selected versions and reasons remain in JSON. A different selected version is not automatically called a conflict or forced override.
 - Empty/unavailable collection uses null/unknown, not invented zero counts. Partial counts describe observed configurations, not proven completeness.
 - Testing counts are statically classified **source files**, not JUnit method counts, tests run, assertion quality or confidence. Integration classification uses conventional integration roots and `*IntegrationTest` / `*IT` filenames. Custom test task/root metadata is also retained from the evaluated Gradle model.
+- Jupiter imports identify the framework without establishing its major version. Static mode reports `JUnit Jupiter`; resolved versions refine it, for example `JUnit Jupiter 6`. Framework signals can include transitive test libraries and are not proof that tests executed.
 
 ## Full facts model
 

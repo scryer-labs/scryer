@@ -6,7 +6,7 @@ Scryer build/test/distribution command:
 JAVA_HOME="$(mise where java)" ./gradlew test installDist
 ```
 
-Development verification used an ignored local Gradle cache and project-cache directory. **38 tests passed, 0 failures/errors/skips**. The static facts commit was also compiled/tested as an independent staged snapshot before committing.
+Development verification used an ignored local Gradle cache and project-cache directory. **47 tests passed, 0 failures/errors/skips**. The static facts commit was also compiled/tested as an independent staged snapshot before committing.
 
 Installed CLI smoke checks:
 
@@ -28,3 +28,18 @@ Petclinic was also scanned using a fresh, empty dependency cache. Collection com
 ## Package and readability refactor
 
 The package split and extracted scan service/collectors were verified with all 38 tests and `installDist`. Before/after JSON was compared structurally for the legacy fixture's static scan and Petclinic's resolved scan; both remained identical, including schema, declarations, notes and graphs. The extracted Gradle collector was also exercised against the legacy fixture: complete resolution, 65 components and 17 configurations. Target working trees remained clean. Architecture responsibilities and code-style guidelines are recorded in `ARCHITECTURE.md`.
+
+## Markdown export and external repositories
+
+Seven export tests cover UTF-8/spaced paths, parent directory creation, replacement, invalid arguments, output errors, ANSI-free Markdown, complete notes/escaping, optional tree output and JSON stdout combined with Markdown export. Two additional tests verify that Jupiter imports do not invent a major version and resolved Jupiter 6 is not labeled JUnit 5.
+
+External checks used shallow clones under the sibling `external` directory:
+
+| Project/revision | Results |
+|---|---|
+| Resilience4j `b7c0069802e373ed72dff0b817c270fbb6e966ba` | Gradle 9.4.1; 30 projects, 410 configurations, 542 resolved components; complete, no failures; 1,241 tracked Java files; warm scan 9.28 seconds |
+| MyBatis `34147d0bd2f5ed0016ef367c92b25e174149326b` | Maven 3.9.16; 59 components; no failed modules; partial because Maven selection reasons are unavailable; Mockito 5.23.0, Jupiter 6.1.3; 1,396 tracked Java files; warm scan 2.47 seconds |
+
+The Gradle 9 check exposed an internal-project classification bug. The collector now uses `ProjectDependency` rather than the removed property; a separate native two-module Gradle 9 model distinguishes an internal project from an external library with the same group. Resilience4j's corrected external dependency count is 510 module/coordinate pairs; internal project declarations remain in JSON but are not counted as external libraries.
+
+Both static and resolved JSON/Markdown reports were generated outside the target checkouts, parsed/checked, and compared with tracked source counts and selected dependencies. Both checkouts remained clean. Reports and the reproducibility summary are in `../external/scan-reports`; they are not bundled into Scryer. Static version-catalog and Maven effective compiler-model limitations remain explicit.

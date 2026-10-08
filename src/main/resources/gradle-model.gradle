@@ -3,6 +3,7 @@ import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.artifacts.result.UnresolvedDependencyResult
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ModuleComponentSelector
+import org.gradle.api.artifacts.ProjectDependency
 
 // Runs only this metadata task; does not depend on compile/test/package tasks.
 gradle.projectsEvaluated {
@@ -70,7 +71,7 @@ gradle.projectsEvaluated {
                 p.configurations.each { c ->
                     c.dependencies.each { dep ->
                         direct << [configuration: c.name, group: dep.group, artifact: dep.name, version: dep.version,
-                            kind: dep.hasProperty('dependencyProject') ? 'project' : 'dependency']
+                            kind: dep instanceof ProjectDependency ? 'project' : 'dependency']
                     }
                 }
             }

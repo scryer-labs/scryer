@@ -25,8 +25,15 @@ internal fun withResolution(facts: RepositoryFacts, resolution: ResolutionFacts)
     if (components.any { it.group == "junit" && it.artifact == "junit" }) {
         testFrameworks += "JUnit 4"
     }
-    if (components.any { it.group == "org.junit.jupiter" }) {
-        testFrameworks += "JUnit 5"
+    val jupiterVersions = components.filter { it.group == "org.junit.jupiter" }
+        .mapNotNull { it.version?.substringBefore('.')?.toIntOrNull() }
+        .distinct()
+        .sorted()
+    if (jupiterVersions.isNotEmpty()) {
+        testFrameworks.remove("JUnit Jupiter")
+        jupiterVersions.forEach { major -> testFrameworks += "JUnit Jupiter $major" }
+    } else if (components.any { it.group == "org.junit.jupiter" }) {
+        testFrameworks += "JUnit Jupiter"
     }
     if (components.any { it.group == "org.testng" }) {
         testFrameworks += "TestNG"
