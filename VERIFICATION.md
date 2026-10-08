@@ -43,3 +43,7 @@ External checks used shallow clones under the sibling `external` directory:
 The Gradle 9 check exposed an internal-project classification bug. The collector now uses `ProjectDependency` rather than the removed property; a separate native two-module Gradle 9 model distinguishes an internal project from an external library with the same group. Resilience4j's corrected external dependency count is 510 module/coordinate pairs; internal project declarations remain in JSON but are not counted as external libraries.
 
 Both static and resolved JSON/Markdown reports were generated outside the target checkouts, parsed/checked, and compared with tracked source counts and selected dependencies. Both checkouts remained clean. Reports and the reproducibility summary are in `../external/scan-reports`; they are not bundled into Scryer. Static version-catalog and Maven effective compiler-model limitations remain explicit.
+
+## CI configuration
+
+The GitHub Actions workflow runs separate `clean`, `test` and `build` steps on Ubuntu with Temurin 21 and the repository Wrapper. Official actions are pinned to verified commit SHAs. The workflow was checked with actionlint 1.7.12, and the same task sequence was executed locally: all 47 tests passed and the build succeeded. A hosted GitHub run has not yet been verified. No executable release/publishing stage is configured; Gradle's existing standard build outputs are unchanged.

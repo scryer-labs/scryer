@@ -4,6 +4,10 @@
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package responsibilities, the scan flow and code-style guidelines.
 
+GitHub Actions runs `clean`, `test` and `build` with the project Wrapper and Temurin Java 21 on pushes to `main`, pull requests and manual dispatch. The workflow uses a Gradle cache and validates the Wrapper. Executable release packaging is deferred until after the first `analyze` implementation.
+
+Commit subjects follow `<type>: <summary>` with `feat`, `refactor`, `tests`, `docs`, `chore`, `fix` or `revert`; see [AGENTS.md](AGENTS.md).
+
 ## Run
 
 Scryer uses Java 21, Kotlin 2.2.21 and its Gradle 8.14.3 Wrapper. Target repositories may use older JDKs and build tools.
