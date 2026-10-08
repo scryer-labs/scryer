@@ -36,7 +36,7 @@ internal class TargetTestRunner(
             notes = execution.notes + "The command changed tracked source/index or HEAD; results are not valid evidence for the requested after SHA.")
     }
 
-    internal fun execute(root: Path, plan: TestRunPlan, log: Path, afterSha: String, timeout: Long): TestExecution {
+    internal fun execute(root: Path, plan: TestRunPlan, log: Path, afterSha: String, timeout: Long, label: String = "after tests"): TestExecution {
         val started = System.nanoTime()
         val notes = listOf("Conventional Wrapper lifecycle only; custom test tasks/commands are not discovered yet.",
             "Command exit status is not per-test execution, build packaging or coverage evidence. Fresh reports/JaCoCo data are collected separately; no test-to-method attribution is inferred from command status.")
@@ -47,7 +47,7 @@ internal class TargetTestRunner(
             // Target classpaths belong to the build, rather than the inherited shell.
             builder.environment().remove("CLASSPATH")
             process = builder.start()
-            progress("Running after tests: ${plan.command.joinToString(" ")}; JAVA_HOME=${plan.javaHome}")
+            progress("Running $label: ${plan.command.joinToString(" ")}; JAVA_HOME=${plan.javaHome}")
             var nextProgress = 15L
             while (!process.waitFor(1, TimeUnit.SECONDS)) {
                 val elapsed = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - started)
@@ -57,7 +57,7 @@ internal class TargetTestRunner(
                         durationMillis = elapsedMillis(started), log = log, notes = notes + "Timed out after ${timeout}s")
                 }
                 if (elapsed >= nextProgress) {
-                    progress("After tests still running (${elapsed}s); log: $log")
+                    progress("$label still running (${elapsed}s); log: $log")
                     nextProgress += 15
                 }
             }

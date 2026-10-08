@@ -1,5 +1,7 @@
 package com.edwardnoaland.scryer.analyze
 
+import com.edwardnoaland.scryer.analyze.model.AnalysisInputs
+import com.edwardnoaland.scryer.analyze.model.AnalysisModule
 import com.sun.source.tree.*
 import com.sun.source.util.JavacTask
 import com.sun.source.util.TreePathScanner
@@ -19,24 +21,54 @@ import javax.tools.ToolProvider
 data class SymbolId(val owner: String, val name: String, val descriptor: String) {
     override fun toString(): String = "$owner#$name$descriptor"
 }
-data class SymbolLocation(val id: SymbolId, val path: String, val line: Int, val sourceSignature: String, val role: SourceRole = sourceRole(path))
+data class SymbolLocation(val id: SymbolId, val path: String, val line: Int, val sourceSignature: String, val role: SourceRole = sourceRole(path), val module: String? = null)
 enum class CallKind { DIRECT, POSSIBLE_DISPATCH, METHOD_REFERENCE, REFLECTION }
 data class CallEdge(val caller: SymbolId, val callee: SymbolId, val kind: CallKind)
 data class CallBoundary(val caller: SymbolId?, val path: String, val line: Long, val expression: String, val reason: String)
 data class CallGraph(val symbols: List<SymbolLocation>, val edges: List<CallEdge>, val boundaries: List<CallBoundary>, val notes: List<String>)
 
 internal class CallGraphCollector {
-    fun collect(root: Path): CallGraph {
-        val paths = Files.walk(root).use { stream ->
+    fun collect(root: Path, inputs: AnalysisInputs = AnalysisInputs()): CallGraph {
+        if (inputs.modules.isEmpty()) return collectSources(root).let { it.copy(notes = inputs.notes + it.notes) }
+        val graphs = inputs.modules.map { module ->
+            val supporting = linkedSetOf(module.id)
+            val pending = ArrayDeque(module.dependencies)
+            while (pending.isNotEmpty()) {
+                val id = pending.removeFirst()
+                if (supporting.add(id)) pending.addAll(inputs.modules.find { it.id == id }?.dependencies.orEmpty())
+            }
+            val modules = inputs.modules.filter { it.id in supporting }
+            val sources = modules.flatMap { it.sources }.map { it.path }
+            collectSources(root, sources, module.classpath, modules).let { graph ->
+                val owned = graph.symbols.filter { it.module == module.id }.map { it.id }.toSet()
+                graph.copy(symbols = graph.symbols.filter { it.module == module.id },
+                    edges = graph.edges.filter { it.caller in owned },
+                    boundaries = graph.boundaries.filter { boundary ->
+                        boundary.caller in owned || (boundary.caller == null && module.sources.any { root.resolve(boundary.path).startsWith(it.path) })
+                    }, notes = listOf("Module ${module.id}: ${module.classpath.size} classpath entries; ${module.sources.size} Java source roots.") + module.notes + graph.notes)
+            }
+        }
+        val symbols = graphs.flatMap { it.symbols }.distinct()
+        val ambiguous = symbols.groupBy { it.id }.filterValues { it.size > 1 }.keys
+        val valid = symbols.filter { it.id !in ambiguous }
+        val ids = valid.map { it.id }.toSet()
+        val notes = inputs.notes + graphs.flatMap { it.notes } +
+            if (ambiguous.isEmpty()) emptyList() else listOf("${ambiguous.size} duplicate source symbol identities across modules excluded rather than merged.")
+        return CallGraph(valid, graphs.flatMap { it.edges }.distinct().filter { it.caller in ids && it.callee in ids },
+            graphs.flatMap { it.boundaries }.distinct(), notes.distinct())
+    }
+
+    private fun collectSources(root: Path, roots: List<Path> = listOf(root), classpath: List<Path> = emptyList(), modules: List<AnalysisModule> = emptyList()): CallGraph {
+        val paths = roots.filter { Files.isDirectory(it) && it.normalize().startsWith(root.normalize()) }.flatMap { source -> Files.walk(source).use { stream ->
             stream.filter { Files.isRegularFile(it) && !Files.isSymbolicLink(it) && it.toString().endsWith(".java") }
                 .filter { path -> root.relativize(path).none { it.toString() in EXCLUDED } }
                 .sorted().toList()
-        }
+        } }.distinct()
         if (paths.isEmpty()) return CallGraph(emptyList(), emptyList(), emptyList(), emptyList())
         val compiler = ToolProvider.getSystemJavaCompiler() ?: error("Symbol analysis requires a JDK")
         val diagnostics = DiagnosticCollector<JavaFileObject>()
         compiler.getStandardFileManager(diagnostics, null, Charsets.UTF_8).use { manager ->
-            val task = compiler.getTask(null, manager, diagnostics, listOf("-proc:none", "-implicit:none", "-classpath", "", "-sourcepath", ""), null,
+            val task = compiler.getTask(null, manager, diagnostics, listOf("-proc:none", "-implicit:none", "-classpath", classpath.joinToString(java.io.File.pathSeparator), "-sourcepath", ""), null,
                 manager.getJavaFileObjectsFromPaths(paths)) as JavacTask
             val units = task.parse().toList()
             val declaredOwners = mutableListOf<String>()
@@ -94,7 +126,10 @@ internal class CallGraphCollector {
                                 methods[id] = method
                                 val owner = method.enclosingElement as TypeElement
                                 val sourceSignature = "${owner.qualifiedName}#${node.name}(${node.parameters.joinToString(", ") { it.type.toString() }})"
-                                locations += SymbolLocation(id, path, unit.lineMap.getLineNumber(position).toInt(), sourceSignature)
+                                val sourcePath = root.resolve(path)
+                                val module = modules.firstOrNull { candidate -> candidate.sources.any { sourcePath.startsWith(it.path) } }
+                                val role = module?.sources?.filter { sourcePath.startsWith(it.path) }?.maxByOrNull { it.path.nameCount }?.role ?: sourceRole(path)
+                                locations += SymbolLocation(id, path, unit.lineMap.getLineNumber(position).toInt(), sourceSignature, role, module?.id)
                             } else boundaries += CallBoundary(null, path, unit.lineMap.getLineNumber(position), node.name.toString(), "Unresolved declaration signature")
                         }
                         super.visitMethod(node, unused)
@@ -171,10 +206,10 @@ internal class CallGraphCollector {
                 }.scan(unit, Unit)
             }
             val errors = diagnostics.diagnostics.filter { it.kind == Diagnostic.Kind.ERROR }
-            val notes = mutableListOf("Partial source call graph: no target dependency classpath, build model, generated sources, framework wiring or dynamic reflection resolution. Literal Class.forName/getMethod/invoke chains are supported.",
+            val notes = mutableListOf("Partial source call graph: build inputs are best effort; no annotation processing, generated sources, target JDK boot API equivalence, framework wiring or dynamic reflection resolution. Literal Class.forName/getMethod/invoke chains are supported.",
                 "Virtual dispatch includes possible source overrides; lambda/method-reference edges are potential calls, not execution evidence.")
             if (errors.isNotEmpty()) notes += "Javac attribution reported ${errors.size} errors; unresolved calls/signatures remain boundaries. Example: ${errors.first().getMessage(null)}"
-            if (ambiguous.isNotEmpty()) notes += "${ambiguous.size} duplicate source symbol identities were excluded; module classpaths are not separated yet."
+            if (ambiguous.isNotEmpty()) notes += "${ambiguous.size} duplicate source symbol identities were excluded; ambiguous identities are not merged."
             return CallGraph(locations.filter { it.id !in ambiguous }.distinct(), edges.toList(), boundaries, notes)
         }
     }

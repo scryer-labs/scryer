@@ -1,0 +1,27 @@
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.ProjectDependency
+
+// Resolve Java source-set inputs without running compilation or tests.
+gradle.projectsEvaluated {
+    rootProject.tasks.create('scryerAnalyzeInputs') {
+        doLast {
+            def modules = rootProject.allprojects.collect { p ->
+                def sets = p.extensions.findByName('sourceSets')
+                def notes = []
+                def classpath = []
+                def sources = []
+                if (sets != null) sets.each { s ->
+                    sources << [name: s.name, roots: s.java.srcDirs.collect { it.absolutePath }]
+                    try { classpath.addAll(s.compileClasspath.files.collect { it.absolutePath }) }
+                    catch (Exception e) { notes << "${s.name} compileClasspath: ${e.message}" }
+                }
+                def dependencies = p.configurations.collectMany { c ->
+                    c.allDependencies.withType(ProjectDependency).collect { it.dependencyProject.path }
+                }.unique()
+                [id: p.path, directory: p.projectDir.absolutePath, sources: sources,
+                 classpath: classpath.unique(), dependencies: dependencies, notes: notes]
+            }
+            new File(System.getProperty('scryer.output')).text = JsonOutput.toJson([modules: modules])
+        }
+    }
+}

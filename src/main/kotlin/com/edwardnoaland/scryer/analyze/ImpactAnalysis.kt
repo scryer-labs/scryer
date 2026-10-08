@@ -8,12 +8,12 @@ class ImpactAnalyzer {
         analyzeSnapshots(comparison, beforeRoot, afterRoot)
     }
 
-    internal fun analyzeSnapshots(comparison: GitComparison, beforeRoot: java.nio.file.Path, afterRoot: java.nio.file.Path): ImpactAnalysis {
+    internal fun analyzeSnapshots(comparison: GitComparison, beforeRoot: java.nio.file.Path, afterRoot: java.nio.file.Path, beforeInputs: com.edwardnoaland.scryer.analyze.model.AnalysisInputs = com.edwardnoaland.scryer.analyze.model.AnalysisInputs(), afterInputs: com.edwardnoaland.scryer.analyze.model.AnalysisInputs = com.edwardnoaland.scryer.analyze.model.AnalysisInputs()): ImpactAnalysis {
         val methods = MethodAnalyzer().analyzeSnapshots(comparison, beforeRoot, afterRoot)
         val collector = CallGraphCollector()
         return ImpactAnalysis(methods,
-            impact(collector.collect(beforeRoot), methods.methods, before = true),
-            impact(collector.collect(afterRoot), methods.methods, before = false))
+            impact(collector.collect(beforeRoot, beforeInputs), methods.methods, before = true),
+            impact(collector.collect(afterRoot, afterInputs), methods.methods, before = false))
     }
 
     private fun impact(graph: CallGraph, changes: List<MethodChange>, before: Boolean): SnapshotImpact {

@@ -132,7 +132,7 @@ Implementation references: [Gradle ResolutionResult](https://docs.gradle.org/8.1
 
 Impact is reported in two layers: reverse-reachable caller impact and potential indirect impact (forward reachability from changed methods and their callers). Indirect candidates may share data/control context; actual behavioral impact is not proven. The terminal draws an indented caller-to-callee graph with CHANGED, CALLER and POTENTIAL INDIRECT markers and source-role labels. All resolved edges inside this scope are drawn, including cycles. Shared nodes use numbered references and recursive edges use CYCLE references; nodes are expanded once to keep the graph finite. Boundary counts attach to their caller nodes; complete boundary details and unknown-caller sites are listed after the graph. This finite graph represents all discovered call chains without enumerating infinitely many recursive paths. There is no depth truncation; unresolved/external edges remain boundaries.
 
-Changed/caller/indirect symbols are labelled PRODUCTION, TEST or UNKNOWN by conventional source paths. Main roots are production; test, integrationTest, integration-test and testFixtures roots are test. Custom roots remain UNKNOWN until build-model source sets are supported. Tests are retained for future evidence matching; a TEST label or static call does not imply execution.
+Changed/caller/indirect symbols are labelled PRODUCTION, TEST or UNKNOWN by conventional source paths. Main roots are production; test, integrationTest, integration-test and testFixtures roots are test. Build-model main/test roots now override path conventions; unknown source-set semantics remain UNKNOWN. Tests are retained for future evidence matching; a TEST label or static call does not imply execution.
 
 Literal reflection support tracks local Class/Method bindings inside straight-line method bodies (including try bodies). It recognizes one-argument `Class.forName("fully.qualified.Name")`, `getMethod`/`getDeclaredMethod` with literal method names and explicit class-literal parameters, and subsequent `Method.invoke`. Public lookup includes inherited source methods; declared lookup is restricted to the named class. Exact overloads are matched and reported as REFLECTION edges, with possible source override dispatch retained. No classes are loaded and no reflected code is executed. Access checks, receiver validity and successful runtime execution are not proven.
 
@@ -154,7 +154,7 @@ SCRYER_JAVA_HOME=/path/to/compatible/jdk scryer analyze --before HEAD~1 --after 
 
 `SCRYER_TEST_TIMEOUT_SECONDS` sets a positive per-command timeout (default 600 seconds). `SCRYER_CACHE_HOME` selects build caches and retained logs (default `${java.io.tmpdir}/scryer-cache`). Run logs live under `runs/analyze-*/test.log` and remain after worktrees are removed. Progress goes to stderr. `clean` and build outputs operate inside the temporary after checkout; caches and logs are outside it. Test/plugin code executes normally with the current user's environment; a Git worktree isolates repository files, not arbitrary process side effects.
 
-Next: load module dependency classpaths, then establish test-to-method attribution and match execution evidence to impact. No coverage percentage or direct/indirect execution classification is produced in this increment.
+Next: match method execution evidence to impact; per-test attribution requires separately established coverage scope. No coverage percentage or direct/indirect execution classification is produced in this increment.
 
 ## Execution artifact collection
 
@@ -167,3 +167,11 @@ JUnit results preserve each testcase record (including parameterized names, fail
 No instrumentation is injected: projects without usable configured JaCoCo data report coverage unavailable, not 0%. Command failure can yield partial reports; timeout, skip, unavailable command and changed-snapshot results yield no authoritative evidence. Successful command exit without fresh XML reports leaves test counts unknown.
 
 Coverage scope remains aggregate/unknown. Session IDs and XML report filenames do not establish which individual test executed a production method, and separate datasets are never silently merged. Direct versus indirect test evidence, affected-path gaps and coverage percentages remain future work.
+
+## Analyze module/classpath inputs
+
+Before static attribution, default analyze resolves each snapshot's own build inputs using its Wrapper and target JVM. Gradle's injected metadata task reads Java source-set roots, compile classpaths and project dependencies without compiling or testing. Maven reads the effective POM and test-scope dependency classpaths per reactor module. Downloads may occur; logs are retained under `runs/model-*`. Analyze model commands default to a 180-second timeout each (`SCRYER_RESOLUTION_TIMEOUT_SECONDS`).
+
+Javac attribution is separated per module. Reactor dependency sources support cross-module calls even before class outputs exist; supporting sources do not become duplicate graph nodes. Source-set classpaths are combined within a module in this increment, so contradictory main/test dependency versions are a limitation. Configured main/test roots provide role labels; unknown custom source-set semantics stay UNKNOWN. Independent modules declaring the same binary symbol are explicitly excluded as ambiguous rather than conflated.
+
+Resolution failures preserve partial source analysis and notes. Annotation processors are disabled; generated sources, framework wiring, included builds, exact target-JDK boot APIs and ambiguous reactor artifact IDs are not fully modeled. `--skip-tests` also skips model subprocesses and uses partial source-only attribution. No global Java configuration or original repository files are modified.
