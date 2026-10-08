@@ -4,7 +4,9 @@
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package responsibilities, the scan flow and code-style guidelines.
 
-GitHub Actions runs `clean`, `test` and `build` with the project Wrapper and Temurin Java 21 on pushes to `main`, pull requests and manual dispatch. The workflow uses a Gradle cache and validates the Wrapper. Executable release packaging is deferred until after the first `analyze` implementation.
+GitHub Actions runs `clean`, `test` and `build` with the project Wrapper and Temurin Java 21 on pushes to `main`, pull requests and manual dispatch. The workflow uses a Gradle cache and validates the Wrapper. After checks pass, CI packages ZIP and TAR distributions, unpacks both and smoke-checks CLI help, a static scan and analyze help. Download `scryer-package-<commit SHA>` from the workflow run's Artifacts; it contains both archives and `SHA256SUMS` and is retained for 14 days. Packages include application libraries and Unix/Windows launch scripts; Java 21 or newer must be installed (the target project's test JVM is configured separately). TAR preserves Unix executable permissions; after extracting ZIP, use `bash bin/scryer` or make `bin/scryer` executable.
+
+To package locally, run `./gradlew distZip distTar`; archives are created under `build/distributions/`. This CI stage uploads workflow artifacts; it does not publish a GitHub Release.
 
 Commit subjects follow `<type>: <summary>` with `feat`, `refactor`, `tests`, `docs`, `chore`, `fix` or `revert`; see [AGENTS.md](AGENTS.md).
 

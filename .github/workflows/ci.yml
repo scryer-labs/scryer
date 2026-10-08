@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Clean, test and build
+    name: Clean, test, build and package
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -45,3 +45,39 @@ jobs:
 
       - name: Build
         run: ./gradlew --no-daemon --console=plain build
+
+      - name: Package distributions
+        run: ./gradlew --no-daemon --console=plain distZip distTar
+
+      - name: Verify packaged CLI and create checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          package_check_dir=$(mktemp -d)
+          trap 'rm -rf "$package_check_dir"' EXIT
+          for archive in build/distributions/*.zip; do
+            unzip -q "$archive" -d "$package_check_dir/zip"
+          done
+          for archive in build/distributions/*.tar; do
+            mkdir -p "$package_check_dir/tar"
+            tar -xf "$archive" -C "$package_check_dir/tar"
+          done
+          for launcher in "$package_check_dir"/*/*/bin/scryer; do
+            bash "$launcher" --help
+            bash "$launcher" scan "$(dirname "$(dirname "$launcher")")" --static
+            bash "$launcher" analyze --help
+          done
+          cd build/distributions
+          sha256sum *.zip *.tar > SHA256SUMS
+
+      - name: Upload packages
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: scryer-package-${{ github.sha }}
+          path: |
+            build/distributions/*.zip
+            build/distributions/*.tar
+            build/distributions/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
