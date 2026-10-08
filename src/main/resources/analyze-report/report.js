@@ -16,7 +16,15 @@
   const percent = value => value === null ? 'Unknown' : `${value.toFixed(1)}%`;
   const badge = (value, type) => node('span', words(value), `tag ${type || words(value).replaceAll(' ', '-')}`);
   const impactClass = value => value === 'CHANGED' ? 'changed' : value === 'CALLER' ? 'caller' : 'indirect';
-  const methodIndex = () => new Map(dataset().methods.map(method => [method.symbol, method]));
+  let indexedDataset = -1;
+  let indexedMethods = new Map();
+  const methodIndex = () => {
+    if (indexedDataset !== state.dataset) {
+      indexedDataset = state.dataset;
+      indexedMethods = new Map(dataset().methods.map(method => [method.symbol, method]));
+    }
+    return indexedMethods;
+  };
   const statusFor = (symbol, snapshotName = state.snapshot) => {
     if (snapshotName !== 'after' || symbol.role === 'TEST') return 'NOT_APPLICABLE';
     return methodIndex().get(symbol.id)?.status || 'UNKNOWN';
@@ -26,7 +34,7 @@
     const status = item.status || statusFor(item);
     return text.includes(state.search) && (state.role === 'ALL' || item.role === state.role)
       && (state.impact === 'ALL' || item.impact === state.impact)
-      && (state.status === 'ALL' || (state.status === 'GAPS' ? ['NOT_EXECUTED', 'PARTIALLY_EXECUTED', 'UNKNOWN'].includes(status) : status === state.status));
+      && ((state.panel === 'impact' && state.snapshot === 'before') || state.status === 'ALL' || (state.status === 'GAPS' ? ['NOT_EXECUTED', 'PARTIALLY_EXECUTED', 'UNKNOWN'].includes(status) : status === state.status));
   };
   const filteredNodes = () => snapshot().nodes.filter(matches);
   const symbolButton = (symbol, text, snapshotName = state.snapshot) => {
@@ -87,7 +95,10 @@
     }));
   }
   function renderMethods() {
-    const methods = dataset().methods.filter(matches);
+    const impactOrder = {CHANGED: 0, CALLER: 1, POTENTIAL_INDIRECT: 2};
+    const evidenceOrder = {NOT_EXECUTED: 0, UNKNOWN: 1, PARTIALLY_EXECUTED: 2, EXECUTED: 3};
+    const methods = dataset().methods.filter(matches).sort((left, right) =>
+      impactOrder[left.impact] - impactOrder[right.impact] || evidenceOrder[left.status] - evidenceOrder[right.status] || left.symbol.localeCompare(right.symbol));
     replace($('method-table'), methods.map(method => {
       const row = node('tr');
       const name = node('td');
@@ -194,7 +205,10 @@
     if (!$('symbol-dialog').open) $('symbol-dialog').showModal();
     window.ScryerReport?.highlightSymbol?.(id);
   }
-  function render() { renderMetrics(); renderMethods(); renderImpact(); }
+  function render() {
+    $('status-filter').disabled = state.panel === 'impact' && state.snapshot === 'before';
+    renderMetrics(); renderMethods(); renderImpact();
+  }
 
   const repoName = report.repository.replaceAll('\\', '/').split('/').filter(Boolean).pop();
   $('project-name').textContent = repoName || 'Repository analysis';

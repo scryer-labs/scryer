@@ -197,3 +197,15 @@ Default terminal output now leads with command/test outcomes and method evidence
 `-o report.md` exports the complete Markdown report: outcomes, independent dataset evidence tables, changed declarations, before/after Mermaid graphs, boundaries, test records, class-ID provenance and retained artifact hashes. Graphs include every resolved scope edge, cycles and shared nodes, with changed/caller/indirect colors and explicit production/test roles. A Markdown viewer with Mermaid support renders the diagrams; other viewers retain readable graph source. Names are escaped according to [Mermaid flowchart syntax](https://mermaid.js.org/syntax/flowchart.html). Markdown escaping and variable-length source fences prevent repository text from breaking table/code structure. `--json -o report.md` keeps stdout JSON while saving Markdown.
 
 `-o report.html` produces a single offline HTML file with all CSS, JavaScript and report data embedded. It provides dataset selection, method/source search, evidence/impact/role filters, clickable symbol details, before/after changes, execution/artifact tables, and an embedded JSON download. Dataset selection never merges coverage. Before graph symbols do not receive after coverage; test symbols are separate from production metrics. The report uses no CDN, remote fonts or network requests and works directly under `file://`. Artifact paths refer to the generating machine; raw evidence files are not bundled. Repository strings are script-escaped on embedding and rendered with text-only DOM APIs.
+
+HTML's impact map is a local SVG graph with pan/zoom/fit, node selection and evidence details, collapse/expand calls, one-hop neighbor focus and restore. Filtering/collapse counts show visible versus total scope nodes/edges; no graph facts are silently discarded. Shared descendants stay visible through expanded callers, and SCC layout preserves recursive/disconnected components without enumerating infinite paths. Before views show static facts only. Dashed edges identify potential dispatch/reference/reflection; animations never simulate test execution. Dark/light themes, responsive layouts, keyboard controls and `prefers-reduced-motion` are supported. The map uses no graph service or runtime dependency.
+
+```bash
+scryer analyze --before HEAD~1 --after HEAD
+scryer analyze --before HEAD~1 --after HEAD --verbose
+scryer analyze --before HEAD~1 --after HEAD --json -o report.json
+scryer analyze --before HEAD~1 --after HEAD -o report.md
+scryer analyze --before HEAD~1 --after HEAD -o report.html
+```
+
+Graph algorithm checks use Node's built-in test runner: `node --test scripts/test-report-graph.cjs`; CI runs these alongside Kotlin tests and validates browser scripts. Node is needed only for these frontend checks, not to run Scryer or open its reports. The checks cover cycles, shared descendants, collapse/restore, focus/filter subsets, edge kinds and a 12,000-node chain.

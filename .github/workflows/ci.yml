@@ -37,5 +37,11 @@ jobs:
       - name: Test
         run: ./gradlew --no-daemon --console=plain test
 
+      - name: Test report graph and validate browser scripts
+        run: |
+          node --test scripts/test-report-graph.cjs
+          node --check src/main/resources/analyze-report/report.js
+          node --check src/main/resources/analyze-report/graph.js
+
       - name: Build
         run: ./gradlew --no-daemon --console=plain build

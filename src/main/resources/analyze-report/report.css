@@ -949,3 +949,186 @@ footer {
   }
 }
 
+
+/* Graph viewport and restrained motion; edges represent static potential calls. */
+.graph-host.interactive {
+  display: block;
+  padding: 0;
+}
+.graph-toolbar, .graph-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.graph-toolbar {
+  padding: 12px 20px;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.graph-controls button {
+  font-size: 11px;
+  padding: 6px 10px;
+}
+.graph-viewport {
+  position: relative;
+  width: 100%;
+  height: 520px;
+  background: radial-gradient(circle, var(--line) 1px, transparent 1px);
+  background-size: 20px 20px;
+  overflow: hidden;
+}
+.impact-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: grab;
+  touch-action: none;
+}
+.impact-svg.panning {
+  cursor: grabbing;
+}
+.graph-edge {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.4;
+  opacity: .42;
+  transition: opacity .2s, stroke-width .2s;
+}
+.graph-edge.potential {
+  stroke-dasharray: 5 4;
+}
+.graph-edge.highlighted {
+  opacity: 1;
+  stroke: var(--accent);
+  stroke-width: 2.2;
+}
+.edge-kind {
+  fill: var(--muted);
+  font-size: 9px;
+  text-anchor: middle;
+}
+.graph-node {
+  cursor: pointer;
+  outline: none;
+}
+.graph-node rect {
+  fill: var(--surface2);
+  stroke: var(--line);
+  stroke-width: 1;
+  transition: stroke-width .2s, filter .2s;
+  animation: node-reveal .35s both;
+  animation-delay: var(--reveal-delay);
+}
+.graph-node.changed rect {
+  stroke: var(--changed);
+}
+.graph-node.caller rect {
+  stroke: var(--caller);
+}
+.graph-node.indirect rect {
+  stroke: var(--indirect);
+}
+.graph-node:hover rect, .graph-node:focus-visible rect, .graph-node.selected rect {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 35%, transparent));
+}
+.node-title {
+  fill: var(--text);
+  font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.node-owner {
+  fill: var(--muted);
+  font: 9px ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.node-role, .node-evidence {
+  fill: var(--muted);
+  font-size: 8px;
+  letter-spacing: .3px;
+}
+.graph-node.changed .node-role {
+  fill: var(--changed);
+}
+.graph-node.caller .node-role {
+  fill: var(--caller);
+}
+.graph-node.indirect .node-role {
+  fill: var(--indirect);
+}
+.node-status {
+  fill: var(--muted);
+}
+.node-status.executed {
+  fill: var(--good);
+}
+.node-status.partially-executed, .node-status.not-executed {
+  fill: var(--indirect);
+}
+.graph-inspector {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 72px;
+}
+.graph-inspector strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.graph-inspector button {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.graph-help {
+  padding: 0 20px 14px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.graph-empty {
+  position: absolute;
+  inset: 45% 20px auto;
+  text-align: center;
+  color: var(--muted);
+  pointer-events: none;
+}
+.metric, .panel, button, .tabs button, .graph-card {
+  transition: background-color .2s, border-color .2s, color .2s;
+}
+.intro, .metrics, .workspace-heading, .panel {
+  animation: enter .4s both;
+}
+.metrics {
+  animation-delay: .06s;
+}
+.workspace-heading {
+  animation-delay: .1s;
+}
+#symbol-dialog[open] {
+  animation: drawer-enter .2s ease-out;
+}
+@keyframes enter {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes node-reveal {
+  from { opacity: .2; }
+  to { opacity: 1; }
+}
+@keyframes drawer-enter {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@media (max-width: 580px) {
+  .graph-viewport { height: 420px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
