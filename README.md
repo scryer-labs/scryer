@@ -16,6 +16,7 @@ Run analyze from inside the target Git repository (or a subdirectory):
 
 ```sh
 scryer analyze --before HEAD~1 --after HEAD
+scryer analyze --before HEAD~1 --after HEAD --skip-tests
 scryer analyze --help
 ```
 
@@ -25,7 +26,7 @@ Both reference arguments are required; invalid arguments exit with code 2. Inval
 
 Methods and constructors are matched by package, enclosing class, name and source parameter types. Output distinguishes ADDED, MODIFIED and DELETED declarations with before/after locations. Overloads and named nested classes are supported. Signature changes appear as deletion plus addition; a pure file rename with identical declarations produces no method changes. AST comparison ignores comments and formatting and includes declaration annotations, return types and method bodies. Test methods are included too; production/test classification comes later.
 
-This is source syntax comparison, not resolved symbol identity or semantic impact analysis. Imports, fields, initializer blocks and inheritance changes are reported as a context-analysis limitation for changed Java files; they can affect unchanged methods. Anonymous classes and ambiguous local-class method identities fail explicitly rather than producing a misleading result. Parse errors also exit with code 1. Parsing uses JDK 21 syntax; unsupported newer syntax, generated sources, submodule contents and Git LFS content are not materialized/analyzed as Java source in this increment. No target builds/tests are executed and no coverage is collected.
+This is source syntax comparison, not resolved symbol identity or semantic impact analysis. Imports, fields, initializer blocks and inheritance changes are reported as a context-analysis limitation for changed Java files; they can affect unchanged methods. Anonymous classes and ambiguous local-class method identities fail explicitly rather than producing a misleading result. Parse errors also exit with code 1. Parsing uses JDK 21 syntax; unsupported newer syntax, generated sources, submodule contents and Git LFS content are not materialized/analyzed as Java source in this increment. The static phase does not compile or execute target code. The command now follows it with target test execution unless `--skip-tests` is supplied; coverage is not collected yet.
 
 Analyze also performs JDK source attribution for both snapshots and constructs **partial** call graphs. Symbol IDs use binary class names, method names and JVM-style erased descriptors, for example `example.Order#total(I)Ljava/math/BigDecimal;`. Changes are mapped to resolved declarations; unresolved mappings are explicitly listed. Reverse reachability includes changed methods and their transitive callers, retaining separate before/after graphs so deleted callers/targets are not lost.
 
@@ -138,3 +139,19 @@ Literal reflection support tracks local Class/Method bindings inside straight-li
 Dynamic names, parameter arrays, custom class loaders, reflective constructors/fields, reassignment, branch/loop merges, catch/finally/resource bodies and cross-method dataflow remain boundaries. Unsupported control flow invalidates local knowledge rather than inventing an edge. Resolved invoke sites replace their unresolved/external call boundary; other reflection API operations can still remain external boundaries.
 
 Analyze Markdown/Mermaid export remains a later increment; this terminal graph does not add an analyze `-o` flag.
+
+## After test command execution
+
+Analyze now runs a conventional test lifecycle in the isolated after worktree by default, after static analysis. Gradle uses the root Wrapper with `clean test`, `--rerun-tasks` and `--no-build-cache` to prevent cached test outcomes; Maven uses its root Wrapper with `clean verify` so configured integration-test lifecycle phases can run. This is not discovery of every custom test task: Gradle integration/evidence tasks outside `test` are not automatically invoked, and Maven profiles/skips remain as configured. Root POSIX Wrappers are required; no global build-tool fallback is used. Mixed or missing Wrappers are UNAVAILABLE. Custom run-test commands are planned, not implemented.
+
+`--skip-tests` explicitly returns static analysis only and reports SKIPPED. Otherwise the report records after SHA, argument list, target JAVA_HOME, duration, exit code and a durable combined stdout/stderr log. SUCCEEDED means command exit 0, not proof that any test executed, covered a method or that a release package was produced. Failed, timed-out, unavailable or snapshot-mutating commands exit Scryer with code 1, while preserving static impact output. Tracked source/index or HEAD changes invalidate the command result for the requested snapshot.
+
+Scryer itself runs on JDK 21. `SCRYER_JAVA_HOME` selects the target build JVM only; this does not alter global mise configuration. Without an override, Gradle 4–6 can reuse an existing fixture-local Java 8 installation under the source repository's `.tooling/mise/data/installs/java`; otherwise they require an explicit compatible JVM. Other targets default to Scryer's runtime JDK; automatic JVM compatibility selection/provisioning is not yet available.
+
+```bash
+SCRYER_JAVA_HOME=/path/to/compatible/jdk scryer analyze --before HEAD~1 --after HEAD
+```
+
+`SCRYER_TEST_TIMEOUT_SECONDS` sets a positive per-command timeout (default 600 seconds). `SCRYER_CACHE_HOME` selects build caches and retained logs (default `${java.io.tmpdir}/scryer-cache`). Run logs live under `runs/analyze-*/test.log` and remain after worktrees are removed. Progress goes to stderr. `clean` and build outputs operate inside the temporary after checkout; caches and logs are outside it. Test/plugin code executes normally with the current user's environment; a Git worktree isolates repository files, not arbitrary process side effects.
+
+Next: collect fresh test reports/JaCoCo data, then load module dependency classpaths before matching execution evidence to impact. No coverage percentage or direct/indirect execution classification is produced in this increment.

@@ -5,9 +5,13 @@ data class ImpactAnalysis(val methods: MethodAnalysis, val before: SnapshotImpac
 
 class ImpactAnalyzer {
     fun analyze(comparison: GitComparison): ImpactAnalysis = IsolatedSnapshots.use(comparison) { beforeRoot, afterRoot ->
+        analyzeSnapshots(comparison, beforeRoot, afterRoot)
+    }
+
+    internal fun analyzeSnapshots(comparison: GitComparison, beforeRoot: java.nio.file.Path, afterRoot: java.nio.file.Path): ImpactAnalysis {
         val methods = MethodAnalyzer().analyzeSnapshots(comparison, beforeRoot, afterRoot)
         val collector = CallGraphCollector()
-        ImpactAnalysis(methods,
+        return ImpactAnalysis(methods,
             impact(collector.collect(beforeRoot), methods.methods, before = true),
             impact(collector.collect(afterRoot), methods.methods, before = false))
     }

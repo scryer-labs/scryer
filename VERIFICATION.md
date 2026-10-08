@@ -89,3 +89,11 @@ The GitHub Actions workflow runs separate `clean`, `test` and `build` steps on U
 - Renderer tests verify every resolved edge appears, including branching, shared nodes, cycles, disconnected recursive components, isolated changed symbols, roles and boundary counts.
 - Fixture case 01 installed-CLI smoke test verifies changed markers, production/test labels, indirect branches and reflection arrows.
 - Nodes expand once, with numbered shared/cycle references; boundary details remain available below the graph. Analyze Markdown/Mermaid export is deferred.
+
+## After test execution increment
+
+- 81 tests pass; Wrapper `test build installDist` succeeds on JDK 21.
+- Runner tests execute synthetic Gradle/Maven Wrapper scripts in temporary repositories, verifying after selection, durable logs, nonzero exit, timeout, original dirty-state/worktree preservation, missing/ambiguous wrappers, target JVM selection, invalid timeout and tracked/index mutation invalidation. These scripts verify orchestration, not Maven's real build lifecycle.
+- Real fixture execution uses its Gradle 4.10.3 Wrapper and existing local Zulu JDK 8; Scryer remains on JDK 21. Baseline returns command SUCCEEDED/CLI 0. Case 06 returns FAILED/CLI 1 with missingCalculation compile diagnostics. Case 07 returns FAILED/CLI 1 with test assertion failures. Logs survive worktree cleanup under the selected cache. The original fixture remains Git-clean.
+- Final Gradle commands use clean test with --rerun-tasks and --no-build-cache; --skip-tests reports SKIPPED and executes no target command.
+- Command success is not per-test/coverage evidence. JaCoCo/test-report acquisition follows; module dependency classpaths must be added before impact/evidence matching. Custom test commands remain planned.

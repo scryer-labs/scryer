@@ -17,8 +17,8 @@ class AnalyzeCommandTest {
 
     @Test fun `valid command resolves refs in either option order`() {
         for (args in listOf(
-            arrayOf("analyze", "--before", "HEAD", "--after", "HEAD"),
-            arrayOf("analyze", "--after", "HEAD", "--before", "HEAD"),
+            arrayOf("analyze", "--before", "HEAD", "--after", "HEAD", "--skip-tests"),
+            arrayOf("analyze", "--skip-tests", "--after", "HEAD", "--before", "HEAD"),
         )) {
             val (code, output, error) = invoke(*args)
             assertEquals(0, code)
@@ -33,6 +33,7 @@ class AnalyzeCommandTest {
     @Test fun `missing blank duplicate and unsupported arguments are rejected`() {
         val invalid = listOf(
             arrayOf("analyze"),
+            arrayOf("analyze", "--before", "HEAD", "--after", "HEAD", "--skip-tests", "--skip-tests"),
             arrayOf("analyze", "--before", "HEAD"),
             arrayOf("analyze", "--before", "HEAD", "--after"),
             arrayOf("analyze", "--before", "", "--after", "HEAD"),

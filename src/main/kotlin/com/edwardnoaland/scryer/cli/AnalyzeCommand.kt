@@ -5,12 +5,13 @@ import java.io.PrintStream
 import java.nio.file.Path
 import com.edwardnoaland.scryer.analyze.GitComparer
 import com.edwardnoaland.scryer.analyze.LineRange
-import com.edwardnoaland.scryer.analyze.ImpactAnalyzer
+import com.edwardnoaland.scryer.analyze.AnalyzeService
+import com.edwardnoaland.scryer.analyze.execute.TestRunStatus
 import com.edwardnoaland.scryer.analyze.SnapshotImpact
 
-internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref>"
+internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref> [--skip-tests]"
 
-private data class AnalyzeOptions(val before: String, val after: String)
+private data class AnalyzeOptions(val before: String, val after: String, val skipTests: Boolean)
 
 internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: PrintStream): Int {
     if (args.contentEquals(arrayOf("--help")) || args.contentEquals(arrayOf("-h"))) {
@@ -26,7 +27,8 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
 
     return try {
         val comparison = GitComparer().compare(Path.of("."), options.before, options.after)
-        val impact = ImpactAnalyzer().analyze(comparison)
+        val result = AnalyzeService(progress = { err.println("scryer: $it") }).analyze(comparison, runTests = !options.skipTests)
+        val impact = result.impact
         val analysis = impact.methods
         out.println("Repository: ${comparison.repository}")
         out.println("Before: ${comparison.before}")
@@ -52,8 +54,17 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
         analysis.notes.forEach { out.println("Note: $it") }
         renderImpact("Before", impact.before, out)
         renderImpact("After", impact.after, out)
-        out.println("Static potential impact only; build and test execution evidence are not collected yet.")
-        0
+        val execution = result.execution
+        out.println("After test command: ${execution.status}")
+        out.println("  After SHA: ${execution.afterSha}")
+        if (execution.command.isNotEmpty()) out.println("  Command: ${execution.command.joinToString(" ")}")
+        execution.javaHome?.let { out.println("  Target JAVA_HOME: $it") }
+        execution.exitCode?.let { out.println("  Exit code: $it") }
+        out.println("  Duration: ${execution.durationMillis}ms")
+        execution.log?.let { out.println("  Log: $it") }
+        execution.notes.forEach { out.println("  Note: $it") }
+        out.println("Static potential impact; per-test execution and coverage evidence are not collected yet.")
+        if (execution.status in setOf(TestRunStatus.SUCCEEDED, TestRunStatus.SKIPPED)) 0 else 1
     } catch (exception: Exception) {
         err.println("scryer: ${exception.message ?: exception.javaClass.simpleName}")
         1
@@ -71,9 +82,16 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
     var before: String? = null
     var after: String? = null
     var index = 0
+    var skipTests = false
 
     while (index < args.size) {
         val flag = args[index]
+        if (flag == "--skip-tests") {
+            if (skipTests) return null
+            skipTests = true
+            index++
+            continue
+        }
         if (flag !in listOf("--before", "--after")) {
             return null
         }
@@ -102,7 +120,7 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
         index += 2
     }
 
-    return AnalyzeOptions(before ?: return null, after ?: return null)
+    return AnalyzeOptions(before ?: return null, after ?: return null, skipTests)
 }
 
 private fun renderImpact(label: String, impact: SnapshotImpact, out: PrintStream) {
