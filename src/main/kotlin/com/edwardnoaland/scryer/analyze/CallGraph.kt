@@ -19,7 +19,7 @@ import javax.tools.ToolProvider
 data class SymbolId(val owner: String, val name: String, val descriptor: String) {
     override fun toString(): String = "$owner#$name$descriptor"
 }
-data class SymbolLocation(val id: SymbolId, val path: String, val line: Int, val sourceSignature: String)
+data class SymbolLocation(val id: SymbolId, val path: String, val line: Int, val sourceSignature: String, val role: SourceRole = sourceRole(path))
 enum class CallKind { DIRECT, POSSIBLE_DISPATCH, METHOD_REFERENCE }
 data class CallEdge(val caller: SymbolId, val callee: SymbolId, val kind: CallKind)
 data class CallBoundary(val caller: SymbolId?, val path: String, val line: Long, val expression: String, val reason: String)

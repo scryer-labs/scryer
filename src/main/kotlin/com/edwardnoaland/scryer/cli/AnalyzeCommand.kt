@@ -106,10 +106,12 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
 
 private fun renderImpact(label: String, impact: SnapshotImpact, out: PrintStream) {
     out.println("$label symbol impact (partial):")
-    impact.changed.forEach { out.println("  CHANGED $it") }
-    (impact.affected - impact.changed).sortedBy { it.toString() }.forEach { out.println("  AFFECTED CALLER $it") }
+    val roles = impact.graph.symbols.associate { it.id to it.role }
+    out.println("  Source roles: conventional paths only; TEST callers are not execution evidence")
+    impact.changed.forEach { out.println("  CHANGED [${roles[it]}] $it") }
+    (impact.affected - impact.changed).sortedBy { it.toString() }.forEach { out.println("  AFFECTED CALLER [${roles[it]}] $it") }
     impact.indirect.sortedBy { it.toString() }.forEach {
-        out.println("  POTENTIAL INDIRECT $it (via ${impact.indirectReasons.getValue(it).caller})")
+        out.println("  POTENTIAL INDIRECT [${roles[it]}] $it (via ${impact.indirectReasons.getValue(it).caller})")
     }
     val scope = impact.affected + impact.indirect
     out.println("  Call chains: all resolved edges in this impact scope; cycles retained, no path truncation")

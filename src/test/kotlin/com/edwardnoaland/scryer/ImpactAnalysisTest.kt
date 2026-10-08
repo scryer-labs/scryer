@@ -138,4 +138,12 @@ class ImpactAnalysisTest {
         assertFalse((impact.affected + impact.indirect).any { it.name == "unrelated" })
     }
 
+    @Test fun `classifies conventional roots without guessing from test class names`() {
+        assertEquals(SourceRole.PRODUCTION, sourceRole("module/src/main/java/SomeTest.java"))
+        assertEquals(SourceRole.TEST, sourceRole("module/src/test/java/Example.java"))
+        assertEquals(SourceRole.TEST, sourceRole("src/integrationTest/java/Example.java"))
+        assertEquals(SourceRole.UNKNOWN, sourceRole("custom/ExampleTest.java"))
+        assertEquals(SourceRole.TEST, sourceRole("module\\src\\test\\java\\Example.java"))
+    }
+
 }
