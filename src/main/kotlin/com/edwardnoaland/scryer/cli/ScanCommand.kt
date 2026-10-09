@@ -1,5 +1,7 @@
 package com.edwardnoaland.scryer.cli
 
+import com.edwardnoaland.scryer.repository.BuildTool
+
 import com.edwardnoaland.scryer.cli.output.ScanRenderer
 import com.edwardnoaland.scryer.cli.output.renderJson
 import com.edwardnoaland.scryer.cli.output.writeMarkdownReport
@@ -9,7 +11,7 @@ import com.edwardnoaland.scryer.scan.resolve.DependencyResolver
 import java.io.PrintStream
 import java.nio.file.Path
 
-internal const val SCAN_USAGE = "Usage: scryer scan <path> [--dependencies] [--dependency-tree] [--json] [--static] [--remote-list] [--color auto|always|never] [-o <OUTPUT_FILE>]"
+internal const val SCAN_USAGE = "Usage: scryer scan <path> [--build-tool maven|gradle] [--dependencies] [--dependency-tree] [--json] [--static] [--remote-list] [--color auto|always|never] [-o <OUTPUT_FILE>]"
 
 private data class ScanOptions(
     val path: String,
@@ -20,6 +22,7 @@ private data class ScanOptions(
     val color: String,
     val outputFile: String?,
     val remote: Boolean,
+    val buildTool: BuildTool?,
 )
 
 private fun parseScanOptions(args: Array<String>): ScanOptions? {
@@ -27,6 +30,7 @@ private fun parseScanOptions(args: Array<String>): ScanOptions? {
         return null
     }
 
+    var buildTool: BuildTool? = null
     var remote = false
     var dependencies = false
     var tree = false
@@ -38,6 +42,10 @@ private fun parseScanOptions(args: Array<String>): ScanOptions? {
 
     while (index < args.size) {
         when (args[index]) {
+            "--build-tool" -> {
+                if (buildTool != null || index + 1 >= args.size) return null
+                buildTool = BuildTool.parse(args[++index]) ?: return null
+            }
             "--remote-list" -> { if (remote) return null; remote = true }
             "--dependencies" -> dependencies = true
             "--dependency-tree" -> tree = true
@@ -62,7 +70,7 @@ private fun parseScanOptions(args: Array<String>): ScanOptions? {
         index++
     }
 
-    return ScanOptions(args[0], dependencies, tree, json, staticOnly, color, outputFile, remote)
+    return ScanOptions(args[0], dependencies, tree, json, staticOnly, color, outputFile, remote, buildTool)
 }
 
 internal fun runScanCommand(args: Array<String>, out: PrintStream, err: PrintStream): Int {
@@ -75,7 +83,7 @@ internal fun runScanCommand(args: Array<String>, out: PrintStream, err: PrintStr
     return try {
         val resolver = DependencyResolver(progress = { message -> err.println("scryer: $message") })
         val service = ScanService(resolver = resolver)
-        val local = service.scan(Path.of(options.path), staticOnly = options.staticOnly)
+        val local = service.scan(Path.of(options.path), staticOnly = options.staticOnly, buildTool = options.buildTool)
         val facts = if (options.remote) local.copy(remoteVersions = com.edwardnoaland.scryer.scan.remote.RemoteVersionCollector(
             progress = { err.println("scryer: $it") }
         ).collect(com.edwardnoaland.scryer.cli.output.directDependencies(local)) { dependency ->

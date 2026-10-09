@@ -1,5 +1,7 @@
 package com.edwardnoaland.scryer.analyze.model
 
+import com.edwardnoaland.scryer.repository.BuildTool
+
 import com.edwardnoaland.scryer.analyze.GitComparison
 import com.edwardnoaland.scryer.analyze.GitProcess
 import com.edwardnoaland.scryer.analyze.SourceRole
@@ -12,15 +14,15 @@ import java.nio.file.Path
 
 /** Snapshot-local build metadata; dependency downloads share the execution cache. */
 internal class AnalysisInputCollector(private val progress: (String) -> Unit = {}) {
-    fun collect(root: Path, comparison: GitComparison, sha: String): AnalysisInputs {
+    fun collect(root: Path, comparison: GitComparison, sha: String, buildTool: BuildTool? = null): AnalysisInputs {
         return try {
             val cache = Path.of(System.getenv("SCRYER_CACHE_HOME") ?: "${System.getProperty("java.io.tmpdir")}/scryer-cache")
             Files.createDirectories(cache.resolve("runs"))
             val run = Files.createTempDirectory(cache.resolve("runs"), "model-")
-            val plan = TestRunPlanner(System.getenv()).plan(root, comparison.repository, cache, run)
+            val plan = TestRunPlanner(System.getenv()).plan(root, comparison.repository, cache, run, buildTool = buildTool)
             val timeout = System.getenv("SCRYER_RESOLUTION_TIMEOUT_SECONDS")?.toLongOrNull() ?: 180L
             check(timeout > 0) { "Resolution timeout must be positive" }
-            val gradle = Files.isRegularFile(root.resolve("gradlew"))
+            val gradle = buildTool == BuildTool.GRADLE || (buildTool == null && Files.isRegularFile(root.resolve("gradlew")))
             val output = run.resolve("inputs.json")
             val command = if (gradle) {
                 val script = run.resolve("inputs.gradle")
@@ -39,7 +41,7 @@ internal class AnalysisInputCollector(private val progress: (String) -> Unit = {
             val inputs = if (gradle) readGradle(output, root) else MavenAnalysisInputs(runner, plan, run, timeout, sha).read(output, root)
             check(GitProcess.run(root, "rev-parse", "HEAD").trim() == sha && GitProcess.run(root, "diff", "HEAD", "--").isBlank() &&
                 GitProcess.run(root, "diff", "--cached", "HEAD", "--").isBlank()) { "Module collection changed the requested snapshot" }
-            inputs
+            inputs.copy(notes = inputs.notes + "Build model tool: ${if (gradle) "gradle" else "maven"} (${if (buildTool == null) "automatic" else "explicit --build-tool"}).")
         } catch (exception: Exception) {
             val intact = runCatching {
                 GitProcess.run(root, "rev-parse", "HEAD").trim() == sha &&

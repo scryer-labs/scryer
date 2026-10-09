@@ -20,6 +20,7 @@ internal class MarkdownReport {
                 listOf("Java target", known(facts.language.targetVersions)),
                 listOf("Toolchain", known(facts.language.toolchainVersions)),
                 listOf("Build", facts.builds.joinToString { "${it.tool} ${it.version ?: "unknown"}" }),
+                listOf("Selected build tool", facts.selectedBuildTool ?: "automatic"),
                 listOf("Wrapper", facts.builds.joinToString { "${it.tool}: ${if (it.wrapperPresent) "present" else "not found"}" }),
                 listOf("Frameworks", known(facts.frameworks)),
                 listOf("Resolution", facts.resolution.status),

@@ -243,3 +243,18 @@ The quoted string is passed verbatim to `sh -c` at the isolated after checkout r
 The command inherits the existing target JVM selection (`SCRYER_JAVA_HOME`), build cache environment and timeout (`SCRYER_TEST_TIMEOUT_SECONDS`). Full argv, target Java, exit status, retained log and freshness-checked evidence appear in all analyze report formats. Missing Wrappers no longer prevent an explicitly supplied test command, but model/coverage gaps remain visible. `--skip-tests` and `--test-command` are mutually exclusive.
 
 Choose a lifecycle that actually reruns the intended tests and produces JUnit XML/JaCoCo artifacts under supported conventional output paths. A custom command exiting zero is not proof that tests ran; unchanged artifacts remain excluded. Tracked source/index or HEAD mutation invalidates after evidence. The worktree isolates repository files; shell commands run with your local user permissions and are not a process sandbox.
+
+## Selecting a build tool in dual-build repositories
+
+When both Maven and Gradle are present, choose explicitly:
+
+```sh
+scryer scan ../external/spring-petclinic-migration --build-tool maven --dependencies
+scryer analyze --before <ref> --after <ref> --build-tool maven
+```
+
+`--build-tool gradle` is also supported. Scan lists all detected build tools, but reads modules/dependency declarations and resolves dependencies only for the selected tool. The selection is retained in JSON (`selectedBuildTool`), terminal and Markdown output. `--static` still performs no build commands.
+
+Analyze applies the same selection to both snapshot models and the after test lifecycle. Explicit selections require that tool's Wrapper in both snapshots; it never silently switches tools. `--test-command` still replaces only the test lifecycle, while `--build-tool` selects model collection and target-JVM conventions. With `--skip-tests`, model/test commands remain disabled. Gradle 6 and earlier need a compatible JVM via `SCRYER_JAVA_HOME`; Scryer itself runs on Java 21.
+
+Without a selection, single-build repositories retain automatic detection. Dual-build scan reports ambiguity; dual-Wrapper analyze does not guess a model or default lifecycle. Dependency resolution can still fail independently because of repositories, network access, credentials or target-JVM incompatibility; these remain explicit collection notes.

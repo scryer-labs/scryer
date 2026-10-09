@@ -33,6 +33,8 @@ internal fun Element.child(name: String): Element? = children(name).firstOrNull(
 internal fun Element.text(name: String): String? = child(name)?.textContent?.trim()?.takeIf { it.isNotEmpty() }
 
 internal fun discoverModules(root: Path, builds: List<BuildFacts>): Pair<List<ModuleFacts>, List<String>> {
+    val gradle = builds.any { it.tool == "Gradle" }
+    val maven = builds.any { it.tool == "Maven" }
     val modules = mutableListOf<ModuleFacts>()
     val notes = mutableListOf<String>()
     val visited = mutableSetOf<Path>()
@@ -41,11 +43,13 @@ internal fun discoverModules(root: Path, builds: List<BuildFacts>): Pair<List<Mo
         val real = directory.toRealPath()
         if (!real.startsWith(root.toRealPath())) { notes += "External module not inspected: $id"; return }
         if (!visited.add(real)) return
-        val definitions = listOf("build.gradle", "build.gradle.kts", "pom.xml").filter { directory.resolve(it).isRegularFile() }
+        val supportedDefinitions = (if (gradle) listOf("build.gradle", "build.gradle.kts") else emptyList()) +
+            (if (maven) listOf("pom.xml") else emptyList())
+        val definitions = supportedDefinitions.filter { directory.resolve(it).isRegularFile() }
         for (definition in definitions) modules += ModuleFacts(id, root.relativize(directory).toString().ifEmpty { "." }, definition)
         if (definitions.isEmpty() && id == ":" && builds.any { it.tool == "Gradle" })
             modules += ModuleFacts(id, ".", builds.first { it.tool == "Gradle" }.definition)
-        if (directory.resolve("pom.xml").isRegularFile()) {
+        if (maven && directory.resolve("pom.xml").isRegularFile()) {
             val pom = readPom(directory.resolve("pom.xml"))
             val properties = pom.child("properties")?.let { element ->
                 (0 until element.childNodes.length).mapNotNull { element.childNodes.item(it) as? Element }
@@ -59,7 +63,7 @@ internal fun discoverModules(root: Path, builds: List<BuildFacts>): Pair<List<Mo
         }
     }
     visit(root, ":")
-    for (settings in listOf("settings.gradle", "settings.gradle.kts").map(root::resolve).filter { it.isRegularFile() }) {
+    for (settings in listOf("settings.gradle", "settings.gradle.kts").map(root::resolve).filter { gradle && it.isRegularFile() }) {
         val content = settings.readText().replace(Regex("(?m)//.*$"), "").replace(Regex("(?s)/\\*.*?\\*/"), "")
         val includes = Regex("\\binclude\\s*(?:\\(([^)]*)\\)|([^\\n;]+))").findAll(content)
         for (include in includes) {

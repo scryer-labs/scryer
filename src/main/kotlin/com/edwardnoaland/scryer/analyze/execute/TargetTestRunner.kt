@@ -1,5 +1,7 @@
 package com.edwardnoaland.scryer.analyze.execute
 
+import com.edwardnoaland.scryer.repository.BuildTool
+
 import com.edwardnoaland.scryer.analyze.GitComparison
 import com.edwardnoaland.scryer.analyze.GitProcess
 import java.nio.file.Files
@@ -10,7 +12,7 @@ internal class TargetTestRunner(
     private val environment: Map<String, String> = System.getenv(),
     private val progress: (String) -> Unit = {},
 ) {
-    fun run(root: Path, comparison: GitComparison, testCommand: String? = null): TestExecution {
+    fun run(root: Path, comparison: GitComparison, testCommand: String? = null, buildTool: BuildTool? = null): TestExecution {
         val cache = Path.of(environment["SCRYER_CACHE_HOME"] ?: "${System.getProperty("java.io.tmpdir")}/scryer-cache").toAbsolutePath().normalize()
         val configuredTimeout = environment["SCRYER_TEST_TIMEOUT_SECONDS"]
         val timeout = configuredTimeout?.toLongOrNull() ?: if (configuredTimeout == null) 600L else 0L
@@ -22,7 +24,7 @@ internal class TargetTestRunner(
             return TestExecution(comparison.after, TestRunStatus.UNAVAILABLE, notes = listOf("Cannot create test log directory: ${exception.message}"))
         }
         val plan = try {
-            TestRunPlanner(environment).plan(root, comparison.repository, cache, run, testCommand)
+            TestRunPlanner(environment).plan(root, comparison.repository, cache, run, testCommand, buildTool)
         } catch (exception: Exception) {
             return TestExecution(comparison.after, TestRunStatus.UNAVAILABLE, notes = listOf(exception.message ?: "Cannot select target test command"))
         }

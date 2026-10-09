@@ -16,7 +16,7 @@ class DependencyResolver(
         if (buildTools.size != 1) {
             return ResolutionFacts(
                 status = "unavailable",
-                notes = listOf("Multiple build tools: resolved graph is ambiguous; select a single-build repository."),
+                notes = listOf("Multiple build tools: resolved graph is ambiguous; use --build-tool maven|gradle to select dependency resolution."),
             )
         }
         val temporary = Files.createTempDirectory("scryer-resolution-")

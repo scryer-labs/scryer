@@ -1,5 +1,7 @@
 package com.edwardnoaland.scryer.cli
 
+import com.edwardnoaland.scryer.repository.BuildTool
+
 import com.edwardnoaland.scryer.cli.output.renderAnalyzeTerminal
 import com.edwardnoaland.scryer.cli.output.renderAnalyzeJson
 import com.edwardnoaland.scryer.cli.output.renderAnalyzeMarkdown
@@ -12,9 +14,9 @@ import com.edwardnoaland.scryer.analyze.GitComparer
 import com.edwardnoaland.scryer.analyze.AnalyzeService
 import com.edwardnoaland.scryer.analyze.execute.TestRunStatus
 
-internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref> [--skip-tests | --test-command <command>] [--verbose | --json] [-o <report.json|report.md|report.html>]"
+internal const val ANALYZE_USAGE = "Usage: scryer analyze --before <ref> --after <ref> [--build-tool maven|gradle] [--skip-tests | --test-command <command>] [--verbose | --json] [-o <report.json|report.md|report.html>]"
 
-private data class AnalyzeOptions(val before: String, val after: String, val skipTests: Boolean, val verbose: Boolean, val json: Boolean, val output: Path?, val testCommand: String?)
+private data class AnalyzeOptions(val before: String, val after: String, val skipTests: Boolean, val verbose: Boolean, val json: Boolean, val output: Path?, val testCommand: String?, val buildTool: BuildTool?)
 
 internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: PrintStream): Int {
     if (args.contentEquals(arrayOf("--help")) || args.contentEquals(arrayOf("-h"))) {
@@ -30,7 +32,7 @@ internal fun runAnalyzeCommand(args: Array<String>, out: PrintStream, err: Print
 
     return try {
         val comparison = GitComparer().compare(Path.of("."), options.before, options.after)
-        val result = AnalyzeService(progress = { err.println("scryer: $it") }).analyze(comparison, runTests = !options.skipTests, testCommand = options.testCommand)
+        val result = AnalyzeService(progress = { err.println("scryer: $it") }).analyze(comparison, runTests = !options.skipTests, testCommand = options.testCommand, buildTool = options.buildTool)
         val report = buildAnalyzeReport(result)
         if (options.json) out.print(renderAnalyzeJson(report)) else renderAnalyzeTerminal(report, out, options.verbose)
         options.output?.let { destination ->
@@ -61,6 +63,7 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
     var json = false
     var output: Path? = null
     var testCommand: String? = null
+    var buildTool: BuildTool? = null
 
     while (index < args.size) {
         val flag = args[index]
@@ -82,7 +85,7 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
             index++
             continue
         }
-        if (flag !in listOf("--before", "--after", "-o", "--test-command")) {
+        if (flag !in listOf("--before", "--after", "-o", "--test-command", "--build-tool")) {
             return null
         }
         if (index + 1 >= args.size) {
@@ -94,6 +97,10 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
         }
 
         when (flag) {
+            "--build-tool" -> {
+                if (buildTool != null) return null
+                buildTool = BuildTool.parse(reference) ?: return null
+            }
             "--test-command" -> {
                 if (testCommand != null || '\u0000' in reference) return null
                 testCommand = reference
@@ -121,5 +128,5 @@ private fun parseAnalyzeOptions(args: Array<String>): AnalyzeOptions? {
 
     if (skipTests && testCommand != null) return null
     if (json && verbose) return null
-    return AnalyzeOptions(before ?: return null, after ?: return null, skipTests, verbose, json, output, testCommand)
+    return AnalyzeOptions(before ?: return null, after ?: return null, skipTests, verbose, json, output, testCommand, buildTool)
 }

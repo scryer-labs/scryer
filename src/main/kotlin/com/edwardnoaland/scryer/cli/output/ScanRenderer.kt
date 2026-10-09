@@ -45,6 +45,7 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
         row("Repository", dim(facts.root.toString()))
         row("Java source / target", "${unknown(facts.language.sourceVersions.takeIf { it.isNotEmpty() }?.joinToString())} / ${unknown(facts.language.targetVersions.takeIf { it.isNotEmpty() }?.joinToString())}")
         row("Toolchain", unknown(facts.language.toolchainVersions.takeIf { it.isNotEmpty() }?.joinToString()))
+        facts.selectedBuildTool?.let { row("Selected build tool", "$it (explicit)") }
         row("Build", facts.builds.joinToString { "${it.tool} ${unknown(it.version)}" })
         row("Wrapper", facts.builds.joinToString { "${it.tool}: ${if (it.wrapperPresent) "present" else "not found"}" })
         row("Modules", (facts.resolution.projects.map { it.id }.distinct().size.takeIf { it > 0 }

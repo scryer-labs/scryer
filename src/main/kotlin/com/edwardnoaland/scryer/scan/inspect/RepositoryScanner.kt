@@ -1,5 +1,7 @@
 package com.edwardnoaland.scryer.scan.inspect
 
+import com.edwardnoaland.scryer.repository.BuildTool
+
 import com.edwardnoaland.scryer.scan.model.BuildFacts
 import com.edwardnoaland.scryer.scan.model.CompileToolingFacts
 import com.edwardnoaland.scryer.scan.model.Declarations
@@ -19,7 +21,7 @@ import org.w3c.dom.Element
 
 /** Collects local declarations and source signals without executing the target build. */
 class RepositoryScanner {
-    fun scan(path: Path): RepositoryFacts {
+    fun scan(path: Path, buildTool: BuildTool? = null): RepositoryFacts {
         val root = path.toAbsolutePath().normalize()
         if (!root.isDirectory()) {
             throw ScanException("Not a directory: $root")
@@ -30,7 +32,11 @@ class RepositoryScanner {
             throw ScanException("No build.gradle, build.gradle.kts or pom.xml found in $root")
         }
 
-        val (modules, moduleNotes) = discoverModules(root, builds)
+        require(buildTool == null || builds.any { it.tool == buildTool.displayName }) {
+            "Selected build tool ${buildTool?.flag} has no build definition in $root"
+        }
+        val selectedBuilds = builds.filter { buildTool == null || it.tool == buildTool.displayName }
+        val (modules, moduleNotes) = discoverModules(root, selectedBuilds)
         val declarations = modules.map { module -> readDeclarations(root, module) }
         val dependencies = declarations.flatMap { it.dependencies }
         val plugins = declarations.flatMap { it.plugins }
@@ -44,6 +50,7 @@ class RepositoryScanner {
             dependencies = dependencies,
             plugins = plugins,
             notes = declarationNotes + moduleNotes,
+            selectedBuildTool = buildTool?.flag,
             modules = modules,
             language = inspection.language,
             sources = inspection.sources,

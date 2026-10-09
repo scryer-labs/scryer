@@ -1,5 +1,7 @@
 package com.edwardnoaland.scryer.analyze.execute
 
+import com.edwardnoaland.scryer.repository.BuildTool
+
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties
@@ -8,10 +10,13 @@ import kotlin.io.path.readText
 
 /** Deliberately conventional commands, not discovered custom test-task semantics. */
 internal class TestRunPlanner(private val environment: Map<String, String>) {
-    fun plan(root: Path, originalRepository: Path, cache: Path, run: Path, testCommand: String? = null): TestRunPlan {
-        val gradle = root.resolve("gradlew").isRegularFile()
-        val maven = root.resolve("mvnw").isRegularFile()
-        if (testCommand == null) check(gradle != maven) { "Expected exactly one root Gradle/Maven Wrapper; use --test-command for a custom lifecycle." }
+    fun plan(root: Path, originalRepository: Path, cache: Path, run: Path, testCommand: String? = null, buildTool: BuildTool? = null): TestRunPlan {
+        val gradle = root.resolve("gradlew").isRegularFile() && buildTool != BuildTool.MAVEN
+        val maven = root.resolve("mvnw").isRegularFile() && buildTool != BuildTool.GRADLE
+        if (buildTool != null) check(root.resolve(buildTool.wrapper).isRegularFile()) {
+            "Selected build tool ${buildTool.flag} requires ${buildTool.wrapper} in $root"
+        }
+        if (testCommand == null) check(gradle != maven) { "Expected exactly one root Gradle/Maven Wrapper; use --build-tool maven|gradle to choose, or --test-command for a custom lifecycle." }
         else require(testCommand.isNotBlank() && '\u0000' !in testCommand) { "Custom test command must be nonblank and contain no NUL characters." }
         check(System.getProperty("os.name").contains("Windows", ignoreCase = true).not()) { "Target test execution currently supports POSIX Wrapper scripts only." }
         val java = chooseJava(root, originalRepository, gradle)
