@@ -19,18 +19,19 @@ func percent(value any) string {
 	}
 	return fmt.Sprintf("%.1f%%", v)
 }
-func analyzeTerminal(data Object, out io.Writer, verbose bool) {
+func analyzeTerminal(data Object, out io.Writer, verbose, color bool) {
+	style := terminalStyle{color}
 	execution := field(data, "execution")
 	evidence := field(data, "evidence")
 	after := field(data, "after")
 	matching := field(data, "matching")
-	fmt.Fprintf(out, "Scryer analysis\nRepository: %s\nBefore: %s\nAfter: %s\nChanged files: %d\nChanged Java methods: %d\nAfter test command: %s\nTest records: %s (records, not unique IDs)\n", str(data, "repository"), str(data, "beforeSha"), afterLabel(data), len(array(data["files"])), len(array(data["changes"])), str(execution, "status"), counts(field(evidence, "testRecords")))
+	fmt.Fprintf(out, "%s\nRepository: %s\nBefore: %s\nAfter: %s\nChanged files: %d\nChanged Java methods: %d\nAfter test command: %s\nTest records: %s (records, not unique IDs)\n", style.heading("Scryer analysis"), str(data, "repository"), str(data, "beforeSha"), afterLabel(data), len(array(data["files"])), len(array(data["changes"])), style.status(str(execution, "status")), style.counts(field(evidence, "testRecords")))
 	roles := map[string]int{}
 	for _, node := range objects(after["nodes"]) {
 		roles[str(node, "role")]++
 	}
 	fmt.Fprintf(out, "After scope: %d production, %d test, %d unknown-role symbols\nCall boundaries: %d in scope/unknown caller (%s repository sites)\n", roles["PRODUCTION"], roles["TEST"], roles["UNKNOWN"], len(array(after["boundaries"])), str(after, "totalBoundaryCount"))
-	fmt.Fprintln(out, "\nChanges")
+	fmt.Fprintln(out, style.heading("\nChanges"))
 	changes := objects(data["changes"])
 	for i, change := range changes {
 		if !verbose && i >= 8 {
@@ -41,14 +42,14 @@ func analyzeTerminal(data Object, out io.Writer, verbose bool) {
 		if version == nil {
 			version = field(change, "before")
 		}
-		fmt.Fprintf(out, "  %s %s\n", str(change, "kind"), str(version, "signature"))
+		fmt.Fprintf(out, "  %s %s\n", str(change, "kind"), style.symbol(str(version, "signature"), "CHANGED", "PRODUCTION"))
 	}
 	if len(changes) == 0 {
 		fmt.Fprintln(out, "  No method-body/signature changes identified; file/class context impact is not analyzed yet.")
 	}
-	fmt.Fprintln(out, "\nAfter evidence and gaps")
+	fmt.Fprintln(out, style.heading("\nAfter evidence and gaps"))
 	for _, dataset := range objects(matching["datasets"]) {
-		fmt.Fprintf(out, "  Dataset: %s\n  %s\n  Method execution: %s (%s/%s assessed; UNKNOWN excluded)\n", str(field(dataset, "artifact"), "source"), counts(field(dataset, "counts")), percent(dataset["methodExecutionPercent"]), str(dataset, "withHits"), str(dataset, "assessed"))
+		fmt.Fprintf(out, "  Dataset: %s\n  %s\n  Method execution: %s (%s/%s assessed; UNKNOWN excluded)\n", str(field(dataset, "artifact"), "source"), style.counts(field(dataset, "counts")), style.fact(percent(dataset["methodExecutionPercent"])), str(dataset, "withHits"), str(dataset, "assessed"))
 		methods := []Object{}
 		for _, method := range objects(dataset["methods"]) {
 			if verbose || str(method, "status") != "EXECUTED" {
@@ -71,7 +72,7 @@ func analyzeTerminal(data Object, out io.Writer, verbose bool) {
 				fmt.Fprintf(out, "    %d more; use --verbose\n", len(methods)-i)
 				break
 			}
-			fmt.Fprintf(out, "    %s [%s] %s\n", str(method, "status"), str(method, "impact"), str(method, "signature"))
+			fmt.Fprintf(out, "    %s [%s] %s\n", style.status(str(method, "status")), str(method, "impact"), style.symbol(str(method, "signature"), str(method, "impact"), "PRODUCTION"))
 			if verbose {
 				fmt.Fprintln(out, "      "+str(method, "reason"))
 				for _, route := range objects(method["routes"]) {
@@ -97,7 +98,7 @@ func analyzeTerminal(data Object, out io.Writer, verbose bool) {
 		fmt.Fprintln(out, "Evidence manifest: "+str(evidence, "manifest"))
 	}
 	if verbose {
-		fmt.Fprintln(out, "\nFull file changes")
+		fmt.Fprintln(out, style.heading("\nFull file changes"))
 		for _, file := range objects(data["files"]) {
 			fmt.Fprintf(out, "  %s %s → %s\n", str(file, "status"), str(file, "beforePath"), str(file, "afterPath"))
 			for _, lines := range objects(file["lines"]) {
@@ -106,10 +107,10 @@ func analyzeTerminal(data Object, out io.Writer, verbose bool) {
 		}
 		for _, name := range []string{"before", "after"} {
 			snapshot := field(data, name)
-			fmt.Fprintln(out, "\n"+name+" impact graph (partial)")
-			terminalGraph(snapshot, out)
+			fmt.Fprintln(out, style.heading("\n"+name+" impact graph (partial)"))
+			terminalGraph(snapshot, out, color)
 			for _, boundary := range objects(snapshot["boundaries"]) {
-				fmt.Fprintf(out, "  BOUNDARY %s:%s: %s: %s\n", str(boundary, "path"), str(boundary, "line"), str(boundary, "reason"), strings.ReplaceAll(str(boundary, "expression"), "\n", " "))
+				fmt.Fprintf(out, "  %s %s:%s: %s: %s\n", style.warning("BOUNDARY"), str(boundary, "path"), str(boundary, "line"), str(boundary, "reason"), strings.ReplaceAll(str(boundary, "expression"), "\n", " "))
 			}
 			for _, note := range notes(snapshot["notes"], snapshot["unresolvedChanges"]) {
 				fmt.Fprintln(out, "  Note: "+note)
@@ -119,7 +120,7 @@ func analyzeTerminal(data Object, out io.Writer, verbose bool) {
 		for _, test := range objects(evidence["tests"]) {
 			fmt.Fprintln(out, "  Test report: "+str(field(test, "artifact"), "source"))
 			for _, record := range objects(test["cases"]) {
-				fmt.Fprintf(out, "    %s %s#%s\n", str(record, "status"), str(record, "className"), str(record, "name"))
+				fmt.Fprintf(out, "    %s %s#%s\n", style.status(str(record, "status")), str(record, "className"), str(record, "name"))
 			}
 		}
 		for _, coverage := range objects(evidence["coverage"]) {
@@ -133,13 +134,14 @@ func analyzeTerminal(data Object, out io.Writer, verbose bool) {
 		}
 	}
 	for _, note := range notes(data["notes"], execution["notes"], evidence["notes"], matching["notes"]) {
-		fmt.Fprintln(out, "Note: "+note)
+		fmt.Fprintln(out, style.muted("Note: "+note))
 	}
 	if !verbose {
 		fmt.Fprintln(out, "Use --verbose for full graphs, boundaries and execution details.")
 	}
 }
-func terminalGraph(snapshot Object, out io.Writer) {
+func terminalGraph(snapshot Object, out io.Writer, color bool) {
+	style := terminalStyle{color}
 	nodes := objects(snapshot["nodes"])
 	names := labels(nodes)
 	byID := map[string]Object{}
@@ -168,11 +170,11 @@ func terminalGraph(snapshot Object, out io.Writer) {
 			}
 			visited[current.id] = true
 			node := byID[current.id]
-			fmt.Fprintf(out, "  %s%s [%s] [%s]\n", strings.Repeat("  ", current.depth), names[str(node, "signature")], str(node, "impact"), str(node, "role"))
+			fmt.Fprintf(out, "  %s%s [%s] [%s]\n", strings.Repeat("  ", current.depth), style.symbol(names[str(node, "signature")], str(node, "impact"), str(node, "role")), str(node, "impact"), str(node, "role"))
 			for _, edge := range outgoing[current.id] {
 				target := str(edge, "callee")
 				label := names[str(byID[target], "signature")]
-				fmt.Fprintf(out, "  %s→ %s (%s)\n", strings.Repeat("  ", current.depth+1), label, str(edge, "kind"))
+				fmt.Fprintf(out, "  %s→ %s (%s)\n", strings.Repeat("  ", current.depth+1), style.symbol(label, str(byID[target], "impact"), str(byID[target], "role")), str(edge, "kind"))
 				if !visited[target] {
 					queue = append(queue, item{target, current.depth + 1})
 				}

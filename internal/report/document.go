@@ -74,7 +74,7 @@ func Terminal(document contract.Document, out io.Writer, dependencies, tree, ver
 	if document.Operation == "scan" {
 		scanTerminal(data, out, dependencies, tree, color)
 	} else {
-		analyzeTerminal(data, out, verbose)
+		analyzeTerminal(data, out, verbose, color)
 	}
 	return nil
 }

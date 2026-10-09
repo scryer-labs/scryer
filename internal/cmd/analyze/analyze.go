@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/application"
+	"github.com/edwardnoaland/scryer/internal/cmd/terminal"
 	"github.com/edwardnoaland/scryer/internal/contract"
 	"github.com/edwardnoaland/scryer/internal/report"
 	"github.com/spf13/cobra"
@@ -19,10 +20,13 @@ type ExecutionError struct{ Status string }
 func (e ExecutionError) Error() string { return "after test command: " + e.Status }
 func New(service *application.Service) *cobra.Command {
 	var request contract.AnalyzeRequest
-	var stack, output string
+	var stack, output, color string
 	var jsonOutput, verbose bool
 	command := &cobra.Command{Use: "analyze [path] --before <ref> --after <ref|.>", Short: "Analyze changes and existing test evidence", Args: cobra.MaximumNArgs(1)}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if color != "auto" && color != "always" && color != "never" {
+			return fmt.Errorf("--color must be auto, always or never")
+		}
 		if strings.TrimSpace(request.Before) == "" || strings.TrimSpace(request.After) == "" {
 			return fmt.Errorf("--before and --after are required")
 		}
@@ -73,7 +77,7 @@ func New(service *application.Service) *cobra.Command {
 				return err
 			}
 		} else {
-			if err = report.Terminal(document, cmd.OutOrStdout(), false, false, verbose, false); err != nil {
+			if err = report.Terminal(document, cmd.OutOrStdout(), false, false, verbose, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
 				return err
 			}
 		}
@@ -113,6 +117,7 @@ func New(service *application.Service) *cobra.Command {
 		return nil
 	}
 	flags := command.Flags()
+	flags.StringVar(&color, "color", "auto", "auto, always or never")
 	flags.StringVar(&stack, "stack", "java", "Technology stack (currently java)")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle for both models and tests")
 	flags.StringVar(&request.Before, "before", "", "Before Git commit/ref")

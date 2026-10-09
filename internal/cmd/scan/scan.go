@@ -3,11 +3,10 @@ package scan
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
 
 	"github.com/edwardnoaland/scryer/internal/application"
+	"github.com/edwardnoaland/scryer/internal/cmd/terminal"
 	"github.com/edwardnoaland/scryer/internal/contract"
 	"github.com/edwardnoaland/scryer/internal/report"
 	"github.com/spf13/cobra"
@@ -42,7 +41,7 @@ func New(service *application.Service) *cobra.Command {
 				return err
 			}
 		} else {
-			if err = report.Terminal(document, cmd.OutOrStdout(), dependencies, tree, false, useColor(color, cmd.OutOrStdout())); err != nil {
+			if err = report.Terminal(document, cmd.OutOrStdout(), dependencies, tree, false, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
 				return err
 			}
 		}
@@ -73,22 +72,4 @@ func New(service *application.Service) *cobra.Command {
 	flags.StringVar(&color, "color", "auto", "auto, always or never")
 	flags.StringVarP(&output, "output", "o", "", "Save Markdown report")
 	return command
-}
-
-func useColor(mode string, output io.Writer) bool {
-	if mode == "always" {
-		return true
-	}
-	if mode == "never" {
-		return false
-	}
-	if _, disabled := os.LookupEnv("NO_COLOR"); disabled {
-		return false
-	}
-	file, ok := output.(*os.File)
-	if !ok {
-		return false
-	}
-	info, err := file.Stat()
-	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }

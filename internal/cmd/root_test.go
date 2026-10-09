@@ -26,7 +26,7 @@ func (f *fakeAnalyzer) Analyze(context.Context, contract.AnalyzeRequest) (contra
 	return contract.Document{}, nil
 }
 func TestCommandsValidateBeforeInvokingAnalyzers(t *testing.T) {
-	for _, args := range [][]string{{"scan", ".", "--build-tool", "unknown"}, {"scan", ".", "--color", "bad"}, {"analyze", "--before", "HEAD"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "--json", "--verbose"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "--skip-tests", "--test-command", "echo test"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "-o", "bad.txt"}, {"scan", ".", "--stack", "cpp"}} {
+	for _, args := range [][]string{{"scan", ".", "--build-tool", "unknown"}, {"scan", ".", "--color", "bad"}, {"analyze", "--before", "HEAD", "--after", ".", "--color", "bad"}, {"analyze", "--before", "HEAD"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "--json", "--verbose"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "--skip-tests", "--test-command", "echo test"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "-o", "bad.txt"}, {"scan", ".", "--stack", "cpp"}} {
 		fake := &fakeAnalyzer{}
 		out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
 		root := NewRoot(&application.Service{Analyzer: fake}, out, errOut)
@@ -55,5 +55,30 @@ func TestScanPresentationFlagsStayInGo(t *testing.T) {
 	}
 	if errOut.Len() != 0 {
 		t.Fatal("unexpected diagnostic")
+	}
+}
+
+func TestScanColorFlagControlsOnlyTerminalOutput(t *testing.T) {
+	for _, sample := range []struct {
+		mode    string
+		json    bool
+		colored bool
+	}{
+		{"always", false, true}, {"never", false, false}, {"auto", false, false}, {"always", true, false},
+	} {
+		fake := &fakeAnalyzer{}
+		out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
+		root := NewRoot(&application.Service{Analyzer: fake}, out, errOut)
+		args := []string{"scan", t.TempDir(), "--static", "--color", sample.mode}
+		if sample.json {
+			args = append(args, "--json")
+		}
+		root.SetArgs(args)
+		if err := root.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		if bytes.Contains(out.Bytes(), []byte{27}) != sample.colored {
+			t.Fatalf("incorrect color for %+v", sample)
+		}
 	}
 }

@@ -7,8 +7,11 @@ import (
 )
 
 func scanTerminal(data Object, out io.Writer, dependencies, tree, color bool) {
-	header := func(title string) { fmt.Fprintln(out, title) }
-	row := func(key string, value any) { fmt.Fprintf(out, "  %-26s%s\n", key, text(value)) }
+	style := terminalStyle{color}
+	header := func(title string) { fmt.Fprintln(out, style.heading(title)) }
+	row := func(key string, value any) {
+		fmt.Fprintf(out, "  %s%s\n", style.muted(fmt.Sprintf("%-26s", key)), style.fact(text(value)))
+	}
 	header("Project")
 	row("Repository", data["root"])
 	language := field(data, "language")
@@ -17,12 +20,12 @@ func scanTerminal(data Object, out io.Writer, dependencies, tree, color bool) {
 	builds := []string{}
 	wrappers := []string{}
 	for _, build := range objects(data["builds"]) {
-		builds = append(builds, str(build, "tool")+" "+str(build, "version"))
+		builds = append(builds, str(build, "tool")+" "+style.fact(str(build, "version")))
 		status := "not found"
 		if boolean(build["wrapperPresent"]) {
 			status = "present"
 		}
-		wrappers = append(wrappers, str(build, "tool")+": "+status)
+		wrappers = append(wrappers, str(build, "tool")+": "+style.status(status))
 	}
 	row("Build", strings.Join(builds, ", "))
 	if data["selectedBuildTool"] != nil {
@@ -130,7 +133,7 @@ func scanTerminal(data Object, out io.Writer, dependencies, tree, color bool) {
 	fmt.Fprintln(out, "  Commands inferred from build conventions; scan does not verify build/test success.")
 	header("\nCollection notes")
 	for _, note := range notes(data["notes"], resolution["notes"]) {
-		fmt.Fprintln(out, "  "+note)
+		fmt.Fprintln(out, style.muted("  "+note))
 	}
 	if remote := field(data, "remoteVersions"); remote != nil {
 		header("\nRemote dependency releases")
@@ -138,19 +141,10 @@ func scanTerminal(data Object, out io.Writer, dependencies, tree, color bool) {
 		fmt.Fprintln(out, "  Checked: "+str(remote, "checkedAt"))
 		order, groups := group(objects(remote["dependencies"]))
 		for _, key := range order {
-			fmt.Fprintln(out, "\n  "+key)
+			fmt.Fprintln(out, style.heading("\n  "+key))
 			for _, d := range groups[key] {
 				comparison := str(d, "current") + " → " + str(d, "latest") + " [" + str(d, "status") + "]"
-				if color {
-					code := "31"
-					switch str(d, "status") {
-					case "CURRENT":
-						code = "32"
-					case "UPDATE_AVAILABLE", "CURRENT_AHEAD":
-						code = "33"
-					}
-					comparison = "\x1b[" + code + "m" + comparison + "\x1b[0m"
-				}
+				comparison = style.paint(remoteColor(str(d, "status")), comparison)
 				fmt.Fprintf(out, "    %s (%s): %s\n", str(d, "coordinate"), str(d, "currentSource"), comparison)
 				if d["note"] != nil {
 					fmt.Fprintln(out, "      "+str(d, "note"))
@@ -162,23 +156,25 @@ func scanTerminal(data Object, out io.Writer, dependencies, tree, color bool) {
 		header("\nDirect dependencies")
 		order, groups := group(declared)
 		for _, key := range order {
-			fmt.Fprintln(out, "  "+key)
+			fmt.Fprintln(out, style.heading("  "+key))
 			for _, d := range groups[key] {
 				fmt.Fprintf(out, "    %s:%s; selected %s; %s\n", str(d, "notation"), str(d, "version"), selectedVersions(data, d), str(d, "source"))
 			}
 		}
 	}
 	if tree {
-		dependencyTree(data, out)
+		dependencyTreeStyled(data, out, color)
 	}
 }
 
-func dependencyTree(data Object, out io.Writer) {
-	fmt.Fprintln(out, "\nResolved dependency tree (selected graph; shared/cyclic nodes expanded once)")
+func dependencyTree(data Object, out io.Writer) { dependencyTreeStyled(data, out, false) }
+func dependencyTreeStyled(data Object, out io.Writer, color bool) {
+	style := terminalStyle{color}
+	fmt.Fprintln(out, style.heading("\nResolved dependency tree (selected graph; shared/cyclic nodes expanded once)"))
 	for _, graph := range objects(field(data, "resolution")["configurations"]) {
-		fmt.Fprintf(out, "  %s / %s [%s]\n", str(graph, "module"), str(graph, "configuration"), str(graph, "status"))
+		fmt.Fprintf(out, "  %s / %s [%s]\n", str(graph, "module"), str(graph, "configuration"), style.status(str(graph, "status")))
 		if graph["error"] != nil {
-			fmt.Fprintln(out, "    "+str(graph, "error"))
+			fmt.Fprintln(out, style.paint("31", "    "+str(graph, "error")))
 		}
 		nodes := map[string]Object{}
 		edges := map[string][]Object{}
@@ -209,7 +205,7 @@ func dependencyTree(data Object, out io.Writer) {
 					label = str(n, "group") + ":" + str(n, "artifact") + ":" + str(n, "version")
 				}
 				if edge["unresolved"] != nil {
-					label += " UNRESOLVED " + str(edge, "unresolved")
+					label += style.paint("31", " UNRESOLVED "+str(edge, "unresolved"))
 				}
 				if visited[id] {
 					label += " (shared/cycle)"
