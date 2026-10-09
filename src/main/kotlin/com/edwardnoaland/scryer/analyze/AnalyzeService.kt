@@ -18,6 +18,18 @@ data class AnalyzeResult(val impact: ImpactAnalysis, val execution: TestExecutio
 /** Owns the common snapshot lifetime; execution follows static analysis in the same after checkout. */
 class AnalyzeService(private val progress: (String) -> Unit = {}) {
     fun analyze(comparison: GitComparison, runTests: Boolean = true, testCommand: String? = null, buildTool: BuildTool? = null): AnalyzeResult = IsolatedSnapshots.use(comparison) { beforeSnapshot, afterSnapshot ->
+        analyzeSnapshots(comparison, beforeSnapshot, afterSnapshot, runTests, testCommand, buildTool)
+    }
+
+    /** The Go orchestrator owns supplied snapshots; this entry point never creates or removes checkouts. */
+    fun analyzeSnapshots(
+        comparison: GitComparison,
+        beforeSnapshot: java.nio.file.Path,
+        afterSnapshot: java.nio.file.Path,
+        runTests: Boolean = true,
+        testCommand: String? = null,
+        buildTool: BuildTool? = null,
+    ): AnalyzeResult {
         val before = beforeSnapshot.toRealPath()
         val after = afterSnapshot.toRealPath()
         if (buildTool != null) {
@@ -38,6 +50,6 @@ class AnalyzeService(private val progress: (String) -> Unit = {}) {
             ExecutionEvidence(comparison.after, execution.status, notes = listOf("Cannot collect execution artifacts: ${it.message}"))
         }
         val matching = ImpactEvidenceMatcher().match(impact, evidence)
-        AnalyzeResult(impact, execution, evidence, matching)
+        return AnalyzeResult(impact, execution, evidence, matching)
     }
 }
