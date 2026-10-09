@@ -65,7 +65,7 @@ func New(service *application.Service) *cobra.Command {
 	flags.StringVar(&stack, "stack", "java", "Technology stack (currently java)")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle")
 	flags.BoolVar(&request.Static, "static", false, "Skip build-model execution")
-	flags.BoolVar(&request.RemoteList, "remote-list", false, "Compare dependency releases with Maven Central")
+	flags.BoolVar(&request.RemoteList, "remote-list", false, "Compare dependency and Java/build-tool releases with remote metadata")
 	flags.BoolVar(&dependencies, "dependencies", false, "List direct dependencies by module/configuration")
 	flags.BoolVar(&tree, "dependency-tree", false, "Show resolved dependency graph")
 	flags.BoolVar(&jsonOutput, "json", false, "Print report JSON")

@@ -23,6 +23,7 @@ data class RepositoryFacts(
     val selectedBuildTool: String? = null,
     val parentPoms: List<ParentPomFact> = emptyList(),
     val remoteVersions: com.edwardnoaland.scryer.scan.model.RemoteVersions? = null,
+    val toolUpdates: ToolUpdates? = null,
     val compileTooling: CompileToolingFacts = CompileToolingFacts(),
 )
 

@@ -7,6 +7,7 @@ import com.edwardnoaland.scryer.analyze.report.buildAnalyzeReport
 import com.edwardnoaland.scryer.repository.BuildTool
 import com.edwardnoaland.scryer.scan.ScanService
 import com.edwardnoaland.scryer.scan.directDependencies
+import com.edwardnoaland.scryer.scan.remote.ToolUpdateCollector
 import com.edwardnoaland.scryer.scan.remote.RemoteVersionCollector
 import com.edwardnoaland.scryer.scan.remote.scopedSelectedVersions
 import com.edwardnoaland.scryer.scan.resolve.DependencyResolver
@@ -33,7 +34,8 @@ fun main() {
                 val facts = ScanService(resolver = DependencyResolver(progress = progress)).scan(
                     Path.of(input.requiredText("repository")), input["static"]?.asBoolean() ?: false, input.buildTool())
                 val enriched = if (input["remoteList"]?.asBoolean() == true) facts.copy(remoteVersions = RemoteVersionCollector(progress = progress)
-                    .collect(directDependencies(facts)) { scopedSelectedVersions(facts, it) }) else facts
+                    .collect(directDependencies(facts)) { scopedSelectedVersions(facts, it) },
+                    toolUpdates = ToolUpdateCollector(progress = progress).collect(facts)) else facts
                 // Public contracts use filesystem paths, not Jackson's default Path URI representation.
                 jsonMapper.valueToTree<ObjectNode>(enriched).put("root", enriched.root.toString())
             }

@@ -131,6 +131,19 @@ func scanMarkdown(data Object, tree bool) string {
 			table(&b, []string{"Dependency", "Current", "Current source", "Remote release", "Comparison", "Metadata", "Limitation"}, rows)
 		}
 	}
+	if updates := field(data, "toolUpdates"); updates != nil {
+		section(&b, 2, "Toolchain / Build tool updates")
+		fmt.Fprintln(&b, "Checked: "+escape(str(updates, "checkedAt"))+".\n")
+		toolRows := [][]string{}
+		for _, tool := range objects(updates["tools"]) {
+			toolRows = append(toolRows, []string{str(tool, "tool"), str(tool, "channel"), str(tool, "current"), str(tool, "currentSource"), str(tool, "latest"), str(tool, "status"), str(tool, "metadataUrl"), toolUpdateNote(tool)})
+		}
+		table(&b, []string{"Tool", "Release channel", "Current", "Current source", "Available release", "Comparison", "Metadata", "Limitation"}, toolRows)
+		for _, note := range notes(updates["notes"]) {
+			fmt.Fprintln(&b, escape(note)+"\n")
+		}
+	}
+
 	section(&b, 2, "Testing")
 	testing := field(data, "testing")
 	table(&b, []string{"Fact", "Value"}, rows([]string{"Frameworks", join(testing["frameworks"])}, []string{"Mock libraries", join(testing["mockLibraries"])}, []string{"Unit source files", str(testing, "testSourceFiles")}, []string{"Integration source files", str(testing, "integrationSourceFiles")}, []string{"JaCoCo", str(testing, "jacocoConfigured")}, []string{"Disabled signals", str(testing, "disabledAnnotationSignals")}, []string{"Existing coverage reports", join(testing["coverageReports"])}))
@@ -214,4 +227,11 @@ func selectedBuildTool(data Object) string {
 		return "automatic"
 	}
 	return str(data, "selectedBuildTool")
+}
+
+func toolUpdateNote(tool Object) string {
+	if tool["note"] == nil {
+		return ""
+	}
+	return str(tool, "note")
 }

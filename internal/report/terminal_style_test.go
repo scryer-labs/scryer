@@ -65,3 +65,26 @@ func TestTerminalStatusesAndZeroCounts(t *testing.T) {
 		t.Fatal("zero failures should not appear as actual failures")
 	}
 }
+
+func TestToolUpdatesAppearInScanTerminalAndMarkdownOnlyWhenEnriched(t *testing.T) {
+	document := contract.Document{Operation: "scan", Data: json.RawMessage(`{"schemaVersion":1,"root":"/repo","builds":[],"dependencies":[],"modules":[],"language":{},"resolution":{},"testing":{},"verification":{},"toolUpdates":{"checkedAt":"now","tools":[{"tool":"Gradle","channel":"latest stable","current":"6.5.1","currentSource":"Wrapper","latest":"9.1.0","status":"UPDATE_AVAILABLE","metadataUrl":"https://example.test/versions","note":null},{"tool":"Java","channel":"same series patch","current":"11","currentSource":"source level","latest":"11.0.29","status":"UNKNOWN_CURRENT","note":"Patch unknown"}],"notes":["Separately validate versions and dependency conflicts."]}}`)}
+	var terminal bytes.Buffer
+	if err := Terminal(document, &terminal, false, false, false, true); err != nil {
+		t.Fatal(err)
+	}
+	markdown, err := Markdown(document, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, text := range []string{"Toolchain / Build tool updates", "UNKNOWN_CURRENT", "dependency conflicts", "6.5.1", "11.0.29"} {
+		if !strings.Contains(terminal.String(), text) || !strings.Contains(string(markdown), escape(text)) {
+			t.Fatalf("missing update fact %s", text)
+		}
+	}
+	if !strings.Contains(terminal.String(), "\x1b[33m6.5.1") {
+		t.Fatal("update comparison did not retain palette")
+	}
+	if bytes.Contains(markdown, []byte{27}) {
+		t.Fatal("ANSI leaked into Markdown")
+	}
+}

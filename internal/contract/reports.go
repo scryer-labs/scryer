@@ -29,7 +29,23 @@ type LanguageFacts struct {
 	TargetVersions    []string `json:"targetVersions"`
 	ToolchainVersions []string `json:"toolchainVersions"`
 }
+type ToolUpdate struct {
+	Tool          string  `json:"tool"`
+	Channel       string  `json:"channel"`
+	Current       *string `json:"current"`
+	CurrentSource string  `json:"currentSource"`
+	Latest        *string `json:"latest"`
+	Status        string  `json:"status"`
+	MetadataURL   *string `json:"metadataUrl"`
+	Note          *string `json:"note"`
+}
+type ToolUpdates struct {
+	CheckedAt string       `json:"checkedAt"`
+	Tools     []ToolUpdate `json:"tools"`
+	Notes     []string     `json:"notes"`
+}
 type ScanReport struct {
+	ToolUpdates   *ToolUpdates               `json:"toolUpdates,omitempty"`
 	SchemaVersion int                        `json:"schemaVersion"`
 	Root          string                     `json:"root"`
 	Builds        []BuildFact                `json:"builds"`

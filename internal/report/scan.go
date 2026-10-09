@@ -152,6 +152,22 @@ func scanTerminal(data Object, out io.Writer, dependencies, tree, color bool) {
 			}
 		}
 	}
+	if updates := field(data, "toolUpdates"); updates != nil {
+		header("\nToolchain / Build tool updates")
+		fmt.Fprintln(out, "  Checked: "+str(updates, "checkedAt"))
+		for _, tool := range objects(updates["tools"]) {
+			comparison := str(tool, "current") + " → " + str(tool, "latest") + " [" + str(tool, "status") + "]"
+			fmt.Fprintf(out, "  %s / %s: %s\n", str(tool, "tool"), str(tool, "channel"), style.paint(remoteColor(str(tool, "status")), comparison))
+			fmt.Fprintln(out, style.muted("    Current source: "+str(tool, "currentSource")))
+			if tool["note"] != nil {
+				fmt.Fprintln(out, style.warning("    "+str(tool, "note")))
+			}
+		}
+		for _, note := range notes(updates["notes"]) {
+			fmt.Fprintln(out, style.warning("  "+note))
+		}
+	}
+
 	if dependencies {
 		header("\nDirect dependencies")
 		order, groups := group(declared)
