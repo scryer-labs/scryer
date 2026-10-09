@@ -135,7 +135,7 @@
     if (!window.ScryerReport?.graphRenderer) {
       replace($('graph-host'), visible.length ? visible.map(symbol => {
         const card = node('button', null, 'graph-card'); card.type = 'button';
-        card.append(node('strong', symbol.name), node('span', symbol.owner, 'source-path'), badge(symbol.impact, impactClass(symbol.impact)), node('span', words(symbol.role), 'source-path'));
+        card.append(node('strong', symbol.name || label(symbol.signature) || symbol.id), node('span', symbol.owner || symbol.module || '', 'source-path'), badge(symbol.impact, impactClass(symbol.impact)), node('span', words(symbol.role), 'source-path'));
         card.addEventListener('click', () => selectSymbol(symbol.id, state.snapshot)); return card;
       }) : [node('div', 'No matching scope symbols. Reset filters or select another snapshot.', 'empty')]);
     }
@@ -192,8 +192,8 @@
     const symbol = graph.nodes.find(item => item.id === id);
     if (!symbol) return;
     const content = $('symbol-content'); content.replaceChildren();
-    const title = node('h2', symbol.name); title.id = 'symbol-title';
-    content.append(title, node('p', symbol.owner, 'symbol-owner'));
+    const title = node('h2', symbol.name || label(symbol.signature) || symbol.id); title.id = 'symbol-title';
+    content.append(title, node('p', symbol.owner || symbol.module || '', 'symbol-owner'));
     const tags = node('div', null, 'symbol-tags'); tags.append(badge(symbol.impact, impactClass(symbol.impact)), badge(symbol.role), badge(snapshotName)); content.append(tags);
     function section(label) { const part = node('section', null, 'detail-section'); part.append(node('h3', label)); content.append(part); return part; }
     section('Identity & source').append(facts([['Signature', symbol.signature], ['Binary symbol', symbol.id], ['Source', symbol.path ? `${symbol.path}:${symbol.line}` : 'unavailable'], ['Module', symbol.module]]));

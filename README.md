@@ -1,18 +1,45 @@
 # Scryer
 
+Scryer uses a Go Cobra CLI and shared reporting layer with a Kotlin analyzer for Java repositories. The installed `scan` and `analyze` commands keep their existing flags and outputs.
+
+## Build the Go + Kotlin application
+
+Prerequisites: Go 1.24 or later, Java 21, Git; the project Gradle Wrapper builds the analyzer.
+
+```sh
+./scripts/build
+./build/install/scryer/bin/scryer --help
+./build/install/scryer/bin/scryer scan ../legacy-maven-fixture --static
+```
+
+`go build ./cmd/scryer` builds the frontend only. For development, point `SCRYER_JAVA_CLASSPATH` at the analyzer jars, or use the combined installation produced by `scripts/build`. `SCRYER_ANALYZER_JAVA_HOME` selects the Java 21 runtime for the analyzer; `SCRYER_JAVA_HOME` independently selects the target project's JVM. `--stack java` is optional and currently the only registered stack.
+
+```sh
+go test -race ./...
+go vet ./...
+./gradlew test
+./scripts/package
+```
+
+Packages contain the native Go executable and Java analyzer jars. Build on the target OS/architecture; these packages do not bundle a JRE. The usual installed path is still `build/install/scryer/bin/scryer`. Running `./gradlew installDist` alone now installs the internal JVM worker, **not** the public CLI; use `scripts/build` for the full application.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for layers and [docs/contracts/README.md](docs/contracts/README.md) for analyzer input/output contracts. Kotlin's former CLI/renderers live only in test sources to retain regression checks during the migration. The following sections describe the Java analyzer capabilities.
+
+## Java analyzer capabilities
+
 `scan` is a repository facts collector for Java repositories. It reports declarations, evaluated build-model facts and lightweight source signals. It does not recommend upgrades, plan transformations or produce a confidence score. `analyze` currently compares two Git commit snapshots and reports changed files, Java method/symbol changes and potential caller impact.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package responsibilities, the scan flow and code-style guidelines.
 
-GitHub Actions runs `clean`, `test` and `build` with the project Wrapper and Temurin Java 21 on pushes to `main`, pull requests and manual dispatch. The workflow uses a Gradle cache and validates the Wrapper. After checks pass, CI packages ZIP and TAR distributions, unpacks both and smoke-checks CLI help, a static scan and analyze help. Download `scryer-package-<commit SHA>` from the workflow run's Artifacts; it contains both archives and `SHA256SUMS` and is retained for 14 days. Packages include application libraries and Unix/Windows launch scripts; Java 21 or newer must be installed (the target project's test JVM is configured separately). TAR preserves Unix executable permissions; after extracting ZIP, use `bash bin/scryer` or make `bin/scryer` executable.
+GitHub Actions runs `clean`, `test` and `build` with the project Wrapper and Temurin Java 21 on pushes to `main`, pull requests and manual dispatch. The workflow uses a Gradle cache and validates the Wrapper. After checks pass, CI packages ZIP and TAR distributions, unpacks both and smoke-checks CLI help, a static scan and analyze help. Download `scryer-package-<commit SHA>` from the workflow run's Artifacts; it contains both archives and `SHA256SUMS` and is retained for 14 days. Packages include a native Go executable and JVM analyzer libraries; Java 21 or newer must be installed (the target project's test JVM is configured separately). Packages currently target the build machine's POSIX OS/architecture. Run `bin/scryer` directly; it is a native executable, not a shell script.
 
-To package locally, run `./gradlew distZip distTar`; archives are created under `build/distributions/`. This CI stage uploads workflow artifacts; it does not publish a GitHub Release.
+To package locally, run `./scripts/package`; archives are created under `build/distributions/`. This CI stage uploads workflow artifacts; it does not publish a GitHub Release.
 
 Commit subjects follow `<type>: <summary>` with `feat`, `refactor`, `tests`, `docs`, `chore`, `fix` or `revert`; see [AGENTS.md](AGENTS.md).
 
 ## Run
 
-Scryer uses Java 21, Kotlin 2.2.21 and its Gradle 8.14.3 Wrapper. Target repositories may use older JDKs and build tools.
+The Java analyzer uses Java 21, Kotlin 2.2.21 and the Gradle 8.14.3 Wrapper; public commands are provided by Go/Cobra. Target repositories may use older JDKs and build tools.
 
 Run analyze from inside the target Git repository (or a subdirectory):
 
@@ -26,19 +53,19 @@ References resolve to commit SHAs through Git: SHA IDs, branches, tags and expre
 
 Both reference arguments are required; invalid arguments exit with code 2. Invalid refs, a non-Git current directory or Git failures exit with code 1. Analysis creates a temporary shared clone and two detached worktrees, reads changed `.java` files with the JDK Java parser, and removes the temporary workspace afterwards. The target repository's working tree and worktree registrations remain unchanged. Git and a full JDK 21 are required.
 
-Methods and constructors are matched by package, enclosing class, name and source parameter types. Output distinguishes ADDED, MODIFIED and DELETED declarations with before/after locations. Overloads and named nested classes are supported. Signature changes appear as deletion plus addition; a pure file rename with identical declarations produces no method changes. AST comparison ignores comments and formatting and includes declaration annotations, return types and method bodies. Test methods are included too; production/test classification comes later.
+Methods and constructors are matched by package, enclosing class, name and source parameter types. Output distinguishes ADDED, MODIFIED and DELETED declarations with before/after locations. Overloads and named nested classes are supported. Signature changes appear as deletion plus addition; a pure file rename with identical declarations produces no method changes. AST comparison ignores comments and formatting and includes declaration annotations, return types and method bodies. Test methods are included too, with production/test/unknown source roles retained.
 
-This is source syntax comparison, not resolved symbol identity or semantic impact analysis. Imports, fields, initializer blocks and inheritance changes are reported as a context-analysis limitation for changed Java files; they can affect unchanged methods. Anonymous classes and ambiguous local-class method identities fail explicitly rather than producing a misleading result. Parse errors also exit with code 1. Parsing uses JDK 21 syntax; unsupported newer syntax, generated sources, submodule contents and Git LFS content are not materialized/analyzed as Java source in this increment. The static phase does not compile or execute target code. The command now follows it with target test execution unless `--skip-tests` is supplied; fresh execution artifacts are collected before cleanup and matched against production impact methods.
+Method-difference detection is source syntax comparison; the later attribution/impact phase adds resolved symbol identities and partial static impact. Imports, fields, initializer blocks and inheritance changes are reported as a context-analysis limitation for changed Java files; they can affect unchanged methods. Anonymous classes and ambiguous local-class method identities fail explicitly rather than producing a misleading result. Parse errors also exit with code 1. Parsing uses JDK 21 syntax; unsupported newer syntax, generated sources, submodule contents and Git LFS content are not materialized/analyzed as Java source in this increment. The static phase does not compile or execute target code. The command now follows it with target test execution unless `--skip-tests` is supplied; fresh execution artifacts are collected before cleanup and matched against production impact methods.
 
 Analyze also performs JDK source attribution for both snapshots and constructs **partial** call graphs. Symbol IDs use binary class names, method names and JVM-style erased descriptors, for example `example.Order#total(I)Ljava/math/BigDecimal;`. Changes are mapped to resolved declarations; unresolved mappings are explicitly listed. Reverse reachability includes changed methods and their transitive callers, retaining separate before/after graphs so deleted callers/targets are not lost.
 
 `DIRECT` edges mean the compile-time target, not observed runtime execution. Source overrides are included as `POSSIBLE_DISPATCH`; `super`, static, private and final calls are not expanded. Method references and lambda bodies are potential calls; creating a callback does not prove it executes. Constructors and recursive cycles are supported.
 
-The collector currently includes Java files outside `.git`, `.tooling`, `.gradle`, `build`, `target` and `node_modules`. It does not discover source sets or resolve target dependencies/module classpaths. Missing types/dependencies, external targets and initializer calls are boundaries. Duplicate symbol identities across files are excluded rather than merged. Javac attribution diagnostics indicate incomplete resolution, not target build results. Framework/DI wiring, dynamic reflection, generated code, dynamically loaded/external subclasses and non-method context impact remain unknown. No absence of callers or graph percentage implies safety. JSON, Markdown and HTML exports retain these boundaries.
+The collector currently includes Java files outside `.git`, `.tooling`, `.gradle`, `build`, `target` and `node_modules`. With build-model execution enabled, it uses discovered module/source roots and target dependency classpaths; source-only fallback remains partial. Missing types/dependencies, external targets and initializer calls are boundaries. Duplicate symbol identities across files are excluded rather than merged. Javac attribution diagnostics indicate incomplete resolution, not target build results. Framework/DI wiring, dynamic reflection, generated code, dynamically loaded/external subclasses and non-method context impact remain unknown. No absence of callers or graph percentage implies safety. JSON, Markdown and HTML exports retain these boundaries.
 
 ```sh
 export JAVA_HOME="$(mise where java)"
-./gradlew test installDist
+./scripts/build
 export PATH="$PWD/build/install/scryer/bin:$PATH"
 scryer scan ../legacy-java-fixture
 ```
@@ -63,7 +90,7 @@ Quote paths with spaces. The supplied path must contain a recognized build/setti
 
 ## Summary and count semantics
 
-The default view groups Project, Dependencies, Key dependencies (at most five), Testing, Code Characteristics, Verification and collection notes. It does not print the entire transitive graph. `--json` retains all notes and facts; the terminal summary shows at most four notes.
+The default view groups Project, Dependencies, Key dependencies (at most five), Testing, Code Characteristics, Verification and collection notes. It does not print the entire transitive graph. `--json` retains all notes and facts; the terminal summary retains collection notes.
 
 For the legacy fixture, scan observes Java source/target 8, Gradle 4.10.3, one module, Spring Boot plugin 2.1.18.RELEASE, JUnit 4, JaCoCo configuration, javax usage and reflection. Actual resolved Spring starters are 2.1.18.RELEASE and Mockito is 2.23.4.
 
@@ -200,7 +227,7 @@ Default terminal output now leads with command/test outcomes and method evidence
 
 `-o report.html` produces a single offline HTML file with all CSS, JavaScript and report data embedded. It provides dataset selection, method/source search, evidence/impact/role filters, clickable symbol details, before/after changes, execution/artifact tables, and an embedded JSON download. Dataset selection never merges coverage. Before graph symbols do not receive after coverage; test symbols are separate from production metrics. The report uses no CDN, remote fonts or network requests and works directly under `file://`. Artifact paths refer to the generating machine; raw evidence files are not bundled. Repository strings are script-escaped on embedding and rendered with text-only DOM APIs.
 
-HTML's impact map is a local SVG graph with pan/zoom/fit, draggable nodes with live call-edge updates, node selection and evidence details, collapse/expand calls, one-hop neighbor focus and restore. Filtering/collapse counts show visible versus total scope nodes/edges; no graph facts are silently discarded. Shared descendants stay visible through expanded callers, and SCC layout preserves recursive/disconnected components without enumerating infinite paths. Before views show static facts only. Dashed edges identify potential dispatch/reference/reflection; animations never simulate test execution. Dark/light themes, responsive layouts, keyboard controls and `prefers-reduced-motion` are supported. The map uses no graph service or runtime dependency. The Scryer Labs logo is bundled from `src/main/resources/analyze-report/scryer-logo.png` and embedded as a data URI, so the report remains a single portable file.
+HTML's impact map is a local SVG graph with pan/zoom/fit, draggable nodes with live call-edge updates, node selection and evidence details, collapse/expand calls, one-hop neighbor focus and restore. Filtering/collapse counts show visible versus total scope nodes/edges; no graph facts are silently discarded. Shared descendants stay visible through expanded callers, and SCC layout preserves recursive/disconnected components without enumerating infinite paths. Before views show static facts only. Dashed edges identify potential dispatch/reference/reflection; animations never simulate test execution. Dark/light themes, responsive layouts, keyboard controls and `prefers-reduced-motion` are supported. The map uses no graph service or runtime dependency. The Scryer Labs logo is bundled from `internal/report/assets/scryer-logo.png` and embedded as a data URI, so the report remains a single portable file.
 
 ```bash
 scryer analyze --before HEAD~1 --after HEAD

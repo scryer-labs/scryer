@@ -1,6 +1,6 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {layoutGraph, visibleGraph} = require('../src/main/resources/analyze-report/graph-model.js');
+const {layoutGraph, visibleGraph} = require('../internal/report/assets/graph-model.js');
 const nodes = names => names.map(id => ({id}));
 const edges = pairs => pairs.map(([caller, callee]) => ({caller, callee, kind: 'DIRECT'}));
 

@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+cd "$root"
+./scripts/build
+mkdir -p build/distributions
+os=$(go env GOOS)
+arch=$(go env GOARCH)
+name="scryer-0.1.0-$os-$arch"
+package_dir=$(mktemp -d "${TMPDIR:-/tmp}/scryer-package.XXXXXX")
+trap 'rm -rf "$package_dir"' EXIT HUP INT TERM
+mkdir -p "$package_dir/$name"
+cp -R build/install/scryer/bin build/install/scryer/lib "$package_dir/$name/"
+cp README.md "$package_dir/$name/"
+# Paths in package checks remain relative to the extracted installation, never the source checkout.
+tar -czf "build/distributions/$name.tar.gz" -C "$package_dir" "$name"
+(cd "$package_dir" && zip -qr "$root/build/distributions/$name.zip" "$name")
+(cd build/distributions && shasum -a 256 "$name.tar.gz" "$name.zip" > "SHA256SUMS-$os-$arch")
+printf '%s\n' "build/distributions/$name.tar.gz" "build/distributions/$name.zip"

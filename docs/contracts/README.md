@@ -57,7 +57,7 @@ The abbreviated `report` above is not a valid complete report. An error response
 
 ## Report fields
 
-The report schema is versioned separately from the process protocol. Version 1 preserves the existing public JSON facts and uncertainty semantics. Required field shapes are checked in `internal/contract/document.go`; additional fields remain intact in JSON/HTML exports. Renderers consume documents in Go, while the analyzer's Java report projection supplies the compatible data structure. `map[string]any` in the renderer is a view over a validated document, not permission to invent evidence.
+The report schema is versioned separately from the process protocol. Version 1 preserves the existing public JSON facts and uncertainty semantics. Core Go DTOs for builds/modules/dependencies/symbols/relations/changes/execution/matching are defined in `internal/contract/reports.go`; in-process analyzers can use `NewDocument` without implementing the Java process protocol. Required field shapes are checked in `internal/contract/document.go`; additional fields remain intact in JSON/HTML exports. Renderers consume documents in Go, while the analyzer's Java report projection supplies the compatible data structure. `map[string]any` in the renderer is a view over a validated document, not permission to invent evidence.
 
 Scan core:
 

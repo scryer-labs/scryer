@@ -22,6 +22,18 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test Go contracts, CLI, process adapter and reports
+        run: go test -race ./...
+
+      - name: Vet Go
+        run: go vet ./...
+
       - name: Set up Java 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
@@ -40,14 +52,14 @@ jobs:
       - name: Test report graph and validate browser scripts
         run: |
           node --test scripts/test-report-graph.cjs
-          node --check src/main/resources/analyze-report/report.js
-          node --check src/main/resources/analyze-report/graph.js
+          node --check internal/report/assets/report.js
+          node --check internal/report/assets/graph.js
 
       - name: Build
-        run: ./gradlew --no-daemon --console=plain build
+        run: ./scripts/build
 
       - name: Package distributions
-        run: ./gradlew --no-daemon --console=plain distZip distTar
+        run: ./scripts/package
 
       - name: Verify packaged CLI and create checksums
         shell: bash
@@ -55,28 +67,28 @@ jobs:
           set -euo pipefail
           package_check_dir=$(mktemp -d)
           trap 'rm -rf "$package_check_dir"' EXIT
-          for archive in build/distributions/*.zip; do
+          for archive in build/distributions/scryer-0.1.0-*.zip; do
             unzip -q "$archive" -d "$package_check_dir/zip"
           done
-          for archive in build/distributions/*.tar; do
+          for archive in build/distributions/scryer-0.1.0-*.tar.gz; do
             mkdir -p "$package_check_dir/tar"
             tar -xf "$archive" -C "$package_check_dir/tar"
           done
           for launcher in "$package_check_dir"/*/*/bin/scryer; do
-            bash "$launcher" --help
-            bash "$launcher" scan . --static
-            bash "$launcher" analyze --help
+            "$launcher" --help
+            "$launcher" scan . --static
+            "$launcher" analyze --help
           done
           cd build/distributions
-          sha256sum *.zip *.tar > SHA256SUMS
+          sha256sum scryer-0.1.0-*.zip scryer-0.1.0-*.tar.gz > SHA256SUMS
 
       - name: Upload packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: scryer-package-${{ github.sha }}
           path: |
-            build/distributions/*.zip
-            build/distributions/*.tar
+            build/distributions/scryer-0.1.0-*.zip
+            build/distributions/scryer-0.1.0-*.tar.gz
             build/distributions/SHA256SUMS
           if-no-files-found: error
           retention-days: 14

@@ -6,6 +6,7 @@ import java.util.Base64
 /** Inline assets and script-safe JSON keep reports portable and usable under file://. */
 internal fun renderAnalyzeHtml(report: AnalyzeReport): String {
     val template = reportResource("report.html")
+        .replace("__SCRYER_STACK__", "JAVA")
         .replace("__SCRYER_STYLE__", reportResource("report.css"))
         .replace("__SCRYER_APP__", reportResource("report.js"))
         .replace("__SCRYER_GRAPH__", reportResource("graph-model.js") + "\n" + reportResource("graph.js"))
