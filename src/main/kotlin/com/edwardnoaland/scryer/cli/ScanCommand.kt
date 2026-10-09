@@ -87,8 +87,7 @@ internal fun runScanCommand(args: Array<String>, out: PrintStream, err: PrintStr
         val facts = if (options.remote) local.copy(remoteVersions = com.edwardnoaland.scryer.scan.remote.RemoteVersionCollector(
             progress = { err.println("scryer: $it") }
         ).collect(com.edwardnoaland.scryer.cli.output.directDependencies(local)) { dependency ->
-            local.resolution.configurations.filter { it.module == dependency.module }.flatMap { it.nodes }
-                .filter { it.group == dependency.group && it.artifact == dependency.artifact }.mapNotNull { it.version }
+            com.edwardnoaland.scryer.scan.remote.scopedSelectedVersions(local, dependency)
         }) else local
         options.outputFile?.let { filename ->
             val destination = Path.of(filename).toAbsolutePath().normalize()

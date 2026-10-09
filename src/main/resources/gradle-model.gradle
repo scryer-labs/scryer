@@ -28,7 +28,7 @@ gradle.projectsEvaluated {
                     declaredDependencies: direct,
                     managementSources: (p.plugins.hasPlugin('io.spring.dependency-management') ? ['io.spring.dependency-management plugin'] : [])]
                 p.configurations.findAll { it.canBeResolved }.each { c ->
-                    def graph = [module: p.path, configuration: c.name, root: null, nodes: [], edges: [], status: 'complete', error: null]
+                    def graph = [module: p.path, configuration: c.name, declarationConfigurations: c.hierarchy.collect { it.name }.sort(), root: null, nodes: [], edges: [], status: 'complete', error: null]
                     try {
                         def rr = c.incoming.resolutionResult
                         def seen = new HashSet()

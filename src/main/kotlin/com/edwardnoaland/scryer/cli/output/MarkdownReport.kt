@@ -70,10 +70,14 @@ internal class MarkdownReport {
             appendLine()
             appendLine("Checked: ${cell(remote.checkedAt)}. This lookup does not establish upgrade compatibility; metadata releases may include prereleases.")
             appendLine()
-            table(listOf("Dependency", "Module / configuration", "Current", "Current source", "Remote release", "Comparison", "Metadata / limitation"),
-                remote.dependencies.map { dependency -> listOf(dependency.coordinate, "${dependency.module} / ${dependency.configuration}",
-                    dependency.current ?: "unknown", dependency.currentSource, dependency.latest ?: "unavailable", dependency.status,
-                    listOfNotNull(dependency.metadataUrl, dependency.note).joinToString("; ")) })
+            for ((group, dependencies) in remote.dependencies.groupBy { it.module to it.configuration }) {
+                appendLine("### ${cell(group.first)} / ${cell(group.second)}")
+                appendLine()
+                table(listOf("Dependency", "Current", "Current source", "Remote release", "Comparison", "Metadata / limitation"),
+                    dependencies.map { dependency -> listOf(dependency.coordinate,
+                        dependency.current ?: "unknown", dependency.currentSource, dependency.latest ?: "unavailable", dependency.status,
+                        listOfNotNull(dependency.metadataUrl, dependency.note).joinToString("; ")) })
+            }
         }
 
         section("Testing")

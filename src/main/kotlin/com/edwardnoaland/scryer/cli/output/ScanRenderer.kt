@@ -19,15 +19,18 @@ class ScanRenderer(private val out: PrintStream, private val color: Boolean) {
         header("\nRemote dependency releases")
         out.println("  ${versions.source}")
         out.println("  Checked: ${versions.checkedAt}")
-        versions.dependencies.forEach { dependency ->
-            val comparison = "${dependency.current ?: "unknown"} → ${dependency.latest ?: "unavailable"} [${dependency.status}]"
-            val styled = when (dependency.status) {
-                "CURRENT" -> good(comparison)
-                "UPDATE_AVAILABLE", "CURRENT_AHEAD" -> warning(comparison)
-                else -> bad(comparison)
+        for ((group, dependencies) in versions.dependencies.groupBy { it.module to it.configuration }) {
+            out.println("\n  ${group.first} / ${group.second}")
+            dependencies.forEach { dependency ->
+                val comparison = "${dependency.current ?: "unknown"} → ${dependency.latest ?: "unavailable"} [${dependency.status}]"
+                val styled = when (dependency.status) {
+                    "CURRENT" -> good(comparison)
+                    "UPDATE_AVAILABLE", "CURRENT_AHEAD" -> warning(comparison)
+                    else -> bad(comparison)
+                }
+                out.println("    ${dependency.coordinate} (${dependency.currentSource}): $styled")
+                dependency.note?.let { out.println("      $it") }
             }
-            out.println("  ${dependency.coordinate} (${dependency.module}, ${dependency.configuration}; ${dependency.currentSource}): $styled")
-            dependency.note?.let { out.println("    $it") }
         }
     }
 

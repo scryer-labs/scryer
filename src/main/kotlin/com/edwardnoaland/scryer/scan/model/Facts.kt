@@ -69,6 +69,7 @@ data class ConfigurationGraph(
     val edges: List<GraphEdge>,
     val status: String = "complete",
     val error: String? = null,
+    val declarationConfigurations: List<String> = emptyList(),
 )
 data class EvaluatedDependency(val configuration: String, val group: String?, val artifact: String?, val version: String?, val kind: String)
 data class EvaluatedProject(
