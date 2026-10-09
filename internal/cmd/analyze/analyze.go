@@ -21,7 +21,7 @@ func New(service *application.Service) *cobra.Command {
 	var request contract.AnalyzeRequest
 	var stack, output string
 	var jsonOutput, verbose bool
-	command := &cobra.Command{Use: "analyze --before <ref> --after <ref>", Short: "Analyze changes and existing test evidence", Args: cobra.NoArgs}
+	command := &cobra.Command{Use: "analyze [path] --before <ref> --after <ref|.>", Short: "Analyze changes and existing test evidence", Args: cobra.MaximumNArgs(1)}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if strings.TrimSpace(request.Before) == "" || strings.TrimSpace(request.After) == "" {
 			return fmt.Errorf("--before and --after are required")
@@ -56,6 +56,9 @@ func New(service *application.Service) *cobra.Command {
 		directory, err := os.Getwd()
 		if err != nil {
 			return err
+		}
+		if len(args) == 1 {
+			directory = args[0]
 		}
 		document, err := service.Analyze(cmd.Context(), stack, directory, request)
 		if err != nil {
@@ -113,7 +116,7 @@ func New(service *application.Service) *cobra.Command {
 	flags.StringVar(&stack, "stack", "java", "Technology stack (currently java)")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle for both models and tests")
 	flags.StringVar(&request.Before, "before", "", "Before Git commit/ref")
-	flags.StringVar(&request.After, "after", "", "After Git commit/ref")
+	flags.StringVar(&request.After, "after", "", "After Git commit/ref, or . for the working tree")
 	flags.BoolVar(&request.SkipTests, "skip-tests", false, "Skip build model and test execution")
 	flags.StringVar(&request.TestCommand, "test-command", "", "Explicit after test lifecycle")
 	flags.BoolVar(&jsonOutput, "json", false, "Print report JSON")
