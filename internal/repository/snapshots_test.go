@@ -42,6 +42,14 @@ func TestSnapshotsResolveExpressionsPreserveDirtySourceAndCleanUp(t *testing.T) 
 		t.Fatal(err)
 	}
 	for path, expected := range map[string]string{snapshots.BeforeRoot: "before", snapshots.AfterRoot: "after"} {
+		// Older embedded Git implementations require a normal .git directory.
+		info, err := os.Stat(filepath.Join(path, ".git"))
+		if err != nil || !info.IsDir() {
+			t.Fatalf("snapshot is not a standalone checkout: %v", err)
+		}
+		if common, err := git(ctx, path, "rev-parse", "--git-common-dir"); err != nil || common != ".git" {
+			t.Fatalf("shared worktree metadata: %s %v", common, err)
+		}
 		actual, err := os.ReadFile(filepath.Join(path, "source.java"))
 		if err != nil || string(actual) != expected {
 			t.Fatalf("checkout %s: %s %v", path, actual, err)

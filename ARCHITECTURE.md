@@ -10,7 +10,7 @@ Scryer is one Go module with a Kotlin JVM analyzer. Public `scan` and `analyze` 
 | `internal/application` | Stack selection and repository/snapshot lifecycle coordination |
 | `internal/contract` | Analyzer interface, versioned requests/responses, report document requirements and uncertainty semantics |
 | `internal/analyzer/java` | Java 21 worker discovery, process protocol, request identity/version validation; no rendering |
-| `internal/repository` | Git ref resolution, shared clone, isolated before/after worktrees and cleanup |
+| `internal/repository` | Git ref resolution, shared clone, isolated standalone before/after checkouts and cleanup |
 | `internal/process` | Subprocess cancellation/process-group lifecycle |
 | `internal/report` | Terminal, JSON, Markdown, Mermaid and offline HTML rendering, atomic output replacement |
 | `internal/report/assets` | Shared HTML/CSS/JS/logo assets embedded into the Go binary |

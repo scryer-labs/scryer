@@ -72,8 +72,14 @@ func Open(ctx context.Context, directory, before, after string) (*Snapshots, err
 		}
 		afterSHA = snapshot.After
 	}
+	// Each snapshot has a normal .git directory. Older embedded Git clients (for
+	// example JGit in legacy Maven plugins) cannot resolve linked-worktree metadata.
+	// Objects are shared only inside this temporary workspace.
 	for _, checkout := range []struct{ path, sha string }{{snapshot.BeforeRoot, beforeSHA}, {snapshot.AfterRoot, afterSHA}} {
-		if _, err = git(ctx, clone, "worktree", "add", "--detach", checkout.path, checkout.sha); err != nil {
+		if _, err = git(ctx, temporary, "clone", "--shared", "--no-checkout", "--", clone, checkout.path); err != nil {
+			return nil, err
+		}
+		if _, err = git(ctx, checkout.path, "checkout", "--detach", checkout.sha); err != nil {
 			return nil, err
 		}
 	}
