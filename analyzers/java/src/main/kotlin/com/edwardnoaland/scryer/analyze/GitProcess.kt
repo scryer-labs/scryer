@@ -13,7 +13,8 @@ internal object GitProcess {
                 process.destroyForcibly().waitFor()
                 error("Git command timed out")
             }
-            val text = java.nio.file.Files.readString(output)
+            // Diff bodies can contain non-UTF-8 source bytes; hunk metadata remains ASCII.
+            val text = java.nio.file.Files.readAllBytes(output).toString(Charsets.UTF_8)
             check(process.exitValue() == 0) { "Git command failed: ${text.trim()}" }
             return text
         } finally {

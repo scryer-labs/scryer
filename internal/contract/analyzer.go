@@ -16,14 +16,15 @@ type ScanRequest struct {
 	BuildTool  string `json:"buildTool,omitempty"`
 }
 type AnalyzeRequest struct {
-	Repository  string `json:"repository"`
-	Before      string `json:"before"`
-	After       string `json:"after"`
-	BeforeRoot  string `json:"beforeRoot"`
-	AfterRoot   string `json:"afterRoot"`
-	SkipTests   bool   `json:"skipTests"`
-	TestCommand string `json:"testCommand,omitempty"`
-	BuildTool   string `json:"buildTool,omitempty"`
+	Repository           string `json:"repository"`
+	Before               string `json:"before"`
+	After                string `json:"after"`
+	ComparisonRepository string `json:"comparisonRepository,omitempty"`
+	BeforeRoot           string `json:"beforeRoot"`
+	AfterRoot            string `json:"afterRoot"`
+	SkipTests            bool   `json:"skipTests"`
+	TestCommand          string `json:"testCommand,omitempty"`
+	BuildTool            string `json:"buildTool,omitempty"`
 }
 
 // Analyzer implementations supply facts; presentation is owned by Go.

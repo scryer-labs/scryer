@@ -289,3 +289,14 @@ Without a selection, single-build repositories retain automatic detection. Dual-
 `--remote-list` groups terminal and Markdown comparisons by module and original declaration scope/configuration. Maven keeps `compile`, `test`, `runtime`, `provided`, etc.; Gradle keeps `implementation`, `testImplementation`, `runtimeOnly` and custom names. The same coordinate can appear in multiple groups, but Maven Central metadata is queried once per group:artifact coordinate.
 
 Current selected versions are matched within the declaration's module and scope. Maven uses direct dependency-tree edge scopes; Gradle uses the actual configuration hierarchy collected from the build (including custom configurations), rather than guessing from names. A Gradle declaration inherited by several resolved configurations may have multiple observed selected versions. If no scoped match is available, the declared version is reported as declared; missing/dynamic declarations stay unknown. JSON retains the original module/configuration fields, and configuration graphs include additive `declarationConfigurations` provenance.
+
+### Analyze another repository or uncommitted changes
+
+```sh
+scryer analyze ../external/spring-petclinic-migration --before HEAD --after . --build-tool maven -o report.html
+scryer analyze ../external/spring-petclinic-migration --before HEAD~1 --after HEAD
+```
+
+The optional path defaults to the current directory. Git refs are resolved in the selected repository. `--after .` captures its current files, including staged and unstaged changes, deletions and non-ignored untracked files. If a staged file also has unstaged edits, the current file content wins. Ignored untracked caches/build products are excluded; tracked/staged files remain included even when an ignore rule matches them.
+
+Go uses a private clone/index and private snapshot commit, then analyzes and runs tests in isolated checkouts. The original HEAD, index, files and worktree registrations are untouched. JSON includes `afterSource` (`kind: WORKING_TREE`, `baseHead`, `snapshotSha`); terminal/Markdown/HTML label the after state as a working-tree snapshot. Execution and coverage refer to this immutable snapshot SHA, not to the original HEAD. Snapshot commits are never created in the original repository. Capture checks for concurrent changes and asks you to retry when detected; avoid editing files while capture is in progress. Working-tree snapshots with submodules are currently rejected; use committed refs instead.

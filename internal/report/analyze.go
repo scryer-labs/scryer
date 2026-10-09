@@ -24,7 +24,7 @@ func analyzeTerminal(data Object, out io.Writer, verbose bool) {
 	evidence := field(data, "evidence")
 	after := field(data, "after")
 	matching := field(data, "matching")
-	fmt.Fprintf(out, "Scryer analysis\nRepository: %s\nBefore: %s\nAfter: %s\nChanged files: %d\nChanged Java methods: %d\nAfter test command: %s\nTest records: %s (records, not unique IDs)\n", str(data, "repository"), str(data, "beforeSha"), str(data, "afterSha"), len(array(data["files"])), len(array(data["changes"])), str(execution, "status"), counts(field(evidence, "testRecords")))
+	fmt.Fprintf(out, "Scryer analysis\nRepository: %s\nBefore: %s\nAfter: %s\nChanged files: %d\nChanged Java methods: %d\nAfter test command: %s\nTest records: %s (records, not unique IDs)\n", str(data, "repository"), str(data, "beforeSha"), afterLabel(data), len(array(data["files"])), len(array(data["changes"])), str(execution, "status"), counts(field(evidence, "testRecords")))
 	roles := map[string]int{}
 	for _, node := range objects(after["nodes"]) {
 		roles[str(node, "role")]++
@@ -186,7 +186,7 @@ func analyzeMarkdown(data Object) string {
 	execution := field(data, "execution")
 	evidence := field(data, "evidence")
 	matching := field(data, "matching")
-	table(&b, []string{"Fact", "Value"}, rows([]string{"Repository", str(data, "repository")}, []string{"Before", str(data, "beforeSha")}, []string{"After", str(data, "afterSha")}, []string{"Generated", str(data, "generatedAt")}, []string{"Changed files", fmt.Sprint(len(array(data["files"])))}, []string{"Changed Java methods", fmt.Sprint(len(array(data["changes"])))}, []string{"After command", str(execution, "status")}, []string{"Test records", counts(field(evidence, "testRecords"))}))
+	table(&b, []string{"Fact", "Value"}, rows([]string{"Repository", str(data, "repository")}, []string{"Before", str(data, "beforeSha")}, []string{"After", afterLabel(data)}, []string{"Generated", str(data, "generatedAt")}, []string{"Changed files", fmt.Sprint(len(array(data["files"])))}, []string{"Changed Java methods", fmt.Sprint(len(array(data["changes"])))}, []string{"After command", str(execution, "status")}, []string{"Test records", counts(field(evidence, "testRecords"))}))
 	b.WriteString("Test records are not unique test IDs. Method hits and static routes do not prove a particular caller path or individual-test attribution. Percentages are not safety scores.\n\n")
 	allNodes := append(objects(field(data, "before")["nodes"]), objects(field(data, "after")["nodes"])...)
 	names := labels(allNodes)
@@ -318,4 +318,12 @@ func countRows(values Object) [][]string {
 		result = append(result, []string{key, text(values[key])})
 	}
 	return result
+}
+
+func afterLabel(data map[string]any) string {
+	source := object(data["afterSource"])
+	if str(source, "kind") == "WORKING_TREE" {
+		return ". (working-tree snapshot " + str(data, "afterSha") + "; base HEAD " + str(source, "baseHead") + ")"
+	}
+	return str(data, "afterSha")
 }

@@ -3,6 +3,7 @@ package application
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -57,7 +58,32 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 	request.Repository = snapshots.Repository
 	request.Before = snapshots.Before
 	request.After = snapshots.After
+	request.ComparisonRepository = snapshots.ComparisonRepository
 	request.BeforeRoot = snapshots.BeforeRoot
 	request.AfterRoot = snapshots.AfterRoot
-	return s.Analyzer.Analyze(ctx, request)
+	document, err = s.Analyzer.Analyze(ctx, request)
+	if err != nil || snapshots.WorkingBase == "" {
+		return document, err
+	}
+	var data map[string]json.RawMessage
+	if err = json.Unmarshal(document.Data, &data); err != nil {
+		return document, err
+	}
+	data["afterSource"], err = json.Marshal(map[string]string{
+		"kind": "WORKING_TREE", "ref": ".", "baseHead": snapshots.WorkingBase, "snapshotSha": snapshots.After,
+	})
+	if err != nil {
+		return document, err
+	}
+	var notes []string
+	if err = json.Unmarshal(data["notes"], &notes); err != nil {
+		return document, err
+	}
+	notes = append(notes, "After is an isolated working-tree snapshot (staged, unstaged and non-ignored untracked files); its SHA is a private snapshot commit, not a commit in the original repository. Ignored untracked files are excluded.")
+	data["notes"], err = json.Marshal(notes)
+	if err != nil {
+		return document, err
+	}
+	document.Data, err = json.Marshal(data)
+	return document, err
 }

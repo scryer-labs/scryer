@@ -39,7 +39,8 @@ fun main() {
             }
             "analyze" -> {
                 val input = requireNotNull(request["analyze"]) { "Missing analyze request" }
-                val comparison = GitComparer().compare(Path.of(input.requiredText("repository")), input.requiredText("before"), input.requiredText("after"))
+                val comparison = GitComparer().compare(Path.of(input["comparisonRepository"]?.asText() ?: input.requiredText("repository")), input.requiredText("before"), input.requiredText("after"))
+                    .copy(repository = Path.of(input.requiredText("repository")).toRealPath())
                 val before = Path.of(input.requiredText("beforeRoot")).toRealPath()
                 val after = Path.of(input.requiredText("afterRoot")).toRealPath()
                 require(GitProcess.run(before, "rev-parse", "HEAD").trim() == comparison.before &&
@@ -53,6 +54,7 @@ fun main() {
         }
         response["error"] = null
     } catch (exception: Exception) {
+        exception.printStackTrace(System.err)
         response["requestId"] = request?.get("requestId")?.asText().orEmpty()
         response["operation"] = request?.get("operation")?.asText().orEmpty()
         response["report"] = null

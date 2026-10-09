@@ -67,4 +67,16 @@ class GitComparisonTest {
     @Test fun `rejects a directory outside a Git repository`() {
         assertFailsWith<IllegalStateException> { GitComparer().compare(root, "HEAD", "HEAD") }
     }
+    @Test fun `non UTF8 diff bodies preserve ASCII hunk ranges`() {
+        git("init")
+        git("config", "user.name", "Fixture")
+        git("config", "user.email", "fixture@example.com")
+        Files.write(root.resolve("legacy.txt"), byteArrayOf(0xe9.toByte(), 10))
+        val before = commit()
+        Files.write(root.resolve("legacy.txt"), byteArrayOf(0xe9.toByte(), 33, 10))
+        val after = commit()
+        val file = GitComparer().compare(root, before, after).files.single()
+        assertEquals(LineRange(1, 1), file.lines.single().after)
+    }
+
 }

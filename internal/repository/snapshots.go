@@ -12,7 +12,7 @@ import (
 	"github.com/edwardnoaland/scryer/internal/process"
 )
 
-type Snapshots struct{ Repository, Before, After, BeforeRoot, AfterRoot, temporary string }
+type Snapshots struct{ Repository, Before, After, BeforeRoot, AfterRoot, ComparisonRepository, WorkingBase, temporary string }
 
 func (s *Snapshots) Close() error { return os.RemoveAll(s.temporary) }
 func git(ctx context.Context, directory string, args ...string) (string, error) {
@@ -40,7 +40,11 @@ func Open(ctx context.Context, directory, before, after string) (*Snapshots, err
 	if err != nil {
 		return nil, err
 	}
-	afterSHA, err := resolve(after)
+	afterRef := after
+	if after == "." {
+		afterRef = "HEAD"
+	}
+	afterSHA, err := resolve(afterRef)
 	if err != nil {
 		return nil, err
 	}
@@ -58,6 +62,15 @@ func Open(ctx context.Context, directory, before, after string) (*Snapshots, err
 	clone := filepath.Join(temporary, "repository")
 	if _, err = git(ctx, temporary, "clone", "--shared", "--no-checkout", "--", root, clone); err != nil {
 		return nil, err
+	}
+	snapshot.ComparisonRepository = clone
+	if after == "." {
+		snapshot.WorkingBase = afterSHA
+		snapshot.After, err = captureWorkingTree(ctx, root, clone, afterSHA)
+		if err != nil {
+			return nil, err
+		}
+		afterSHA = snapshot.After
 	}
 	for _, checkout := range []struct{ path, sha string }{{snapshot.BeforeRoot, beforeSHA}, {snapshot.AfterRoot, afterSHA}} {
 		if _, err = git(ctx, clone, "worktree", "add", "--detach", checkout.path, checkout.sha); err != nil {

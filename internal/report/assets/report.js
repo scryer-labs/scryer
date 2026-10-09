@@ -231,6 +231,10 @@
   $('repository').textContent = report.repository;
   $('before-sha').textContent = report.beforeSha.slice(0, 12); $('before-sha').title = report.beforeSha;
   $('after-sha').textContent = report.afterSha.slice(0, 12); $('after-sha').title = report.afterSha;
+  if (report.afterSource?.kind === 'WORKING_TREE') {
+    $('after-sha').textContent = `Working tree · ${report.afterSha.slice(0, 12)}`;
+    $('after-sha').title = `Private snapshot ${report.afterSha}; base HEAD ${report.afterSource.baseHead}`;
+  }
   $('change-count').textContent = `${report.files.length} changed files · ${report.changes.length} changed methods`;
   $('run-status').textContent = `Command ${words(report.execution.status)}`;
   $('run-status').className = `badge ${report.execution.status === 'SUCCEEDED' ? 'good' : report.execution.status === 'SKIPPED' ? 'unknown' : 'bad'}`;

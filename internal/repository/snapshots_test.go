@@ -61,3 +61,75 @@ func TestSnapshotsResolveExpressionsPreserveDirtySourceAndCleanUp(t *testing.T) 
 		t.Fatal("invalid reference accepted")
 	}
 }
+
+func TestWorkingTreeCapturesCurrentContentWithoutChangingOriginal(t *testing.T) {
+	ctx := context.Background()
+	root := t.TempDir()
+	run := func(args ...string) string {
+		t.Helper()
+		out, err := git(ctx, root, args...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	write := func(name, value string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(root, name), []byte(value), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	run("init")
+	run("config", "user.name", "Fixture")
+	run("config", "user.email", "fixture@example.test")
+	write(".gitignore", "ignored/\n")
+	write("source.java", "baseline")
+	write("deleted.java", "deleted")
+	run("add", ".")
+	run("commit", "-m", "baseline")
+	base := run("rev-parse", "HEAD")
+	write("source.java", "staged")
+	run("add", "source.java")
+	write("source.java", "unstaged")
+	write("staged-ignored.java", "staged ignored")
+	run("add", "staged-ignored.java")
+	write(".gitignore", "ignored/\nstaged-ignored.java\n")
+	write("new file.java", "untracked")
+	if err := os.Remove(filepath.Join(root, "deleted.java")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(root, "ignored"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	write("ignored/cache", "excluded")
+	write("local-cache", "excluded by repository-local rule")
+	if err := os.WriteFile(filepath.Join(root, ".git/info/exclude"), []byte("local-cache\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	status, index, trees := run("status", "--porcelain"), run("ls-files", "--stage"), run("worktree", "list", "--porcelain")
+	snapshots, err := Open(ctx, root, "HEAD", ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer snapshots.Close()
+	if snapshots.WorkingBase != base || snapshots.After == base {
+		t.Fatal("missing snapshot identity")
+	}
+	for name, expected := range map[string]string{"source.java": "unstaged", "new file.java": "untracked", "staged-ignored.java": "staged ignored"} {
+		content, err := os.ReadFile(filepath.Join(snapshots.AfterRoot, name))
+		if err != nil || string(content) != expected {
+			t.Fatalf("%s: %s %v", name, content, err)
+		}
+	}
+	for _, name := range []string{"deleted.java", "ignored/cache", "local-cache"} {
+		if _, err := os.Stat(filepath.Join(snapshots.AfterRoot, name)); !os.IsNotExist(err) {
+			t.Fatalf("unexpected snapshot file %s: %v", name, err)
+		}
+	}
+	if run("status", "--porcelain") != status || run("ls-files", "--stage") != index || run("rev-parse", "HEAD") != base || run("worktree", "list", "--porcelain") != trees {
+		t.Fatal("original repository changed")
+	}
+	if _, err := git(ctx, root, "cat-file", "-e", snapshots.After); err == nil {
+		t.Fatal("snapshot commit leaked into original repository")
+	}
+}
