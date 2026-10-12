@@ -16,8 +16,8 @@ class MethodAnalyzer {
         val changes = mutableListOf<MethodChange>()
         val notes = mutableListOf<String>()
         for (file in comparison.files) {
-            val before = readMethods(reader, beforeRoot, file.beforePath).associateBy { it.signature }
-            val after = readMethods(reader, afterRoot, file.afterPath).associateBy { it.signature }
+            val before = readMethods(reader, beforeRoot, file.beforePath, "before", notes).associateBy { it.signature }
+            val after = readMethods(reader, afterRoot, file.afterPath, "after", notes).associateBy { it.signature }
             if (file.beforePath?.endsWith(".java") != true && file.afterPath?.endsWith(".java") != true) continue
             val fileChanges = (before.keys + after.keys).mapNotNull { signature ->
                 val old = before[signature]
@@ -36,6 +36,8 @@ class MethodAnalyzer {
         return MethodAnalysis(comparison, changes, notes)
     }
 
-    private fun readMethods(reader: JavaMethods, root: Path, path: String?): List<JavaMethod> =
-        if (path?.endsWith(".java") == true) reader.read(root.resolve(path)) else emptyList()
+    private fun readMethods(reader: JavaMethods, root: Path, path: String?, snapshot: String, notes: MutableList<String>): List<JavaMethod> =
+        if (path?.endsWith(".java") == true) reader.read(root.resolve(path)) { limitation ->
+            notes += "$snapshot $path: $limitation"
+        } else emptyList()
 }

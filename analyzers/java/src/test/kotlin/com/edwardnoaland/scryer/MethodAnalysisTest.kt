@@ -136,7 +136,7 @@ class MethodAnalysisTest {
         assertFalse(Files.exists(temporary))
     }
 
-    @Test fun `parse errors and anonymous method identity are explicit failures`() {
+    @Test fun `parse errors remain explicit failures while anonymous fields expose limitations`() {
         initialize()
         val before = commit("class Order {}")
         val broken = commit("class Order { void broken( }")
@@ -145,9 +145,34 @@ class MethodAnalysisTest {
         }
         assertTrue(parseError.message!!.contains("Cannot parse"))
         val anonymous = commit("class Order { Runnable r = new Runnable() { public void run() {} }; }")
-        val identityError = assertFailsWith<IllegalStateException> {
-            MethodAnalyzer().analyze(GitComparer().compare(root, before, anonymous))
-        }
-        assertTrue(identityError.message!!.contains("Anonymous class"))
+        val analysis = MethodAnalyzer().analyze(GitComparer().compare(root, before, anonymous))
+        assertTrue(analysis.methods.isEmpty())
+        assertTrue(analysis.notes.any { "after Order.java:" in it && "anonymous-class" in it })
     }
+    @Test fun `anonymous initializer and override changes preserve outer and sibling methods without false identities`() {
+        initialize()
+        val source = """
+            class Order {
+                void run() { }
+                Runnable make() {
+                    return new Runnable() {
+                        { int seed = 1; }
+                        public void run() { int value = 1; }
+                        class Nested { void run() { } }
+                    };
+                }
+                int sibling() { return 1; }
+                static class Named { int total() { return 1; } }
+            }
+        """.trimIndent()
+        val before = commit(source)
+        val after = commit(source.replace("seed = 1", "seed = 2").replace("value = 1", "value = 2")
+            .replace("sibling() { return 1;", "sibling() { return 2;"))
+        val analysis = MethodAnalyzer().analyze(GitComparer().compare(root, before, after))
+        assertEquals(setOf("Order#make()", "Order#sibling()"), analysis.methods.map { it.after!!.signature }.toSet())
+        assertTrue(analysis.methods.all { it.kind == MethodChangeKind.MODIFIED })
+        assertTrue(analysis.notes.any { it.startsWith("before Order.java:") && "anonymous-class" in it })
+        assertTrue(analysis.notes.any { it.startsWith("after Order.java:") && "anonymous-class" in it })
+    }
+
 }

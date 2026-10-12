@@ -16,7 +16,7 @@ data class JavaMethod(val owner: String, val name: String, val parameterTypes: L
 }
 
 internal class JavaMethods {
-    fun read(path: Path): List<JavaMethod> {
+    fun read(path: Path, onLimitation: (String) -> Unit = {}): List<JavaMethod> {
         require(!java.nio.file.Files.isSymbolicLink(path)) { "Java source is a symlink: $path" }
         val compiler = ToolProvider.getSystemJavaCompiler() ?: error("Method analysis requires a JDK, not a JRE")
         val diagnostics = DiagnosticCollector<JavaFileObject>()
@@ -33,7 +33,14 @@ internal class JavaMethods {
                 val packageName = unit.packageName?.toString().orEmpty()
                 object : TreeScanner<Unit, Unit>() {
                     override fun visitClass(node: ClassTree, unused: Unit?) {
-                        check(node.simpleName.isNotEmpty()) { "Anonymous class in $path: method identity is not supported yet" }
+                        if (node.simpleName.isEmpty()) {
+                            val start = positions.getStartPosition(unit, node)
+                            val line = unit.lineMap.getLineNumber(start)
+                            onLimitation("line $line: anonymous-class methods and initializers are not independently identified for changes; enclosing method syntax is still compared. Change-impact scope is partial.")
+                            // Do not misattribute anonymous methods (or their nested classes)
+                            // to the enclosing named class or invent unstable ordinal identities.
+                            return
+                        }
                         owners += node.simpleName.toString()
                         super.visitClass(node, unused)
                         owners.removeAt(owners.lastIndex)
