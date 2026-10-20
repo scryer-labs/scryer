@@ -7,18 +7,9 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 )
-
-type Project struct{ ID string }
-type Dependency struct {
-	Source, Target string
-	Internal       bool
-}
-type Facts struct {
-	Projects     []Project
-	Dependencies []Dependency
-}
 
 type row struct {
 	values map[string]string
@@ -32,7 +23,7 @@ func ReadCSV(projectsPath, dependenciesPath string) (Facts, error) {
 	if err != nil {
 		return Facts{}, err
 	}
-	facts := Facts{}
+	facts := Facts{Projects: []Project{}, Dependencies: []Dependency{}}
 	aliases := map[string][]string{}
 	known := map[string]bool{}
 	for _, r := range projects {
@@ -48,7 +39,7 @@ func ReadCSV(projectsPath, dependenciesPath string) (Facts, error) {
 			return Facts{}, rowError(projectsPath, r.line, "duplicate project identity: "+id)
 		}
 		known[id] = true
-		facts.Projects = append(facts.Projects, Project{ID: id})
+		facts.Projects = append(facts.Projects, Project{ID: id, RepositoryPath: r.values["repositoryPath"]})
 		unique := map[string]bool{}
 		for _, alias := range []string{id, artifact, r.values["projectId"], r.values["projectName"], r.values["repositoryPath"]} {
 			if alias != "" && !unique[alias] {
@@ -64,7 +55,7 @@ func ReadCSV(projectsPath, dependenciesPath string) (Facts, error) {
 	if err != nil {
 		return Facts{}, err
 	}
-	seen := map[[2]string]bool{}
+	seen := map[[2]string]int{}
 	for _, r := range dependencies {
 		source := first(r.values, "source", "projectName", "projectId", "repositoryPath")
 		target := first(r.values, "target")
@@ -99,10 +90,18 @@ func ReadCSV(projectsPath, dependenciesPath string) (Facts, error) {
 			return Facts{}, rowError(dependenciesPath, r.line, "dependency source is not in projects: "+source)
 		}
 		key := [2]string{source, target}
-		if !seen[key] {
-			facts.Dependencies = append(facts.Dependencies, Dependency{source, target, known[target]})
-			seen[key] = true
+		index, exists := seen[key]
+		if !exists {
+			index = len(facts.Dependencies)
+			facts.Dependencies = append(facts.Dependencies, Dependency{Source: source, Target: target, Internal: known[target], Scopes: []string{}})
+			seen[key] = index
 		}
+		scope := r.values["scope"]
+		edge := &facts.Dependencies[index]
+		if !slices.Contains(edge.Scopes, scope) {
+			edge.Scopes = append(edge.Scopes, scope)
+		}
+
 	}
 	return facts, nil
 }
