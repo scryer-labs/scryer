@@ -314,3 +314,24 @@ Section headings are bold cyan; successful commands/test records and execution h
 Available releases are version information, not upgrade recommendations. **Separately validate Java/build-tool versions, framework/plugin compatibility and dependency conflicts before upgrading.** Without `--remote-list`, these remote queries and the new section are omitted. `--static --remote-list` still queries remote metadata while skipping build-model execution.
 
 Changed Java files containing anonymous classes no longer abort method-change analysis. Enclosing named methods retain their syntax comparisons, while anonymous-class methods/initializers (including classes nested inside them) are not assigned speculative change identities. Reports name the before/after file and line as a partial change-impact limitation. This also applies to anonymous classes in field initializers, whose changes may have no identified method. Java parse errors remain explicit failures.
+
+### Workspace dependency facts (CSV)
+
+Read cross-repository facts without Java, build execution or network access:
+
+```bash
+scryer analyze workspace --projects projects.csv --dependencies dependencies.csv
+```
+
+Projects require `projectId`, `artifactId` or `projectName`. When both `groupId`
+and `artifactId` are present, their Maven coordinate is the identity. Dependencies
+accept `source,target` (consumer → dependency), or Moderne exports with
+`projectName` as consumer and `groupId,artifactId` as target. Additional columns
+and leading `#` metadata lines are ignored. Quoted CSV fields are supported.
+Duplicate project identities, ambiguous references and unknown consumers are
+errors; targets outside the project list are printed explicitly. Repeated edges
+are collapsed into one repository relationship, regardless of scope/version.
+These are declared relationships, not execution evidence or release constraints.
+This increment prints projects and arrows only; file output, phase suggestions
+and refactor-plan execution are not implemented yet. A directory literally named
+`workspace` can still be analyzed using `scryer analyze ./workspace --before … --after …`.

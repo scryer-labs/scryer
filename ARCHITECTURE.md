@@ -48,3 +48,10 @@ No existence of a test class, command success, static test route or method hit p
 Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod`; package boundaries are sufficient until independently versioned components are needed.
 
 Build tooling compiles the JVM analyzer and Go executable into `build/install/scryer`: `bin/scryer` is Go, `lib/java/*.jar` is the worker runtime. The native package contains both components and requires an external Java 21 runtime; no JRE is bundled. CI tests Go, JVM and browser graph behavior, then checks extracted packages.
+
+## Workspace facts
+
+`analyze workspace` is a Go-only use case. `internal/workspace` owns CSV adapters
+and cross-repository facts; the command owns flags and terminal presentation.
+No JVM analyzer is needed. Dependency arrows run from consumer to dependency.
+Declared edges are not runtime calls or inferred release-phase constraints.
