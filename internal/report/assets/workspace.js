@@ -16,6 +16,11 @@
   document.getElementById('summary').textContent = `${projects.length} projects · ${dependencies.length} declared relationships`;
   document.getElementById('semantics').textContent = 'Repository facts only. No code is executed, no upgrade strategy is selected, and no test confidence is inferred.';
   for (const note of doc.notes) { const li = document.createElement('li'); li.textContent = note; document.getElementById('notes').append(li); }
+  if (doc.suggestion) {
+    document.getElementById('title').textContent = 'Suggested refactor phases';
+    document.getElementById('summary').textContent += ` · ${doc.suggestion.phases.length} phases · ${doc.suggestion.blocked.length} blocked`;
+    document.getElementById('semantics').textContent = 'Dependency-based suggestions, not an execution plan or safety guarantee. Columns use internal declared edges; arrows still point from consumer to dependency.';
+  }
   const positions = new Map();
   const labels = [];
   function initialPositions() {

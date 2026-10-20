@@ -14,6 +14,7 @@ import (
 	"github.com/edwardnoaland/scryer/internal/analyzer/java"
 	"github.com/edwardnoaland/scryer/internal/application"
 	"github.com/edwardnoaland/scryer/internal/cmd/analyze"
+	"github.com/edwardnoaland/scryer/internal/cmd/refactorplan"
 	"github.com/edwardnoaland/scryer/internal/cmd/scan"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,7 @@ func NewRoot(service *application.Service, out, errOut io.Writer) *cobra.Command
 	root := &cobra.Command{Use: "scryer", Short: "Repository facts and refactor test evidence", SilenceUsage: true, SilenceErrors: true}
 	root.SetOut(out)
 	root.SetErr(errOut)
-	root.AddCommand(scan.New(service), analyze.New(service))
+	root.AddCommand(scan.New(service), analyze.New(service), refactorplan.New())
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error { return usageError{err} })
 	for _, child := range root.Commands() {
 		arguments := child.Args
