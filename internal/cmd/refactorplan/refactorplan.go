@@ -3,6 +3,7 @@ package refactorplan
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/report"
@@ -16,7 +17,7 @@ func New() *cobra.Command {
 	var jsonOutput bool
 	generate := &cobra.Command{Use: "generate", Short: "Suggest phases from workspace CSV facts; no code or recipes are executed", Args: cobra.NoArgs, RunE: func(cmd *cobra.Command, args []string) error {
 		if output != "" {
-			if _, err := report.WorkspaceFormat(output); err != nil {
+			if _, err := report.PlanFormat(output); err != nil {
 				return err
 			}
 		}
@@ -35,7 +36,26 @@ func New() *cobra.Command {
 			}
 		}
 		if output != "" {
-			return report.SaveWorkspace(doc, output, cmd.ErrOrStderr())
+			format, err := report.PlanFormat(output)
+			if err != nil {
+				return err
+			}
+			if format != "yaml" {
+				return report.SaveWorkspace(doc, output, cmd.ErrOrStderr())
+			}
+			data, err := report.PlanTemplate(doc)
+			if err != nil {
+				return err
+			}
+			absolute, err := filepath.Abs(output)
+			if err != nil {
+				return err
+			}
+			if err = report.WriteFile(absolute, data); err != nil {
+				return err
+			}
+			_, err = fmt.Fprintln(cmd.ErrOrStderr(), "scryer: Draft plan saved to "+absolute)
+			return err
 		}
 		if jsonOutput {
 			return nil
@@ -52,7 +72,7 @@ func New() *cobra.Command {
 	}}
 	generate.Flags().StringVar(&projects, "projects", "", "Projects CSV")
 	generate.Flags().StringVar(&dependencies, "dependencies", "", "Dependencies CSV")
-	generate.Flags().StringVarP(&output, "output", "o", "", "Save suggestions (.json or .html)")
+	generate.Flags().StringVarP(&output, "output", "o", "", "Save suggestions (.json/.html) or draft platform template (.yaml/.yml)")
 	generate.Flags().BoolVar(&jsonOutput, "json", false, "Print suggestion JSON to stdout")
 	generate.MarkFlagRequired("projects")
 	generate.MarkFlagRequired("dependencies")
