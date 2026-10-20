@@ -40,6 +40,7 @@
   const transform = () => world.setAttribute('transform', `translate(${x} ${y}) scale(${scale})`);
   function fit() {
     const visible = [...positions.entries()].filter(([id]) => matches(id)).map(([,p]) => p);
+    if (doc.suggestion) visible.push(...labels.map(p => ({x:p.x,y:p.y+35})));
     if (!visible.length) return;
     const minX=Math.min(...visible.map(p=>p.x)),minY=Math.min(...visible.map(p=>p.y))-35;
     const width=Math.max(...visible.map(p=>p.x))-minX+270,height=Math.max(...visible.map(p=>p.y))-minY+100;
