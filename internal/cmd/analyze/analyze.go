@@ -73,6 +73,7 @@ func New(service *application.Service) *cobra.Command {
 	flags.StringVarP(&output, "output", "o", "", "Save JSON, Markdown or HTML report")
 	command.MarkFlagsMutuallyExclusive("skip-tests", "test-command")
 	command.MarkFlagsMutuallyExclusive("json", "verbose")
+	command.AddCommand(newWorkspaceCommand())
 	return command
 }
 
