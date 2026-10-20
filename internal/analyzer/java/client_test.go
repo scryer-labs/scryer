@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -89,5 +90,25 @@ func TestCancellationStopsWorker(t *testing.T) {
 	}
 	if time.Since(started) > 5*time.Second {
 		t.Fatal("worker did not stop")
+	}
+}
+
+func TestJavaRuntimeSelection(t *testing.T) {
+	installation := filepath.Join(t.TempDir(), "bin", "scryer")
+	bundled := filepath.Join(filepath.Dir(installation), "..", "runtime", "bin", "java")
+	if got := javaExecutable(installation, "", "/target-java8"); got != "/target-java8/bin/java" {
+		t.Fatal(got)
+	}
+	if err := os.MkdirAll(filepath.Dir(bundled), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(bundled, []byte("runtime"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if got := javaExecutable(installation, "", "/target-java8"); got != bundled {
+		t.Fatal(got)
+	}
+	if got := javaExecutable(installation, "/explicit-java21", "/target-java8"); got != "/explicit-java21/bin/java" {
+		t.Fatal(got)
 	}
 }

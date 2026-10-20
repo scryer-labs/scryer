@@ -65,14 +65,15 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 	}
 	executable := c.Java
 	if executable == "" {
-		executable = "java"
-		home := os.Getenv("SCRYER_ANALYZER_JAVA_HOME")
-		if home == "" {
-			home = os.Getenv("JAVA_HOME")
+		installation, err := os.Executable()
+		if err != nil {
+			return contract.Document{}, err
 		}
-		if home != "" {
-			executable = filepath.Join(home, "bin", "java")
+		installation, err = filepath.EvalSymlinks(installation)
+		if err != nil {
+			return contract.Document{}, err
 		}
+		executable = javaExecutable(installation, os.Getenv("SCRYER_ANALYZER_JAVA_HOME"), os.Getenv("JAVA_HOME"))
 	}
 	// Target build/test timeouts remain stack-specific; the caller owns cancellation of the complete run.
 	cmd := process.Command(ctx, "", executable, "-cp", classpath, "com.edwardnoaland.scryer.worker.WorkerKt")
@@ -122,3 +123,19 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 }
 
 var _ contract.Analyzer = (*Client)(nil)
+
+// Explicit analyzer configuration wins; bundled Java avoids inheriting a target
+// project's Java 8/11 JAVA_HOME. Target build/test Java selection stays separate.
+func javaExecutable(installation, overrideHome, javaHome string) string {
+	if overrideHome != "" {
+		return filepath.Join(overrideHome, "bin", "java")
+	}
+	bundled := filepath.Join(filepath.Dir(installation), "..", "runtime", "bin", "java")
+	if info, err := os.Stat(bundled); err == nil && !info.IsDir() {
+		return bundled
+	}
+	if javaHome != "" {
+		return filepath.Join(javaHome, "bin", "java")
+	}
+	return "java"
+}

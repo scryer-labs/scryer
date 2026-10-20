@@ -17,7 +17,7 @@ jobs:
   build:
     name: Clean, test, build and package
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Check out repository
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -54,12 +54,15 @@ jobs:
           node --test scripts/test-report-graph.cjs
           node --check internal/report/assets/report.js
           node --check internal/report/assets/graph.js
+          node --check internal/report/assets/workspace.js
 
       - name: Build
         run: ./scripts/build
 
       - name: Package distributions
-        run: ./scripts/package
+        run: |
+          ./scripts/package
+          ./scripts/package --with-runtime
 
       - name: Verify packaged CLI and create checksums
         shell: bash
@@ -78,6 +81,12 @@ jobs:
             "$launcher" --help
             "$launcher" scan . --static
             "$launcher" analyze --help
+            if [[ -x "$(dirname "$launcher")/../runtime/bin/java" ]]; then
+              # No Go or external Java required; an invalid JAVA_HOME must not
+              # override the bundled analyzer runtime. Target builds are separate.
+              env -u SCRYER_ANALYZER_JAVA_HOME JAVA_HOME=/missing-java PATH=/usr/bin:/bin "$launcher" scan . --static --json > "$package_check_dir/bundled-scan.json"
+              python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["schemaVersion"] == 1' "$package_check_dir/bundled-scan.json"
+            fi
           done
           cd build/distributions
           sha256sum scryer-0.1.0-*.zip scryer-0.1.0-*.tar.gz > SHA256SUMS

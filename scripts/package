@@ -2,18 +2,43 @@
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
+with_runtime=false
+case "${1:-}" in
+  '') ;;
+  --with-runtime) with_runtime=true ;;
+  *) echo "Usage: $0 [--with-runtime]" >&2; exit 2 ;;
+esac
 ./scripts/build
 mkdir -p build/distributions
 os=$(go env GOOS)
 arch=$(go env GOARCH)
 name="scryer-0.1.0-$os-$arch"
+if [ "$with_runtime" = true ]; then name="$name-with-java21"; fi
 package_dir=$(mktemp -d "${TMPDIR:-/tmp}/scryer-package.XXXXXX")
 trap 'rm -rf "$package_dir"' EXIT HUP INT TERM
 mkdir -p "$package_dir/$name"
 cp -R build/install/scryer/bin build/install/scryer/lib "$package_dir/$name/"
 cp README.md "$package_dir/$name/"
-# Paths in package checks remain relative to the extracted installation, never the source checkout.
+if [ "$with_runtime" = true ]; then
+  # Resolve the host JDK; the resulting package targets this OS/architecture only.
+  if [ -n "${JAVA_HOME:-}" ]; then
+    runtime_jlink="$JAVA_HOME/bin/jlink"
+  else
+    runtime_jlink=$(command -v jlink)
+  fi
+  runtime_version=$("$runtime_jlink" --version)
+  case "$runtime_version" in
+    21|21.*) ;;
+    *) echo "Bundled distribution requires a Java 21 jlink, found $runtime_version" >&2; exit 1 ;;
+  esac
+  # Keep all JDK modules: javac/compiler and service providers are used by analysis.
+  # jlink includes the runtime's legal notices under runtime/legal.
+  "$runtime_jlink" --add-modules ALL-MODULE-PATH --bind-services \
+    --no-header-files --no-man-pages \
+    --output "$package_dir/$name/runtime"
+  "$package_dir/$name/runtime/bin/java" -version
+fi
 tar -czf "build/distributions/$name.tar.gz" -C "$package_dir" "$name"
 (cd "$package_dir" && zip -qr "$root/build/distributions/$name.zip" "$name")
-(cd build/distributions && shasum -a 256 "$name.tar.gz" "$name.zip" > "SHA256SUMS-$os-$arch")
+(cd build/distributions && shasum -a 256 "$name.tar.gz" "$name.zip" > "SHA256SUMS-$os-$arch$(if [ "$with_runtime" = true ]; then printf '%s' '-with-java21'; fi)")
 printf '%s\n' "build/distributions/$name.tar.gz" "build/distributions/$name.zip"
