@@ -21,7 +21,7 @@ go vet ./...
 ./scripts/package
 ```
 
-Packages contain the native Go executable and Java analyzer jars. Build on the target OS/architecture; these packages do not bundle a JRE. The usual installed path is still `build/install/scryer/bin/scryer`. Running `./gradlew installDist` alone now installs the internal JVM worker, **not** the public CLI; use `scripts/build` for the full application.
+Packages contain the native Go executable and Java analyzer jars. Build on the target OS/architecture. The default package needs external Java 21; `./scripts/package --with-runtime` creates a separate `-with-java21` distribution containing a jlink Java 21 runtime, compiler modules and legal notices. The usual installed path is still `build/install/scryer/bin/scryer`. Running `./gradlew installDist` alone now installs the internal JVM worker, **not** the public CLI; use `scripts/build` for the full application.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for layers and [docs/contracts/README.md](docs/contracts/README.md) for analyzer input/output contracts. Kotlin's former CLI/renderers live only in test sources to retain regression checks during the migration. The following sections describe the Java analyzer capabilities.
 
@@ -31,9 +31,9 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for layers and [docs/contracts/README.md]
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package responsibilities, the scan flow and code-style guidelines.
 
-GitHub Actions runs `clean`, `test` and `build` with the project Wrapper and Temurin Java 21 on pushes to `main`, pull requests and manual dispatch. The workflow uses a Gradle cache and validates the Wrapper. After checks pass, CI packages ZIP and TAR distributions, unpacks both and smoke-checks CLI help, a static scan and analyze help. Download `scryer-package-<commit SHA>` from the workflow run's Artifacts; it contains both archives and `SHA256SUMS` and is retained for 14 days. Packages include a native Go executable and JVM analyzer libraries; Java 21 or newer must be installed (the target project's test JVM is configured separately). Packages currently target the build machine's POSIX OS/architecture. Run `bin/scryer` directly; it is a native executable, not a shell script.
+GitHub Actions runs `clean`, `test` and `build` with the project Wrapper and Temurin Java 21 on pushes to `main`, pull requests and manual dispatch. The workflow uses a Gradle cache and validates the Wrapper. After checks pass, CI packages ZIP and TAR distributions, unpacks both and smoke-checks CLI help, a static scan and analyze help. Download `scryer-package-<commit SHA>` from the workflow run's Artifacts; it contains both archives and `SHA256SUMS` and is retained for 14 days. CI uploads both the slim package and a `-with-java21` package. The latter includes the analyzer runtime and needs neither Go nor an external Java installation (the target project's build/test JVM is configured separately). Packages currently target the build machine's POSIX OS/architecture. Run `bin/scryer` directly; it is a native executable, not a shell script.
 
-To package locally, run `./scripts/package`; archives are created under `build/distributions/`. This CI stage uploads workflow artifacts; it does not publish a GitHub Release.
+To package locally, run `./scripts/package` or `./scripts/package --with-runtime`; archives are created under `build/distributions/`. This CI stage uploads workflow artifacts; it does not publish a GitHub Release.
 
 Commit subjects follow `<type>: <summary>` with `feat`, `refactor`, `tests`, `docs`, `chore`, `fix` or `revert`; see [AGENTS.md](AGENTS.md).
 
@@ -331,7 +331,61 @@ and leading `#` metadata lines are ignored. Quoted CSV fields are supported.
 Duplicate project identities, ambiguous references and unknown consumers are
 errors; targets outside the project list are printed explicitly. Repeated edges
 are collapsed into one repository relationship, regardless of scope/version.
-These are declared relationships, not execution evidence or release constraints.
-This increment prints projects and arrows only; file output, phase suggestions
-and refactor-plan execution are not implemented yet. A directory literally named
+These are declared relationships, not execution evidence or release constraints. A directory literally named
 `workspace` can still be analyzed using `scryer analyze ./workspace --before … --after …`.
+
+
+### Workspace reports and suggested refactor phases
+
+```bash
+scryer analyze workspace --projects projects.csv --dependencies dependencies.csv -o dependencies.json
+scryer analyze workspace --projects projects.csv --dependencies dependencies.csv -o dependencies.html
+scryer analyze workspace --projects projects.csv --dependencies dependencies.csv --json
+scryer refactor-plan generate --projects projects.csv --dependencies dependencies.csv -o phases.json
+scryer refactor-plan generate --projects projects.csv --dependencies dependencies.csv -o phases.html
+scryer refactor-plan generate --projects projects.csv --dependencies dependencies.csv -o refactor-plan.yaml
+```
+
+Workspace JSON schema version 1 contains `kind`, `edgeDirection`, `facts.projects`,
+`facts.dependencies` and `notes`. Projects and edges have deterministic ordering;
+IDs remain complete, while HTML shortens labels and shows full IDs on selection.
+Edges point from consumer to dependency. Repeated relationships retain their
+observed scopes (`""` means unspecified). JSON prints to stdout only with `--json`;
+file-save messages go to stderr. No CSV output is provided.
+
+HTML is a single offline file with embedded logo/data/scripts: pan, zoom, fit,
+node dragging, search, selection, dependency tables and keyboard selection.
+Workspace reports do not invoke Java, Mod CLI, a build tool or the network.
+
+`refactor-plan generate` reuses the normalized facts and adds `suggestion` with
+`rule`, `phases`, `cyclic` and `blocked`. Kahn layering starts at **phase-1**;
+all declared internal relationships constrain order, including test and unknown
+scopes. External targets remain visible but do not constrain local phases.
+Cycle members are distinguished from downstream blocked projects using SCCs.
+Missing parent tables, incomplete input, version compatibility and release units
+cannot be inferred. Suggestions are not a prescribed migration strategy.
+
+The YAML is a **draft platform configuration**, not an executable OpenRewrite
+recipe or a stable platform execution contract. It defaults to `provider.type:
+mod-cli`, lists project identities and optional SCM repository paths, and leaves
+local `path: null` and `steps: []` for consumers to fill. Blocked projects appear
+in diagnostics rather than runnable phases. A platform may accept a manually
+edited plan with reordered/repeated repos; this generator does not execute,
+validate an edited plan, select recipes, apply changes or resume runs. Execution,
+review/apply gates, provider adapters and multi-repo report aggregation belong
+to the consuming platform.
+
+### Bundled Java runtime
+
+The `-with-java21` ZIP/TAR is a relocatable **directory distribution**, not one
+monolithic executable: keep `bin/`, `lib/` and `runtime/` together and run
+`bin/scryer`. Runtime selection is explicit `SCRYER_ANALYZER_JAVA_HOME`, then
+bundled `runtime/`, then `JAVA_HOME`/PATH. The package does not modify global Java
+configuration. Symlinked launchers resolve back to the installation directory.
+
+Packages are OS/architecture-specific; CI currently produces Linux amd64,
+while local packaging uses the build host. A future Podman image should extract
+the matching archive into a compatible base image. This is not a Windows `.exe`
+or a promise of compatibility with every Linux libc/base image. Target builds
+may still need Git, Maven/Gradle wrappers, network access and another JDK selected
+with `SCRYER_JAVA_HOME`. The Java 21 runtime is for Scryer's analyzer.

@@ -47,7 +47,7 @@ No existence of a test class, command success, static test route or method hit p
 
 Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod`; package boundaries are sufficient until independently versioned components are needed.
 
-Build tooling compiles the JVM analyzer and Go executable into `build/install/scryer`: `bin/scryer` is Go, `lib/java/*.jar` is the worker runtime. The native package contains both components and requires an external Java 21 runtime; no JRE is bundled. CI tests Go, JVM and browser graph behavior, then checks extracted packages.
+Build tooling compiles the JVM analyzer and Go executable into `build/install/scryer`: `bin/scryer` is Go, `lib/java/*.jar` is the worker runtime. The slim native package needs external Java 21; `scripts/package --with-runtime` adds a host-specific Java 21 image under `runtime/`, selected before inherited JAVA_HOME unless SCRYER_ANALYZER_JAVA_HOME is explicit. CI tests Go, JVM and browser graph behavior, then checks extracted packages.
 
 ## Workspace facts
 
@@ -55,3 +55,10 @@ Build tooling compiles the JVM analyzer and Go executable into `build/install/sc
 and cross-repository facts; the command owns flags and terminal presentation.
 No JVM analyzer is needed. Dependency arrows run from consumer to dependency.
 Declared edges are not runtime calls or inferred release-phase constraints.
+
+Workspace JSON and HTML render the same schema-versioned, sorted document.
+`refactor-plan generate` adds Kahn phase suggestions and SCC cycle diagnostics;
+all observed internal edges constrain the conservative ordering. Renderers do
+not recompute phases. YAML export is a draft configuration for a consuming
+platform, defaulting to mod-cli with no invented paths or recipe steps. Execution,
+review/apply/resume and provider adapters belong to that platform, not Scryer.
