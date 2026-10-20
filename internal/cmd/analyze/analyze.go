@@ -57,65 +57,9 @@ func New(service *application.Service) *cobra.Command {
 		return nil
 	}
 	command.RunE = func(cmd *cobra.Command, args []string) error {
-		directory, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-		if len(args) == 1 {
-			directory = args[0]
-		}
-		document, err := service.Analyze(cmd.Context(), stack, directory, request)
-		if err != nil {
-			return err
-		}
-		if jsonOutput {
-			data, err := report.JSON(document)
-			if err != nil {
-				return err
-			}
-			if _, err = cmd.OutOrStdout().Write(data); err != nil {
-				return err
-			}
-		} else {
-			if err = report.Terminal(document, cmd.OutOrStdout(), false, false, verbose, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
-				return err
-			}
-		}
-		if output != "" {
-			var data []byte
-			switch strings.ToLower(filepath.Ext(output)) {
-			case ".json":
-				data, err = report.JSON(document)
-			case ".md":
-				data, err = report.Markdown(document, false)
-			case ".html":
-				data, err = report.HTML(document)
-			}
-			if err != nil {
-				return err
-			}
-			absolute, err := filepath.Abs(output)
-			if err != nil {
-				return err
-			}
-			if err = report.WriteFile(absolute, data); err != nil {
-				return err
-			}
-			fmt.Fprintln(cmd.ErrOrStderr(), "scryer: Report saved to "+absolute)
-		}
-		var result struct {
-			Execution struct {
-				Status string `json:"status"`
-			} `json:"execution"`
-		}
-		if err = json.Unmarshal(document.Data, &result); err != nil {
-			return err
-		}
-		if result.Execution.Status != "SUCCEEDED" && result.Execution.Status != "SKIPPED" {
-			return ExecutionError{result.Execution.Status}
-		}
-		return nil
+		return runProjectAnalysis(cmd, args, service, request, stack, output, color, jsonOutput, verbose)
 	}
+
 	flags := command.Flags()
 	flags.StringVar(&color, "color", "auto", "auto, always or never")
 	flags.StringVar(&stack, "stack", "java", "Technology stack (currently java)")
@@ -130,4 +74,65 @@ func New(service *application.Service) *cobra.Command {
 	command.MarkFlagsMutuallyExclusive("skip-tests", "test-command")
 	command.MarkFlagsMutuallyExclusive("json", "verbose")
 	return command
+}
+
+func runProjectAnalysis(cmd *cobra.Command, args []string, service *application.Service, request contract.AnalyzeRequest, stack, output, color string, jsonOutput, verbose bool) error {
+	directory, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if len(args) == 1 {
+		directory = args[0]
+	}
+	document, err := service.Analyze(cmd.Context(), stack, directory, request)
+	if err != nil {
+		return err
+	}
+	if jsonOutput {
+		data, err := report.JSON(document)
+		if err != nil {
+			return err
+		}
+		if _, err = cmd.OutOrStdout().Write(data); err != nil {
+			return err
+		}
+	} else {
+		if err = report.Terminal(document, cmd.OutOrStdout(), false, false, verbose, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
+			return err
+		}
+	}
+	if output != "" {
+		var data []byte
+		switch strings.ToLower(filepath.Ext(output)) {
+		case ".json":
+			data, err = report.JSON(document)
+		case ".md":
+			data, err = report.Markdown(document, false)
+		case ".html":
+			data, err = report.HTML(document)
+		}
+		if err != nil {
+			return err
+		}
+		absolute, err := filepath.Abs(output)
+		if err != nil {
+			return err
+		}
+		if err = report.WriteFile(absolute, data); err != nil {
+			return err
+		}
+		fmt.Fprintln(cmd.ErrOrStderr(), "scryer: Report saved to "+absolute)
+	}
+	var result struct {
+		Execution struct {
+			Status string `json:"status"`
+		} `json:"execution"`
+	}
+	if err = json.Unmarshal(document.Data, &result); err != nil {
+		return err
+	}
+	if result.Execution.Status != "SUCCEEDED" && result.Execution.Status != "SKIPPED" {
+		return ExecutionError{result.Execution.Status}
+	}
+	return nil
 }
