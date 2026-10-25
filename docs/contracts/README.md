@@ -1,6 +1,6 @@
 # Analyzer contract v1
 
-Go owns the public commands, repository/snapshot lifecycle and report rendering. An analyzer supplies facts through `internal/contract.Analyzer`; no analyzer receives color, verbosity or output-file parameters. Only Java is registered initially. A C++ analyzer may implement this interface in Go directly or use a separate process adapter.
+Go owns the public commands, repository/snapshot lifecycle and report rendering. An analyzer supplies facts through `internal/contract.Analyzer`; no analyzer receives color, verbosity or output-file parameters. Only Java is registered today. The planned [independent analyzer distribution](../decisions/001-analyzer-distribution.md) is not an existing install/discovery protocol. An external Go analyzer cannot import the host's `internal/contract` package; M1 must establish the public/protocol boundary before extraction. An in-host analyzer may implement the Go interface directly; an external Go-wrapped analyzer needs the planned public/protocol boundary.
 
 ## Process transport
 

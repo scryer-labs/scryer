@@ -1,4 +1,12 @@
-# Scan verification — 2026-10-08
+# Verification history — early Java increments
+
+**Historical evidence.** This log begins with checks from 2026-10-08 and preserves
+observations from successive early increments. Test totals, CLI placeholders,
+missing features and CI/package descriptions below describe their respective
+increments, not today's implementation. Do not combine these totals or treat
+historical failures/limitations as fresh verification. Current behavior is in the
+[command reference](docs/CLI.md), current CI in the workflow, and future work in
+[milestones](docs/MILESTONES.md). Re-run the repository checks for new changes.
 
 Scryer build/test/distribution command:
 

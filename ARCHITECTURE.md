@@ -45,7 +45,7 @@ No existence of a test class, command success, static test route or method hit p
 
 ## Code and dependency rules
 
-Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod`; package boundaries are sufficient until independently versioned components are needed.
+Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod` for the current application; do not scatter modules through the existing tree. Independently versioned analyzer repositories are now planned in [decision 001](docs/decisions/001-analyzer-distribution.md), which records the next independent distribution boundary. That extraction and an external Go contract boundary are not implemented yet.
 
 Build tooling compiles the JVM analyzer and Go executable into `build/install/scryer`: `bin/scryer` is Go, `lib/java/*.jar` is the worker runtime. The slim native package needs external Java 21; `scripts/package --with-runtime` adds a host-specific Java 21 image under `runtime/`, selected before inherited JAVA_HOME unless SCRYER_ANALYZER_JAVA_HOME is explicit. CI tests Go, JVM and browser graph behavior, then checks extracted packages.
 
@@ -62,3 +62,12 @@ all observed internal edges constrain the conservative ordering. Renderers do
 not recompute phases. YAML export is a draft configuration for a consuming
 platform, defaulting to mod-cli with no invented paths or recipe steps. Execution,
 review/apply/resume and provider adapters belong to that platform, not Scryer.
+
+## Documentation and future work
+
+This file describes the implementation, not the future plugin system. The
+[documentation index](docs/README.md) separates current contracts from plans;
+[milestones](docs/MILESTONES.md) owns delivery order and
+[technical debt](docs/TECH-DEBT.md) records existing limitations. Java extraction,
+Go-wrapped plugin installation, non-Java analysis and architecture/test-strategy
+capabilities must not be described as present until their slices are implemented.
