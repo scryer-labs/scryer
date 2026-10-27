@@ -20,4 +20,3 @@ Reference docs say what works **now**. Decisions say **why and what was agreed**
 Milestones say **what comes next**. Do not scatter next-step lists through command
 examples or rewrite historical verification as if checks were run today. Update
 changed agreements explicitly rather than leaving conflicting directions behind.
-
