@@ -84,3 +84,17 @@ than embedding UI-specific interpretation inside language collectors.
 [Milestones](../MILESTONES.md) owns priority/status. [Technical debt](../TECH-DEBT.md)
 owns existing limitations. Keep [architecture](../../ARCHITECTURE.md) descriptive
 of implemented code until extraction actually changes package ownership.
+
+## 2026-10-27 addendum: CLI semantics and state ownership
+
+Review the public command/fact contract before extraction; current CLI behavior
+remains authoritative until explicitly changed. Validate the extracted engine via
+standalone CLI and Orrery's provider without coupling engine implementation to
+Orrery. Engine/repository names remain undecided; package installation must not
+require Java for non-Java capabilities. Existing optional Java runtime packaging
+requirements remain unchanged.
+
+Scryer does not own a persistent workspace scan timeline or Orrery plan/history
+identities. Local tool installation/configuration, temporary snapshots, report
+artifacts and caches are compatible with this boundary. See [product direction](../PRODUCT-DIRECTION.md)
+for the next cross-stack/architecture validation path.

@@ -1,8 +1,9 @@
 # Product milestones
 
-Updated 2026-10-25. This is the single priority/status index, not a release schedule
-or authorization to implement every stage. The next delivery focus is analyzer
-extraction and installation. Additional language/relationship, architecture and
+Updated 2026-10-27. This is the single priority/status index, not a release schedule
+or authorization to implement every stage. The next delivery focus is public CLI
+semantic review, then analyzer extraction and installation; see
+[product direction](PRODUCT-DIRECTION.md). Additional language/relationship, architecture and
 test-analysis goals are an incremental direction, not one promised short sprint.
 Existing implementation gaps remain in [technical debt](TECH-DEBT.md).
 
@@ -23,23 +24,29 @@ Existing implementation gaps remain in [technical debt](TECH-DEBT.md).
 See [decision 001](decisions/001-analyzer-distribution.md). Implement in runnable
 slices, retaining Java behavior throughout the split:
 
-1. [ ] Establish an external analyzer package/Go-wrapper boundary that does not
+1. [ ] Review/agree CLI semantics, report/fact compatibility and concrete invocation
+   examples before extraction; retain current command behavior until a deliberate
+   change is implemented. Audit project/workspace scope, scan/analyze meaning,
+   stdout/file formats, diagnostics and partial/error outcomes.
+2. [ ] Establish an external analyzer package/Go-wrapper boundary that does not
    depend on importing this repository's `internal/` packages. Decide the minimal
    public contract/SDK and compatibility/capability handshake from the working adapter.
-2. [ ] Extract the Java analyzer into its own repository, with a Go entry point
+3. [ ] Extract the Java analyzer into its own repository, with a Go entry point
    wrapping the Kotlin/JVM worker. Kotlin still owns Java-specific analysis; Go
    packaging does not mean rewriting that analysis in Go. No repository is created
    by this documentation change.
-3. [ ] Add plugin installation/discovery through a command such as
+4. [ ] Add plugin installation/discovery through a command such as
    `scryer install java`, independent analyzer versions and platform-aware package
    selection. Define distribution source, integrity checks, local installation,
    replacement/rollback and missing/incompatible-analyzer diagnostics.
-4. [ ] Make Java analysis run through the installed analyzer rather than a required
+5. [ ] Make Java analysis run through the installed analyzer rather than a required
    in-tree implementation. Retain standalone Scryer use and language-neutral reports;
    record tool/analyzer/schema versions so consumers can interpret historical facts.
-5. [ ] Split builds/releases and move Java-specific tests with their owner while
+6. [ ] Split builds/releases and move Java-specific tests with their owner while
    preserving host/adapter contract and end-to-end package checks. Define how the
    optional Java 21 runtime ships with the independently installed analyzer.
+7. [ ] Validate the evolved CLI/engine contract through Orrery's official Scryer
+   provider and its own development pipeline; keep standalone CLI use equally valid.
 
 The existing Go `Analyzer` interface and Java process adapter are the starting
 point, not evidence that install/discovery, a plugin SDK or Go dynamic-module
@@ -47,14 +54,17 @@ loading already exists. No external Go ABI/plugin mechanism is selected.
 
 ## Priority 2 — M2: More stacks and relationship facts
 
-Order individual stacks by real fixtures/use cases; no per-language order is
-agreed yet. Deliver static facts first, then richer resolution/evidence where the
+First compare bounded C++, Rust and Tauri/mixed-stack prototypes by measured
+effort and value on real fixtures; choose one rather than committing to complete
+all three. Go and Markdown follow incrementally. Full semantic support order is
+not agreed. Deliver static facts first, then richer resolution/evidence where the
 stack supports it. Unsupported capabilities must stay explicit.
 
 - [ ] Markdown: document structure and local/external link/reference relationships,
   with unresolved links and scope limits rather than treating documents as Java code.
 - [ ] C++: project/build structure, code/symbol observations and declared/resolved
   library dependencies, with compiler/build-system and generated-code boundaries.
+- [ ] Go: module/package/build and dependency facts, then richer supported evidence.
 - [ ] Rust: crate/workspace/module relationships, code facts and library dependency
   graphs, retaining requested/resolved versions and configuration where available.
 - [ ] Tauri and mixed-language repositories: compose relevant analyzers, represent
@@ -73,6 +83,10 @@ must not depend on Orrery. Existing CSV workspace facts remain supported rather
 than requiring the future discovery engine.
 
 ## Priority 3 — M3: Architecture facts across supported stacks
+
+Deliver usable project-level facts early enough for the first Orrery interactive
+architecture view; do not wait for every M2 language. Keep the fact producer here
+and build the consumer diagram/navigation in Orrery.
 
 - [ ] Build a language-neutral, evidence-backed architecture model: projects,
   components/modules, optional layer assignments and typed relationships, with
