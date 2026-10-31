@@ -71,7 +71,8 @@ installation/extraction and an Orrery provider update. These changes are **not
 implemented**; current usage remains in [CLI](docs/CLI.md). See
 [decision 002](docs/decisions/002-scan-scopes-and-fact-boundary.md) and
 [milestones](docs/MILESTONES.md). Scryer supplies facts through language engines;
-consumers own judgments, plan execution and long-lived history. macOS is the
+shared evidence-backed checks may follow, while consumers own business/design
+judgments, plan execution and long-lived history. macOS is the
 primary development/acceptance platform; Windows migration is deferred.
 
 Contributions follow [AGENTS.md](AGENTS.md), including `<type>: <summary>` commits.

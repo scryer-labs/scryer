@@ -19,8 +19,10 @@ compatible with this boundary. Existing retained evidence is not deleted or
 reinterpreted by this decision.
 
 Language/build-specific parsing, symbol resolution and evidence-backed relationship
-extraction belong to engines. Architectural fitness, rule verdicts, test adequacy
-and refactoring recommendations belong to consumers. Existing Java impact/evidence
+extraction belong to engines. Core may later provide shared, reproducible rules
+for code smells, bounded test-effectiveness checks and evidence-backed refactoring
+suggestions. Business/design trade-offs and consultant-style advice remain human
+or consumer responsibilities. Existing Java impact/evidence
 matching and workspace phase/plan suggestions still exist; the CLI review must
 classify them before deliberately migrating behavior. This direction does not
 silently remove current commands or evidence.
@@ -46,6 +48,27 @@ options; project scans can also use defaults without a configuration file.
 See [decision 002](decisions/002-scan-scopes-and-fact-boundary.md) for ownership,
 output and unsupported/partial-result principles. Filenames, schema and command
 grammar are not yet implemented or finalized.
+
+## Stack discovery and shared checks
+
+Core should identify project/workspace technology-stack signals without installed
+language engines, using lightweight file/manifest/build-declaration detection with
+source evidence. Workspace discovery uses configured membership. A composition use
+case can match these signals against an available-engine catalog and installed
+inventory, then install missing compatible engines. Start with a bundled catalog;
+auto-install follows installation lifecycle validation and requires an explicit
+command/option. Ordinary scanning does not silently install engines.
+
+Shared checks operate on common facts rather than being reimplemented in every
+engine repository. Declarative mappings can describe language-to-fact normalization
+and rule conditions; JSON configuration does not replace semantic extraction or
+shared algorithms. Engine capabilities progressively cover symbols, typed relations,
+types, source locations, control/data flow and test/execution evidence. Rules declare
+the facts they require; missing capabilities/evidence remain unsupported or unknown.
+Findings and raw facts remain distinct. See
+[decision 003](decisions/003-stack-discovery-and-shared-rules.md), which refines the
+previous blanket exclusion of rule judgments. `suggest`/`check` names and schema
+remain open; derive the shared rule format from concrete cross-language cases later.
 
 ## Source-first facts and supported platform
 

@@ -2,6 +2,9 @@
 
 Date: 2026-10-31
 Status: Agreed direction; CLI/configuration/engine changes are not implemented.
+The blanket rule-judgment exclusion below is refined by
+[decision 003](003-stack-discovery-and-shared-rules.md): shared reproducible checks
+and bounded suggestions may belong to Scryer; consultant-style advice remains outside.
 
 ## Context
 

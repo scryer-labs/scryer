@@ -23,12 +23,15 @@ configuration below are not current capabilities.
 - [ ] Agree concrete project/workspace journeys and command grammar before changing
   commands. Workspace becomes a first-class scope rather than `analyze workspace`.
   Classify existing scan/analyze behavior, evidence matching and phase/plan
-  suggestions against the facts-only boundary; preserve existing behavior until
+  suggestions against the fact/shared-rule boundary; preserve existing behavior until
   a deliberate migration is implemented.
 - [ ] Define handwritten workspace/project `.scryer/` configuration: retained,
   explicit membership using workspace-relative paths; project-level scan options;
   defaults for standalone project scans; root project `.` support. No directory-based
   membership guessing or reverse membership duplicated in project configuration.
+- [ ] Include engine-independent project/workspace technology-stack discovery in
+  CLI design: retain evidence for file/manifest/build signals, support mixed stacks
+  and use configured workspace membership without automatically registering projects.
 - [ ] Define JSON results for every command, default JSON delivery, stdout/file
   formats, stderr diagnostics/progress, exit codes and partial-result semantics.
   Include provenance and distinguish missing engine, incompatible engine,
@@ -49,10 +52,15 @@ See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable sli
    actual request/response before moving the Java implementation. Commands such as
    `scryer engine install`, `uninstall` and `list` are provisional. A failed install
    must not appear as a usable engine. Public download/update infrastructure can wait.
-3. [ ] Move Java into the user-created `scryer-java-engine` repository, with a Go
+3. [ ] Compose stack discovery, catalog/installed-inventory matching and installation
+   into explicit auto-install after the installation primitives are verified. Start
+   with a bundled available-engine catalog; preserve compatibility and per-engine
+   outcomes. Ordinary scans do not install engines implicitly. Exact grammar and
+   matching/version policy remain to be agreed.
+4. [ ] Move Java into the user-created `scryer-java-engine` repository, with a Go
    entry point around Kotlin/JVM. Preserve Java capabilities and evidence; Java
    runtime discovery/optional runtime packaging belong with that engine.
-4. [ ] Invoke installed Java through ordinary Core commands; keep non-Java Core
+5. [ ] Invoke installed Java through ordinary Core commands; keep non-Java Core
    operations usable without a JVM. Split tests/builds/releases by ownership and
    retain host/engine compatibility, cancellation and package smoke checks.
 
@@ -88,8 +96,8 @@ preselect an implementation order or promise complete semantic engines together.
   signals and explicit user mappings. Folder nesting is not proof of intended
   architectural layers. Deliver useful project facts before every language is ready.
 - [ ] Extend test inventory/execution evidence where supported; preserve independent
-  datasets, freshness, provenance and unknowns. Test adequacy and strategy judgments
-  belong to consumers rather than a new Scryer assessment engine.
+  datasets, freshness, provenance and unknowns. These facts can support later shared
+  checks; no aggregate hit/count alone proves test adequacy.
 
 ## Priority 4 — Workspace-local cross-repository relationships
 
@@ -117,8 +125,22 @@ distinct from an engine's missing capability or incomplete scan coverage.
 - [ ] Revisit Windows development/distribution for the input-method project after
   Scryer and Orrery stabilize; do not add Windows acceptance work now.
 
-Architecture-rule evaluation, Hunch-test comparison, refactoring recommendations,
-test-effectiveness/strategy judgments and retained evolution timelines belong to
-consumers. This supersedes earlier Scryer roadmap entries for an architecture-guard
-DSL and judgment engine. Scryer supplies versioned facts, evidence and explicit
-before/after observations without owning the persistent history or verdict.
+## Later capability — Shared checks and bounded suggestions
+
+- [ ] After a second language engine and one or two concrete rule cases, derive a
+  shared rule layer over common facts. Avoid duplicated rule implementations across
+  engine repositories. Define declarative fact mappings/conditions and reusable
+  algorithms together; do not assume JSON alone supplies missing language semantics.
+- [ ] Let engines declare available symbol/relation/type/control-flow/data-flow and
+  test/execution capabilities incrementally. Rules state required capabilities and
+  retain identity/version, parameters, source provenance and evidence. Missing facts
+  yield unsupported/unknown results rather than a pass.
+- [ ] Add reproducible code-smell, bounded test-effectiveness and evidence-backed
+  refactoring checks/suggestions. Keep findings separate from raw facts and report
+  explicit limits. `suggest` and `check` are provisional names, not approved grammar.
+
+[Decision 003](decisions/003-stack-discovery-and-shared-rules.md) refines the earlier
+blanket assignment of judgments to consumers. Business/design trade-offs,
+consultant-style advice, persistent evolution history and plan execution remain
+outside Scryer. The shared-rule capability does not block the current CLI/Java
+extraction and **2.1** Orrery adaptation sequence.

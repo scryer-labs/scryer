@@ -14,6 +14,7 @@ Plans and decisions are not proof that a feature exists.
 | [Milestones](MILESTONES.md) | Single priority/status index for implemented and planned capabilities. |
 | [Analyzer distribution decision](decisions/001-analyzer-distribution.md) | Agreed repository/Go-wrapper/install direction, rationale and unresolved packaging details. |
 | [Scan scopes and fact-ownership decision](decisions/002-scan-scopes-and-fact-boundary.md) | Planned project/workspace configuration, source-first facts, JSON outcomes and consumer boundaries. |
+| [Stack discovery and shared-rule decision](decisions/003-stack-discovery-and-shared-rules.md) | Engine-independent stack detection, explicit auto-install composition and shared evidence-backed checks. |
 | [Technical debt](TECH-DEBT.md) | Existing implementation gaps and deferred maintenance, not a duplicate feature roadmap. |
 | [Verification history](../VERIFICATION.md) | Preserved early verification observations, not current test totals or current behavior. |
 
