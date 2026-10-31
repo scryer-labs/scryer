@@ -65,12 +65,13 @@ Release publication is configured. See [runtime/package details](docs/CLI.md#bun
 - [Technical debt](docs/TECH-DEBT.md): existing limitations, separate from new features.
 - [Verification history](VERIFICATION.md): earlier observations, not current test totals.
 
-The next direction is an independently distributed, Go-wrapped Java analyzer,
-installed through a command such as `scryer install java`. This command and the
-plugin installer are **not implemented**. Non-Java, architecture-rule and broader
-test-strategy analysis are planned; the milestone index distinguishes them from
-current Java capabilities. Scryer supplies facts and bounded analysis; consuming
-platforms such as Orrery own plan execution, human review and long-lived workspace
-orchestration.
+The next direction is explicit project/workspace commands with handwritten
+`.scryer/` configuration and JSON contracts, followed by independent Java engine
+installation/extraction and an Orrery provider update. These changes are **not
+implemented**; current usage remains in [CLI](docs/CLI.md). See
+[decision 002](docs/decisions/002-scan-scopes-and-fact-boundary.md) and
+[milestones](docs/MILESTONES.md). Scryer supplies facts through language engines;
+consumers own judgments, plan execution and long-lived history. macOS is the
+primary development/acceptance platform; Windows migration is deferred.
 
 Contributions follow [AGENTS.md](AGENTS.md), including `<type>: <summary>` commits.

@@ -1,82 +1,102 @@
 # Product direction and engine handoff
 
-Agreed 2026-10-27. Planned boundaries, not additional implemented CLI commands or
-an installer. [Milestones](MILESTONES.md) owns priority/status; [CLI](CLI.md) and
+Updated 2026-10-31. Planned boundaries, not implemented commands or configuration.
+[Milestones](MILESTONES.md) owns delivery order; [CLI](CLI.md) and
 [architecture](../ARCHITECTURE.md) describe current behavior.
 
 ## Independent facts tool
 
-Scryer is an independent, lightweight code-fact discovery and analysis tool. Given
-a repository, snapshots or supported workspace inputs, it produces structured facts
-and human-readable reports. It must remain useful without Orrery. Orrery preserves,
-organizes, visualizes and acts on those facts in a persistent workspace context.
+Scryer is an independent fact-scanning tool with installable language engines.
+It produces structured facts and human-readable reports for people, AI and other
+consumers, including Orrery and a future Hunch-test comparator. Future plugin
+categories are possible, but do not justify a general plugin framework now.
 
-Scryer must not become the owner of Orrery scan IDs, persistent scan timelines,
-workspace registration, plan/run history or UI. Being stateless with respect to
-that engineering context does not forbid installed-engine settings, temporary
-analysis checkouts, output files or regenerable caches. Existing retained evidence
-artifacts also remain valid; this decision does not delete or reinterpret them.
-Operation/request IDs and source revision provenance are not Orrery's history IDs.
+Scryer does not own scan history, tracking, persistent timelines, plan execution
+or design judgments. It may scan explicitly supplied Git history or branch-policy
+inputs in the future without retaining its own history. Installed-engine settings,
+portable `.scryer/` configuration, temporary snapshots, output files and caches are
+compatible with this boundary. Existing retained evidence is not deleted or
+reinterpreted by this decision.
 
-Scryer owns bounded extraction/analysis and architecture-rule evaluation. Engines
-own language/build-specific implementation. Shared command/report contracts and
-presentation remain outside language collectors. Engine and Orrery provider
-interfaces need not be the same: independent contracts serve different consumers.
+Language/build-specific parsing, symbol resolution and evidence-backed relationship
+extraction belong to engines. Architectural fitness, rule verdicts, test adequacy
+and refactoring recommendations belong to consumers. Existing Java impact/evidence
+matching and workspace phase/plan suggestions still exist; the CLI review must
+classify them before deliberately migrating behavior. This direction does not
+silently remove current commands or evidence.
 
-## Next development sequence
+Shared CLI/fact contracts and presentation stay in Core. Engine interfaces do not
+import Orrery types or have to match Orrery provider interfaces. Terminal, JSON and
+other reports derive from the same facts; presentation must not invent evidence.
+Every command, including engine management, must provide a JSON result contract.
+The exact default stdout/file delivery policy remains to be designed.
 
-Orrery first completes its bounded foundation: usable local execution/providers,
-parameters/results/reports, retry and workspace access. It can then run development
-checks for Scryer while primary implementation returns here. Orrery's official
-Scryer provider consumes public CLI/fact contracts; no engine imports Orrery types.
+## Explicit scan scopes
 
-1. Review public CLI semantics before moving the Java engine. Define scan versus
-   analyze, project/workspace scope, input/ref options, stdout versus output-file
-   formats, diagnostics/progress, exit/partial-result semantics and compatibility.
-   Write concrete examples and contract tests before renaming commands/flags.
-   Do not invent the new grammar in this planning update.
-2. Establish the smallest external engine boundary from existing process/contracts,
-   then extract the Java engine and its runtime packaging. Preserve existing Java
-   capabilities and report evidence; keep Core usable without a JVM for non-Java
-   operations. Java runtime requirements belong to the optional Java engine.
-3. Update the Orrery Scryer provider against the agreed CLI/version/capability
-   contract and validate the integration in actual Scryer development.
-4. Prototype C++, Rust or a Tauri/mixed-stack slice and choose the first by measured
-   effort and usefulness on a real repository. Repository/package names such as
-   `scryer-java-engine` or `scryer-lang-java` are candidates, not selected names.
-   Do not promise all three complete semantic engines at once. Tauri composes Rust,
-   frontend and configuration facts plus supported bridge relations; it is not a
-   standalone source language.
-5. Add Go and Markdown capabilities incrementally afterward. Go package/build facts
-   and Markdown document/link facts have distinct semantics. Explicit unknowns and
-   unsupported operations are preferable to a Java-shaped universal model.
+A project is a repository and may contain multiple languages and build modules.
+A workspace explicitly groups projects and their cross-repository relationships.
+A build-system workspace/module is a project-internal structure, not automatically
+Scryer's workspace scope. Workspace must become a first-class scope rather than
+remain a special case under `analyze`.
 
-The Java extraction/distribution decision remains authoritative on package/runtime
-constraints; this adds the CLI review and real-consumer validation before/around it.
-No repository, command rename, install mechanism or new engine is created here.
+Workspace and project `.scryer/` configuration will initially be handwritten.
+Workspace configuration retains membership, so repeated scans do not require
+re-entering project paths. Project configuration holds project-specific scan
+options; project scans can also use defaults without a configuration file.
+See [decision 002](decisions/002-scan-scopes-and-fact-boundary.md) for ownership,
+output and unsupported/partial-result principles. Filenames, schema and command
+grammar are not yet implemented or finalized.
 
-## Architecture facts and the consumer loop
+## Source-first facts and supported platform
 
-A valuable first architecture slice is a small real C++ repository: source →
-versioned architecture JSON → Orrery persisted scan → interactive project diagram
-→ source/evidence navigation. Return to Orrery for that UI after usable project
-facts exist; do not require every language or IPC relationship before the first view.
+Basic source/symbol extraction must not require the target project to build or run.
+Richer resolution may need dependencies, generated sources, compiler options or
+build metadata. Execution evidence requires explicit execution capabilities/options.
+Retain available facts and identify unresolved or unsupported portions rather than
+requiring a successful target build before producing anything.
 
-Facts should retain typed entities/edges, source locations and relation evidence,
-coverage/unknowns, source state and engine/schema/tool provenance. Keep observed
-facts, explicit user architecture mappings/constraints and inferred relationships
-separate. Static/shared linking, package dependencies, calls, IPC and REST are not
-one undifferentiated dependency relation. Nodes may have several evidence locations.
-Dynamic routing, dispatch and cross-process matching need supported pattern scopes;
-static analysis cannot claim exhaustive runtime behavior.
+macOS is the current primary development and acceptance platform. Windows migration
+for daily input-method development is deferred until Scryer and Orrery are stable;
+Ubuntu-specific IPC work is outside the current scope. Existing Ubuntu CI remains
+in place. Keep platform boundaries clear without adding Windows work now.
 
-Orrery owns durable history, code-state associations, user display-name overrides,
-queries and interactive rendering. It may compare saved snapshots; Scryer can
-analyze explicitly supplied before/after inputs without maintaining that timeline.
-Web/nvim/TUI should consume Orrery's shared context, not independently duplicate
-history or call engines behind the backend's back. Diagrams/reports derive from the
-same facts rather than becoming competing analysis sources.
+## Engine handoff and consumer loop
 
-Architecture-guard DSL, richer cross-repository communication and historical
-architecture evolution follow bounded fact extraction. Rule expectations are not
-observed facts; missing evidence cannot become a passing architecture test.
+First agree CLI/configuration/output contracts. Then establish the minimal external
+engine boundary, verify local install/uninstall/list plus an actual protocol call,
+and move Java into the user-created `scryer-java-engine` repository. The `engine`
+category name is provisional. Keep existing Java capabilities and evidence during
+the split, with Java runtime requirements owned by the optional Java engine.
+Java feature expansion is not the next focus.
+
+After extraction, milestone **2.1** updates Orrery's Scryer provider for the new CLI
+and engine contract. Add a new published provider version; do not edit immutable
+published provider YAML. Validate standalone use and the Orrery integration.
+
+The next language is chosen at that point. C++, Rust, TypeScript, Go and Markdown
+are target capabilities; their implementation order is undecided. Mixed-language
+projects include Scriptorium Ink (Tauri), Orrery (TypeScript/HTML/CSS/Rust) and
+Scryer (Go/Kotlin). Compose available engines and expose coverage gaps before
+attempting complete cross-language semantic linkage. Tauri is a framework, not a
+source language.
+
+Facts should cover symbols, typed relations, architecture structure/pattern signals,
+internal dependencies and workspace-local cross-repository dependencies. Prioritize
+library/package relationships, then IPC (shared memory, named pipes and supported
+macOS mechanisms), then REST provider/consumer relationships. Preserve package,
+version, configuration, source and engine/schema provenance. A matching name alone
+is not proof that a local checkout supplies a dependency or that two endpoints
+communicate. Candidate matches and unresolved relations remain explicit.
+
+Orrery owns durable history, code-state associations, interactive architecture
+views and user annotations. Consumers may compare supplied facts and evaluate
+architectural expectations; missing evidence must not become a passing judgment.
+Do not wait for every language or IPC mechanism before exposing useful project facts.
+
+## Development acceptance
+
+Edward will establish the scryer-lab workspace and its Orrery acceptance plan,
+aligned with GitHub Actions. Once available, invoke that plan and inspect its
+recorded results; Edward reviews the same run in Orrery. Do not replace it with
+separately executed local test/build commands or change its scope without agreement.
+The plan is not claimed to exist yet. See [contributor instructions](../AGENTS.md).

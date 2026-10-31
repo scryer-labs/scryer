@@ -1,9 +1,9 @@
 # Technical debt and existing analysis limitations
 
-Updated 2026-10-25. Item IDs are not priority ranks. New analyzer installation,
-language support, architecture rules and test-strategy diagrams belong in
-[milestones](MILESTONES.md), not duplicated implementation tasks here. The next
-analyzer-extraction slice takes precedence unless a real regression requires a fix.
+Updated 2026-10-31. Item IDs are not priority ranks. New analyzer installation,
+language support and architecture/test fact capabilities belong in
+[milestones](MILESTONES.md), not duplicated implementation tasks here. The CLI/configuration and
+engine-extraction sequence takes precedence unless a real regression requires a fix.
 
 ## TD-001: Finish the Go/JVM migration cleanup
 
@@ -36,8 +36,9 @@ outputs. Custom output locations, other coverage formats and test-to-method caus
 attribution are incomplete/unavailable. Freshness, class-ID provenance and separate
 datasets must survive new adapters. Static test-role file counts, aggregate method
 hits and command success do not establish assertion effectiveness. Address a real
-collector/evidence use case at a time; broader strategy analysis is M4, not a
-promise to infer missing evidence from current reports.
+collector/evidence use case at a time; test-strategy judgments belong to consumers under
+[decision 002](decisions/002-scan-scopes-and-fact-boundary.md), not a promise to infer
+missing evidence from current reports.
 
 ## TD-004: Packaging portability and independent release transition
 

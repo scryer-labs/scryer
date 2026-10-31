@@ -13,3 +13,14 @@ Commit subjects use `<type>: <summary>`. Allowed types are:
 - `revert`: reverting an earlier change
 
 Choose the type for the primary purpose of the commit. Keep summaries concise and specific. Do not rewrite existing history unless the user requests it.
+
+## Development acceptance
+
+Agreed 2026-10-31: Edward will create the scryer-lab workspace and an Orrery plan
+aligned with GitHub Actions. Once configured, trigger that plan for acceptance and
+inspect its recorded results so Edward can review the same run in Orrery. Do not
+substitute separately executed local test/build commands or modify the plan's
+commands/scope without agreement. Do not assume a plan ID or that setup is complete;
+resolve the actual plan when available. Read-only inspection and documentation
+checks remain appropriate. Report exactly which checks ran and any missing
+acceptance evidence; documentation checks are not code-pipeline acceptance.

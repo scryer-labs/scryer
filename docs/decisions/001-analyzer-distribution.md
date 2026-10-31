@@ -98,3 +98,20 @@ Scryer does not own a persistent workspace scan timeline or Orrery plan/history
 identities. Local tool installation/configuration, temporary snapshots, report
 artifacts and caches are compatible with this boundary. See [product direction](../PRODUCT-DIRECTION.md)
 for the next cross-stack/architecture validation path.
+
+## 2026-10-31 addendum: Installation before extraction
+
+[Decision 002](002-scan-scopes-and-fact-boundary.md) refines the scope and delivery
+boundary. First agree explicit project/workspace commands, handwritten `.scryer/`
+configuration and JSON/error contracts. Then validate a minimal locally installed
+engine through install/uninstall/list and an actual request/response before moving
+Java to the user-created `scryer-java-engine` repository. `engine` remains a
+provisional category name; repository creation is not performed by this decision.
+The older statements that the repository name is undecided are superseded.
+
+Retain Java behavior/evidence and the Go-wrapped Kotlin implementation. Update the
+Orrery provider after extraction (milestone **2.1**) using a new published provider
+version. Choose the next language afterward. macOS is the current primary
+acceptance platform; Windows migration is deferred. Decision 002 also supersedes
+any reading of cross-stack analysis here as ownership of architectural/test-quality
+verdicts: Scryer supplies facts and bounded evidence; consumers judge them.

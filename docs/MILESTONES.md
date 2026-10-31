@@ -1,11 +1,10 @@
 # Product milestones
 
-Updated 2026-10-27. This is the single priority/status index, not a release schedule
-or authorization to implement every stage. The next delivery focus is public CLI
-semantic review, then analyzer extraction and installation; see
-[product direction](PRODUCT-DIRECTION.md). Additional language/relationship, architecture and
-test-analysis goals are an incremental direction, not one promised short sprint.
-Existing implementation gaps remain in [technical debt](TECH-DEBT.md).
+Updated 2026-10-31. This is the single priority/status index, not authorization to
+implement all stages. [Product direction](PRODUCT-DIRECTION.md) defines scope;
+[decisions](decisions/002-scan-scopes-and-fact-boundary.md) record agreements;
+[technical debt](TECH-DEBT.md) records existing limitations. Planned commands and
+configuration below are not current capabilities.
 
 ## Done — current baseline
 
@@ -19,125 +18,107 @@ Existing implementation gaps remain in [technical debt](TECH-DEBT.md).
 - [x] **Done** — ~~Normalize workspace dependency CSVs to JSON/HTML and generate suggested phases/cycle diagnostics and a draft consumer-plan YAML.~~ No Mod CLI or JVM is needed for CSV processing.
 - [x] **Done** — ~~Build/test Go, JVM and browser graph code in CI; package slim and Java-21-runtime distributions with extracted-package smoke checks.~~ Workflow artifacts are not published releases.
 
-## Priority 1 — M1: Independently installed analyzers
+## Priority 1 — CLI, explicit scopes and portable configuration
 
-See [decision 001](decisions/001-analyzer-distribution.md). Implement in runnable
-slices, retaining Java behavior throughout the split:
+- [ ] Agree concrete project/workspace journeys and command grammar before changing
+  commands. Workspace becomes a first-class scope rather than `analyze workspace`.
+  Classify existing scan/analyze behavior, evidence matching and phase/plan
+  suggestions against the facts-only boundary; preserve existing behavior until
+  a deliberate migration is implemented.
+- [ ] Define handwritten workspace/project `.scryer/` configuration: retained,
+  explicit membership using workspace-relative paths; project-level scan options;
+  defaults for standalone project scans; root project `.` support. No directory-based
+  membership guessing or reverse membership duplicated in project configuration.
+- [ ] Define JSON results for every command, default JSON delivery, stdout/file
+  formats, stderr diagnostics/progress, exit codes and partial-result semantics.
+  Include provenance and distinguish missing engine, incompatible engine,
+  unsupported capability and execution failure. JSON mode stdout contains only JSON.
+- [ ] Keep source/symbol extraction usable without target build/run success.
+  Separate optional resolution and execution capabilities and report coverage gaps.
+- [ ] Write meaningful command/configuration contracts and migration examples.
+  Current CLI remains documented in [CLI](CLI.md) until implementation changes it.
 
-1. [ ] Review/agree CLI semantics, report/fact compatibility and concrete invocation
-   examples before extraction; retain current command behavior until a deliberate
-   change is implemented. Audit project/workspace scope, scan/analyze meaning,
-   stdout/file formats, diagnostics and partial/error outcomes.
-2. [ ] Establish an external analyzer package/Go-wrapper boundary that does not
-   depend on importing this repository's `internal/` packages. Decide the minimal
-   public contract/SDK and compatibility/capability handshake from the working adapter.
-3. [ ] Extract the Java analyzer into its own repository, with a Go entry point
-   wrapping the Kotlin/JVM worker. Kotlin still owns Java-specific analysis; Go
-   packaging does not mean rewriting that analysis in Go. No repository is created
-   by this documentation change.
-4. [ ] Add plugin installation/discovery through a command such as
-   `scryer install java`, independent analyzer versions and platform-aware package
-   selection. Define distribution source, integrity checks, local installation,
-   replacement/rollback and missing/incompatible-analyzer diagnostics.
-5. [ ] Make Java analysis run through the installed analyzer rather than a required
-   in-tree implementation. Retain standalone Scryer use and language-neutral reports;
-   record tool/analyzer/schema versions so consumers can interpret historical facts.
-6. [ ] Split builds/releases and move Java-specific tests with their owner while
-   preserving host/adapter contract and end-to-end package checks. Define how the
-   optional Java 21 runtime ships with the independently installed analyzer.
-7. [ ] Validate the evolved CLI/engine contract through Orrery's official Scryer
-   provider and its own development pipeline; keep standalone CLI use equally valid.
+## Priority 2 — Independent Java engine installation and extraction
 
-The existing Go `Analyzer` interface and Java process adapter are the starting
-point, not evidence that install/discovery, a plugin SDK or Go dynamic-module
-loading already exists. No external Go ABI/plugin mechanism is selected.
+See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable slices:
 
-## Priority 2 — M2: More stacks and relationship facts
+1. [ ] Finish the logical external boundary from the current Go/Java adapter.
+   External engines must not import Core's `internal/` packages. Define the minimal
+   public protocol/contract, identity/version and capability handshake.
+2. [ ] Verify install/uninstall/list using a minimal local engine package and an
+   actual request/response before moving the Java implementation. Commands such as
+   `scryer engine install`, `uninstall` and `list` are provisional. A failed install
+   must not appear as a usable engine. Public download/update infrastructure can wait.
+3. [ ] Move Java into the user-created `scryer-java-engine` repository, with a Go
+   entry point around Kotlin/JVM. Preserve Java capabilities and evidence; Java
+   runtime discovery/optional runtime packaging belong with that engine.
+4. [ ] Invoke installed Java through ordinary Core commands; keep non-Java Core
+   operations usable without a JVM. Split tests/builds/releases by ownership and
+   retain host/engine compatibility, cancellation and package smoke checks.
 
-First compare bounded C++, Rust and Tauri/mixed-stack prototypes by measured
-effort and value on real fixtures; choose one rather than committing to complete
-all three. Go and Markdown follow incrementally. Full semantic support order is
-not agreed. Deliver static facts first, then richer resolution/evidence where the
-stack supports it. Unsupported capabilities must stay explicit.
+No dynamic Go ABI or general plugin framework is selected. Engine naming, package
+schema and exact install flags remain open. macOS is the primary acceptance target;
+Windows migration is deferred until both Scryer and Orrery are stable.
 
-- [ ] Markdown: document structure and local/external link/reference relationships,
-  with unresolved links and scope limits rather than treating documents as Java code.
-- [ ] C++: project/build structure, code/symbol observations and declared/resolved
-  library dependencies, with compiler/build-system and generated-code boundaries.
-- [ ] Go: module/package/build and dependency facts, then richer supported evidence.
-- [ ] Rust: crate/workspace/module relationships, code facts and library dependency
-  graphs, retaining requested/resolved versions and configuration where available.
-- [ ] Tauri and mixed-language repositories: compose relevant analyzers, represent
-  frontend/backend boundaries and supported command/event/IPC bindings. Tauri is
-  not a separate source language; do not require a Java-shaped project model.
-- [ ] IPC discovery, including supported named-pipe/message/command patterns, and
-  REST API provider/consumer relationships. Retain endpoint/protocol and source
-  evidence where available; distinguish declaration, static inference and observed
-  execution. Dynamic routes/dispatch and external consumers may remain unknown.
-- [ ] Common library/package dependency facts across supported stacks, with stable
-  identities, provenance, direct/transitive context and unresolved edges. Do not
-  merge package dependencies, calls, IPC and REST into one untyped arrow meaning.
+### 2.1 — Update Orrery after Java extraction
 
-Keep reports consumable as structured JSON and human-readable reports; adapters
-must not depend on Orrery. Existing CSV workspace facts remain supported rather
-than requiring the future discovery engine.
+- [ ] Adapt Orrery's Scryer provider and relevant scan-plan bindings to the new
+  command/configuration/engine contract after Priority 2. Publish a new provider
+  version instead of changing published YAML. Validate actual invocation, JSON,
+  artifacts and partial/unsupported outcomes through Orrery, while retaining
+  standalone CLI use.
 
-## Priority 3 — M3: Architecture facts across supported stacks
+## Priority 3 — Additional languages and mixed-project facts
 
-Deliver usable project-level facts early enough for the first Orrery interactive
-architecture view; do not wait for every M2 language. Keep the fact producer here
-and build the consumer diagram/navigation in Orrery.
+Choose the first language after Java extraction and the Orrery adaptation. Do not
+preselect an implementation order or promise complete semantic engines together.
 
-- [ ] Build a language-neutral, evidence-backed architecture model: projects,
-  components/modules, optional layer assignments and typed relationships, with
-  source locations, analyzer versions and partial/unknown coverage.
-- [ ] Support Markdown, C++, Rust and Tauri/mixed repositories incrementally using
-  their M2 capabilities. User configuration may supply component/layer mappings;
-  do not present folder nesting as proof of clean-architecture intent.
-- [ ] Export comparable architecture snapshots/differences with stable entity
-  identity or explicit uncertain matching, source revision/dirty-state context and
-  provenance. Preserve removed entities/relationships and distinguish missing
-  analysis from observed removal.
+- [ ] C++: source/build/symbol facts and declared/resolved library dependencies,
+  including compiler flags, macros, generated sources and incomplete-model limits.
+- [ ] Rust: crate/module/symbol facts and dependency relationships, preserving build
+  configurations and declared/resolved identities.
+- [ ] TypeScript: project/module/symbol and dependency facts, with explicit supported
+  frontend/bridge patterns and unresolved boundaries.
+- [ ] Go: module/package/build/symbol and dependency facts.
+- [ ] Markdown: document structure and link/reference facts, with unresolved links.
+- [ ] Mixed-language projects: compose installed engines for Scriptorium Ink,
+  Orrery and Scryer; report per-engine capability/coverage before richer cross-language
+  links. Build-system modules are not automatically separate registered projects.
+- [ ] Expose typed architecture entities/relations, source locations, structural
+  signals and explicit user mappings. Folder nesting is not proof of intended
+  architectural layers. Deliver useful project facts before every language is ready.
+- [ ] Extend test inventory/execution evidence where supported; preserve independent
+  datasets, freshness, provenance and unknowns. Test adequacy and strategy judgments
+  belong to consumers rather than a new Scryer assessment engine.
 
-**Consumer boundary:** Orrery may retain and compare snapshots, draw interactive
-Excalidraw-style/layered/concentric architecture views, apply editable display
-names and show architecture-evolution stages. Scryer owns facts and bounded
-analysis, not Orrery's workspace history, UI templates or pipeline execution.
-Display-name overrides do not rewrite the facts or historical observed names.
+## Priority 4 — Workspace-local cross-repository relationships
 
-## Priority 4 — M4: Cross-stack test analysis and strategy diagrams
+Implement bounded patterns in this order; retain useful existing CSV input support:
 
-- [ ] Extend test discovery, framework/lifecycle facts and source/test roles to the
-  supported stacks. Markdown document/link checks are distinct from compiled-code
-  unit/integration/system tests; unsupported categories remain not-applicable/unknown.
-- [ ] Add stack-specific execution/evidence adapters where supported, with explicit
-  request/side effects, command results, artifacts and snapshot provenance. Preserve
-  the separation between static candidates and verified execution observations.
-- [ ] Analyze test effectiveness with explainable, bounded evidence: affected code,
-  execution gaps and available assertions/behavioral evidence. Passing tests and
-  aggregate coverage alone do not prove effective assertions or refactoring safety;
-  do not invent a universal confidence score or per-test causal attribution.
-- [ ] Classify observed automated-test layers with configurable conventions and
-  evidence/uncertainty, and generate test-layer/strategy diagrams (for example
-  pyramid/trophy-style views where appropriate). Distinguish observed inventory
-  from a proposed strategy; no universal layer ratio or recommended mix is agreed.
-  Select export/interactive formats when implementing the renderer; images must
-  derive from the same structured data, not become a second analysis source.
+1. [ ] Library/package dependencies: match consumers to providers within the explicit
+   workspace, preserving identity/version/configuration and unresolved/candidate
+   matches instead of equating package-name equality with a confirmed local edge.
+2. [ ] IPC: supported shared-memory, named-pipe and macOS communication patterns,
+   with evidence for endpoints and matching. Ubuntu-specific mechanisms are outside
+   current scope; dynamic communication may remain unknown.
+3. [ ] REST API declarations/calls and supported provider/consumer matching; lower
+   priority than library relationships and IPC.
 
-Java's existing test/evidence matching is the baseline to preserve and extend,
-not a claim that these cross-stack or strategy-diagram capabilities exist today.
+Cross-repository edges retain their relation type and evidence. Dependencies, calls,
+IPC and REST do not become one undifferentiated arrow. Observed absence must remain
+distinct from an engine's missing capability or incomplete scan coverage.
 
-## Deferred — architecture guard DSL and richer evolution analysis
+## Deferred integration and consumer responsibilities
 
-- [ ] Define an architecture-rule DSL for Scryer: constraints/tests over observed
-  components/layers/dependencies/IPC/API relationships, compared against scan facts.
-  Record rule version, inputs, evidence and result; insufficient scan coverage is
-  unknown/unsupported, not a passing assertion. Begin with concrete rule cases;
-  no grammar, parser library or new CLI command is approved yet.
-- [ ] Provide reproducible architecture comparisons usable by Orrery's interactive
-  evolution timelines and major-change stages. Derived stage boundaries must be
-  explainable; consumers can annotate them. Static topology alone does not reveal
-  the original author's intent or prove architectural improvement.
+- [ ] Consider Orrery provider operations for editing Scryer configuration and an
+  explicit integration action that runs a default plan to generate project entries.
+  Name/UX are undecided. Show differences and preserve handwritten scan options;
+  no automatic synchronization or silent overwriting in the initial scope.
+- [ ] Revisit Windows development/distribution for the input-method project after
+  Scryer and Orrery stabilize; do not add Windows acceptance work now.
 
-These are future analysis capabilities. Scryer does not become a plan executor,
-agent manager or mandatory backend for an Orrery-only visualization system.
+Architecture-rule evaluation, Hunch-test comparison, refactoring recommendations,
+test-effectiveness/strategy judgments and retained evolution timelines belong to
+consumers. This supersedes earlier Scryer roadmap entries for an architecture-guard
+DSL and judgment engine. Scryer supplies versioned facts, evidence and explicit
+before/after observations without owning the persistent history or verdict.
