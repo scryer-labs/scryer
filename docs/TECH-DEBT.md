@@ -1,6 +1,6 @@
 # Technical debt and existing analysis limitations
 
-Updated 2026-10-31. Item IDs are not priority ranks. New analyzer installation,
+Updated 2026-11-01. Item IDs are not priority ranks. New analyzer installation,
 language support and architecture/test fact capabilities belong in
 [milestones](MILESTONES.md), not duplicated implementation tasks here. The CLI/configuration and
 engine-extraction sequence takes precedence unless a real regression requires a fix.
@@ -51,3 +51,32 @@ proven by those artifact checks. Separate core and analyzer packaging without
 breaking relocation, runtime discovery, legal notices or the distinction between
 the analyzer JVM and target JVM. Installer/repository design is owned by
 [decision 001](decisions/001-analyzer-distribution.md).
+
+## TD-005: Remove refactor-plan generation from Scryer
+
+- [ ] Status: next removal; explicitly authorized 2026-11-01.
+
+Remove `refactor-plan generate`, its phase/cycle scheduling implementation,
+platform-plan YAML export and dedicated presentation/tests. Orrery already derives
+phases and creates plan drafts from dependency facts; its Scryer provider calls
+`analyze workspace`, not `refactor-plan`. Execution-plan generation belongs to the
+consuming platform. Preserve the CSV dependency facts and JSON/HTML path used by
+Orrery. Future bounded shared checks do not justify keeping this plan generator.
+
+## TD-006: Retire CSV-in/dependencies-out workspace adaptation
+
+- [ ] Status: temporary compatibility capability; blocked on workspace dependency scanning.
+
+Retain `analyze workspace --projects ... --dependencies ...` for now. It normalizes
+externally collected CSV facts and renders JSON/HTML; it does not scan repository
+dependencies itself. Orrery currently depends on Mod CLI collection followed by
+this adapter. The temporary command is accepted because Scryer cannot yet collect
+those workspace dependency facts directly.
+
+After native `workspace scan` supports the needed dependency collection and the
+Orrery provider/scan plans have migrated and been verified, completely remove the
+old CSV-adaptation command and its exclusive code/tests/docs. Do not keep a permanent
+alias or rename the same adapter into the new scan operation. Shared fact/report
+code still needed by native scanning may remain. Do not break the current Mod-based
+consumer before the replacement is usable. This supersedes earlier roadmap wording
+that CSV input support should remain indefinitely.

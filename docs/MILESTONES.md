@@ -1,6 +1,6 @@
 # Product milestones
 
-Updated 2026-10-31. This is the single priority/status index, not authorization to
+Updated 2026-11-01. This is the single priority/status index, not authorization to
 implement all stages. [Product direction](PRODUCT-DIRECTION.md) defines scope;
 [decisions](decisions/002-scan-scopes-and-fact-boundary.md) record agreements;
 [technical debt](TECH-DEBT.md) records existing limitations. Planned commands and
@@ -17,6 +17,16 @@ configuration below are not current capabilities.
 - [x] **Done** — ~~Render shared terminal/JSON/Markdown reports and standalone interactive HTML analysis reports.~~ Java scan file export currently writes Markdown; output support is command-specific.
 - [x] **Done** — ~~Normalize workspace dependency CSVs to JSON/HTML and generate suggested phases/cycle diagnostics and a draft consumer-plan YAML.~~ No Mod CLI or JVM is needed for CSV processing.
 - [x] **Done** — ~~Build/test Go, JVM and browser graph code in CI; package slim and Java-21-runtime distributions with extracted-package smoke checks.~~ Workflow artifacts are not published releases.
+
+## Immediate cleanup and design checkpoint
+
+- [ ] Remove refactor-plan generation under [TD-005](TECH-DEBT.md#td-005-remove-refactor-plan-generation-from-scryer).
+- [ ] Before structural refactoring, pair on domain concepts, scope-first command
+  semantics and future engine/shared-rule extension boundaries. Agree concrete
+  journeys and contracts before changing the package structure.
+- [ ] Retain the Mod-fed workspace CSV adapter temporarily under
+  [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation);
+  remove it once native workspace dependency scanning and consumer migration work.
 
 ## Priority 1 — CLI, explicit scopes and portable configuration
 
@@ -101,7 +111,8 @@ preselect an implementation order or promise complete semantic engines together.
 
 ## Priority 4 — Workspace-local cross-repository relationships
 
-Implement bounded patterns in this order; retain useful existing CSV input support:
+Implement bounded patterns in this order. Existing CSV adaptation is temporary
+under [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation):
 
 1. [ ] Library/package dependencies: match consumers to providers within the explicit
    workspace, preserving identity/version/configuration and unresolved/candidate
