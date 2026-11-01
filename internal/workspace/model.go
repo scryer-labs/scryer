@@ -21,12 +21,11 @@ type Facts struct {
 	Dependencies []Dependency `json:"dependencies"`
 }
 type Document struct {
-	Suggestion    *Suggestion `json:"suggestion,omitempty"`
-	SchemaVersion int         `json:"schemaVersion"`
-	Kind          string      `json:"kind"`
-	Direction     string      `json:"edgeDirection"`
-	Facts         Facts       `json:"facts"`
-	Notes         []string    `json:"notes"`
+	SchemaVersion int      `json:"schemaVersion"`
+	Kind          string   `json:"kind"`
+	Direction     string   `json:"edgeDirection"`
+	Facts         Facts    `json:"facts"`
+	Notes         []string `json:"notes"`
 }
 
 func NewDocument(facts Facts) Document {

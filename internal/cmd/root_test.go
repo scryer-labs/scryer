@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/edwardnoaland/scryer/internal/application"
@@ -80,5 +81,19 @@ func TestScanColorFlagControlsOnlyTerminalOutput(t *testing.T) {
 		if bytes.Contains(out.Bytes(), []byte{27}) != sample.colored {
 			t.Fatalf("incorrect color for %+v", sample)
 		}
+	}
+}
+
+func Test_should_reject_refactor_plan_when_command_has_been_removed(t *testing.T) {
+	fake := &fakeAnalyzer{}
+	out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
+	root := NewRoot(&application.Service{Analyzer: fake}, out, errOut)
+	root.SetArgs([]string{"refactor-plan", "generate"})
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), `unknown command "refactor-plan"`) {
+		t.Fatalf("expected removed command to be rejected, got %v", err)
+	}
+	if exitCode(err) != 2 || fake.calls != 0 || out.Len() != 0 {
+		t.Fatal("removed command must fail as a usage error without invoking an analyzer or producing output")
 	}
 }

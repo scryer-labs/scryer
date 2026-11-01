@@ -23,9 +23,10 @@ extraction belong to engines. Core may later provide shared, reproducible rules
 for code smells, bounded test-effectiveness checks and evidence-backed refactoring
 suggestions. Business/design trade-offs and consultant-style advice remain human
 or consumer responsibilities. Existing Java impact/evidence
-matching and workspace phase/plan suggestions still exist; the CLI review must
-classify them before deliberately migrating behavior. This direction does not
-silently remove current commands or evidence.
+matching remains; the CLI review must classify it before deliberately migrating
+behavior. Workspace phase/plan generation has been removed; Orrery owns that use
+case. The Mod-fed workspace CSV adapter remains temporarily under TD-006. Other
+current commands and Java evidence remain unchanged by this cleanup.
 
 Shared CLI/fact contracts and presentation stay in Core. Engine interfaces do not
 import Orrery types or have to match Orrery provider interfaces. Terminal, JSON and
@@ -118,8 +119,9 @@ Do not wait for every language or IPC mechanism before exposing useful project f
 
 ## Development acceptance
 
-Edward will establish the scryer-lab workspace and its Orrery acceptance plan,
-aligned with GitHub Actions. Once available, invoke that plan and inspect its
-recorded results; Edward reviews the same run in Orrery. Do not replace it with
+The scryer-lab workspace now has the **DevOps / Daily Development** Orrery plan,
+created 2026-11-01 with checks aligned to GitHub Actions and local macOS toolchain
+paths. Invoke that plan and inspect its recorded results; Edward reviews the same
+run in Orrery. Do not replace it with
 separately executed local test/build commands or change its scope without agreement.
-The plan is not claimed to exist yet. See [contributor instructions](../AGENTS.md).
+See [contributor instructions](../AGENTS.md) for its local root and stable ID.

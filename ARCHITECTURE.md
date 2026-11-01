@@ -57,11 +57,12 @@ No JVM analyzer is needed. Dependency arrows run from consumer to dependency.
 Declared edges are not runtime calls or inferred release-phase constraints.
 
 Workspace JSON and HTML render the same schema-versioned, sorted document.
-`refactor-plan generate` adds Kahn phase suggestions and SCC cycle diagnostics;
-all observed internal edges constrain the conservative ordering. Renderers do
-not recompute phases. YAML export is a draft configuration for a consuming
-platform, defaulting to mod-cli with no invented paths or recipe steps. Execution,
-review/apply/resume and provider adapters belong to that platform, not Scryer.
+The former `refactor-plan generate` command, phase scheduling and platform-plan
+YAML exporter have been removed. Execution-plan generation belongs to consumers
+such as Orrery. The workspace CSV adapter is temporary compatibility code under
+[TD-006](docs/TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation),
+not the future native workspace scanner. Renderers present the normalized facts
+without computing a schedule.
 
 ## Documentation and future work
 

@@ -1,6 +1,6 @@
 # Command reference
 
-Updated 2026-10-25. Current command behavior, analysis boundaries and report formats.
+Updated 2026-11-01. Current command behavior, analysis boundaries and report formats.
 Run build/test examples from the repository root. Only the Java analyzer is
 registered today; workspace CSV processing is Go-only. Future features belong in
 [milestones](MILESTONES.md), not in the current CLI contract.
@@ -278,15 +278,12 @@ These are declared relationships, not execution evidence or release constraints.
 `workspace` can still be analyzed using `scryer analyze ./workspace --before … --after …`.
 
 
-## Workspace reports and suggested refactor phases
+## Workspace dependency reports
 
 ```bash
 scryer analyze workspace --projects projects.csv --dependencies dependencies.csv -o dependencies.json
 scryer analyze workspace --projects projects.csv --dependencies dependencies.csv -o dependencies.html
 scryer analyze workspace --projects projects.csv --dependencies dependencies.csv --json
-scryer refactor-plan generate --projects projects.csv --dependencies dependencies.csv -o phases.json
-scryer refactor-plan generate --projects projects.csv --dependencies dependencies.csv -o phases.html
-scryer refactor-plan generate --projects projects.csv --dependencies dependencies.csv -o refactor-plan.yaml
 ```
 
 Workspace JSON schema version 1 contains `kind`, `edgeDirection`, `facts.projects`,
@@ -300,23 +297,11 @@ HTML is a single offline file with embedded logo/data/scripts: pan, zoom, fit,
 node dragging, search, selection, dependency tables and keyboard selection.
 Workspace reports do not invoke Java, Mod CLI, a build tool or the network.
 
-`refactor-plan generate` reuses the normalized facts and adds `suggestion` with
-`rule`, `phases`, `cyclic` and `blocked`. Kahn layering starts at **phase-1**;
-all declared internal relationships constrain order, including test and unknown
-scopes. External targets remain visible but do not constrain local phases.
-Cycle members are distinguished from downstream blocked projects using SCCs.
-Missing parent tables, incomplete input, version compatibility and release units
-cannot be inferred. Suggestions are not a prescribed migration strategy.
-
-The YAML is a **draft platform configuration**, not an executable OpenRewrite
-recipe or a stable platform execution contract. It defaults to `provider.type:
-mod-cli`, lists project identities and optional SCM repository paths, and leaves
-local `path: null` and `steps: []` for consumers to fill. Blocked projects appear
-in diagnostics rather than runnable phases. A platform may accept a manually
-edited plan with reordered/repeated repos; this generator does not execute,
-validate an edited plan, select recipes, apply changes or resume runs. Execution,
-review/apply gates, provider adapters and multi-repo report aggregation belong
-to the consuming platform.
+`refactor-plan generate` has been removed. Dependency-based stage generation and
+execution-plan authoring belong to consuming platforms such as Orrery. The CSV
+workspace adapter above remains temporarily available until native workspace
+dependency scanning and the Orrery migration replace it; see
+[TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation).
 
 ## Bundled Java runtime
 

@@ -16,11 +16,22 @@ Choose the type for the primary purpose of the commit. Keep summaries concise an
 
 ## Development acceptance
 
-Agreed 2026-10-31: Edward will create the scryer-lab workspace and an Orrery plan
-aligned with GitHub Actions. Once configured, trigger that plan for acceptance and
-inspect its recorded results so Edward can review the same run in Orrery. Do not
+Agreed 2026-10-31; configured 2026-11-01: use the Orrery **DevOps / Daily Development**
+plan for acceptance. Workspace root is
+`/Users/edwardnoaland/Desktop/experiment/scryer-lab`; plan ID is
+`scryer-lab--daily-development`. Read its manifest for the current revision before
+starting a run through Orrery's API. Checks follow `.github/workflows/ci.yml`, with
+local macOS toolchain paths replacing hosted setup actions. Packaging checks remain
+local; GitHub artifact upload is a hosted workflow concern.
+
+Inspect the recorded results so Edward can review the same run in Orrery. Do not
 substitute separately executed local test/build commands or modify the plan's
-commands/scope without agreement. Do not assume a plan ID or that setup is complete;
-resolve the actual plan when available. Read-only inspection and documentation
-checks remain appropriate. Report exactly which checks ran and any missing
-acceptance evidence; documentation checks are not code-pipeline acceptance.
+commands/scope without agreement. Read-only inspection and documentation checks
+remain appropriate. Report exactly which checks ran and any missing acceptance
+evidence; documentation checks are not code-pipeline acceptance.
+
+The current plan assumes the combined Go CLI/Kotlin Java-engine repository layout.
+When CLI and language engines are split into independent repositories, update the
+plan targets, toolchains, build/test/package steps and cross-repository compatibility
+checks together with the corresponding CI workflows. Do not treat today's plan as
+permanent acceptance coverage for the extracted architecture.

@@ -15,12 +15,12 @@ configuration below are not current capabilities.
 - [x] **Done (Java)** — ~~Run default/custom target test lifecycles, retain fresh JUnit/JaCoCo evidence and match independent datasets to affected methods with explicit unknowns.~~ This does not prove assertion quality or complete behavioral coverage.
 - [x] **Done** — ~~Support isolated working-tree after snapshots, explicit build-tool selection and target/analyzer JVM separation.~~
 - [x] **Done** — ~~Render shared terminal/JSON/Markdown reports and standalone interactive HTML analysis reports.~~ Java scan file export currently writes Markdown; output support is command-specific.
-- [x] **Done** — ~~Normalize workspace dependency CSVs to JSON/HTML and generate suggested phases/cycle diagnostics and a draft consumer-plan YAML.~~ No Mod CLI or JVM is needed for CSV processing.
+- [x] **Done** — ~~Normalize workspace dependency CSVs to JSON/HTML.~~ No Mod CLI or JVM is needed for CSV processing. This adapter is temporary under TD-006; former plan generation has been removed.
 - [x] **Done** — ~~Build/test Go, JVM and browser graph code in CI; package slim and Java-21-runtime distributions with extracted-package smoke checks.~~ Workflow artifacts are not published releases.
 
 ## Immediate cleanup and design checkpoint
 
-- [ ] Remove refactor-plan generation under [TD-005](TECH-DEBT.md#td-005-remove-refactor-plan-generation-from-scryer).
+- [x] **Done** — ~~Remove refactor-plan generation.~~ See [TD-005](TECH-DEBT.md#td-005-remove-refactor-plan-generation-from-scryer); accepted by DevOps / Daily Development; run recorded in TD-005.
 - [ ] Before structural refactoring, pair on domain concepts, scope-first command
   semantics and future engine/shared-rule extension boundaries. Agree concrete
   journeys and contracts before changing the package structure.
@@ -32,8 +32,8 @@ configuration below are not current capabilities.
 
 - [ ] Agree concrete project/workspace journeys and command grammar before changing
   commands. Workspace becomes a first-class scope rather than `analyze workspace`.
-  Classify existing scan/analyze behavior, evidence matching and phase/plan
-  suggestions against the fact/shared-rule boundary; preserve existing behavior until
+  Classify existing scan/analyze behavior and evidence matching
+  against the fact/shared-rule boundary; preserve existing behavior until
   a deliberate migration is implemented.
 - [ ] Define handwritten workspace/project `.scryer/` configuration: retained,
   explicit membership using workspace-relative paths; project-level scan options;

@@ -54,10 +54,13 @@ the analyzer JVM and target JVM. Installer/repository design is owned by
 
 ## TD-005: Remove refactor-plan generation from Scryer
 
-- [ ] Status: next removal; explicitly authorized 2026-11-01.
+- [x] **Done** — ~~Remove refactor-plan generation.~~ Code removed 2026-11-01;
+  accepted by **DevOps / Daily Development** run `20261101T220229829Z-83db3881`
+  (all eight steps succeeded on macOS).
 
-Remove `refactor-plan generate`, its phase/cycle scheduling implementation,
-platform-plan YAML export and dedicated presentation/tests. Orrery already derives
+Removed `refactor-plan generate`, its phase/cycle scheduling implementation,
+platform-plan YAML export and dedicated presentation/tests. A CLI regression check
+requires the removed command to fail without invoking an analyzer. Orrery already derives
 phases and creates plan drafts from dependency facts; its Scryer provider calls
 `analyze workspace`, not `refactor-plan`. Execution-plan generation belongs to the
 consuming platform. Preserve the CSV dependency facts and JSON/HTML path used by

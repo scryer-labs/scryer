@@ -16,31 +16,15 @@
   document.getElementById('summary').textContent = `${projects.length} projects · ${dependencies.length} declared relationships`;
   document.getElementById('semantics').textContent = 'Repository facts only. No code is executed, no upgrade strategy is selected, and no test confidence is inferred.';
   for (const note of doc.notes) { const li = document.createElement('li'); li.textContent = note; document.getElementById('notes').append(li); }
-  if (doc.suggestion) {
-    document.getElementById('title').textContent = 'Suggested refactor phases';
-    document.getElementById('summary').textContent += ` · ${doc.suggestion.phases.length} phases · ${doc.suggestion.blocked.length} blocked`;
-    document.getElementById('semantics').textContent = 'Dependency-based suggestions, not an execution plan or safety guarantee. Columns use internal declared edges; arrows still point from consumer to dependency.';
-  }
   const positions = new Map();
-  const labels = [];
   function initialPositions() {
-    positions.clear(); labels.length = 0;
-    if (doc.suggestion) {
-      const groups = doc.suggestion.phases.map(p => [p.id, p.projects]);
-      if (doc.suggestion.blocked.length) groups.push(['Blocked', doc.suggestion.blocked]);
-      const external = ids.filter(id => !internal.has(id));
-      if (external.length) groups.push(['External', external]);
-      groups.forEach(([label, members], col) => {
-        labels.push({label,x:col*300,y:0});
-        members.forEach((id,row) => positions.set(id,{x:col*300,y:40+row*95}));
-      });
-    } else ids.forEach((id,i) => positions.set(id,{x:(i%4)*300,y:Math.floor(i/4)*95}));
+    positions.clear();
+    ids.forEach((id,i) => positions.set(id,{x:(i%4)*300,y:Math.floor(i/4)*95}));
   }
   let world, scale = 1, x = 20, y = 20, selected = null;
   const transform = () => world.setAttribute('transform', `translate(${x} ${y}) scale(${scale})`);
   function fit() {
     const visible = [...positions.entries()].filter(([id]) => matches(id)).map(([,p]) => p);
-    if (doc.suggestion) visible.push(...labels.map(p => ({x:p.x,y:p.y+35})));
     if (!visible.length) return;
     const minX=Math.min(...visible.map(p=>p.x)),minY=Math.min(...visible.map(p=>p.y))-35;
     const width=Math.max(...visible.map(p=>p.x))-minX+270,height=Math.max(...visible.map(p=>p.y))-minY+100;
@@ -61,7 +45,6 @@
     const defs=node('defs'),marker=node('marker',{id:'arrow',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto'});
     marker.append(node('path',{d:'M0 0 L10 5 L0 10 Z',fill:'#778bab'}));defs.append(marker);svg.append(defs);
     world=node('g');svg.append(world);transform();
-    for(const label of labels) world.append(node('text',{class:'phase',x:label.x,y:label.y},label.label));
     const edges=[];
     function updateEdges() {
       for(const {e,path} of edges) {
