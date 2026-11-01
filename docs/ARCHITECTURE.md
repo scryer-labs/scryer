@@ -20,7 +20,7 @@ The flow is `main → Cobra command → application → Analyzer interface → J
 
 Go resolves refs to immutable SHAs and creates isolated snapshots. Kotlin consumes those directories, verifies their SHAs, identifies changed Java symbols from Git differences, builds attributed source graphs, runs target tests and matches evidence. Java owns Maven/Gradle and target-JDK details. Go owns the outer lifecycle/cancellation, while Java build/test runners retain command-specific timeout, log and snapshot-integrity handling. Retained artifacts live in the cache, not in temporary checkouts.
 
-`--build-tool` selects declarations/models and default test lifecycle. `--test-command` replaces only the target test command. `--skip-tests` skips build-model commands as well as tests. Unsupported Java features and failed model collection stay explicit partial-analysis notes/boundaries. The process protocol is described in [docs/contracts/README.md](docs/contracts/README.md).
+`--build-tool` selects declarations/models and default test lifecycle. `--test-command` replaces only the target test command. `--skip-tests` skips build-model commands as well as tests. Unsupported Java features and failed model collection stay explicit partial-analysis notes/boundaries. The process protocol is described in [docs/contracts/README.md](contracts/README.md).
 
 ## Java analyzer packages
 
@@ -45,7 +45,7 @@ No existence of a test class, command success, static test route or method hit p
 
 ## Code and dependency rules
 
-Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod` for the current application; do not scatter modules through the existing tree. Independently versioned analyzer repositories are now planned in [decision 001](docs/decisions/001-analyzer-distribution.md), which records the next independent distribution boundary. That extraction and an external Go contract boundary are not implemented yet.
+Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod` for the current application; do not scatter modules through the existing tree. Independently versioned analyzer repositories are now planned in [decision 001](decisions/001-analyzer-distribution.md), which records the next independent distribution boundary. That extraction and an external Go contract boundary are not implemented yet.
 
 Build tooling compiles the JVM analyzer and Go executable into `build/install/scryer`: `bin/scryer` is Go, `lib/java/*.jar` is the worker runtime. The slim native package needs external Java 21; `scripts/package --with-runtime` adds a host-specific Java 21 image under `runtime/`, selected before inherited JAVA_HOME unless SCRYER_ANALYZER_JAVA_HOME is explicit. CI tests Go, JVM and browser graph behavior, then checks extracted packages.
 
@@ -60,15 +60,15 @@ Workspace JSON and HTML render the same schema-versioned, sorted document.
 The former `refactor-plan generate` command, phase scheduling and platform-plan
 YAML exporter have been removed. Execution-plan generation belongs to consumers
 such as Orrery. The workspace CSV adapter is temporary compatibility code under
-[TD-006](docs/TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation),
+[TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation),
 not the future native workspace scanner. Renderers present the normalized facts
 without computing a schedule.
 
 ## Documentation and future work
 
 This file describes the implementation, not the future plugin system. The
-[documentation index](docs/README.md) separates current contracts from plans;
-[milestones](docs/MILESTONES.md) owns delivery order and
-[technical debt](docs/TECH-DEBT.md) records existing limitations. Java extraction,
+[documentation index](README.md) separates current contracts from plans;
+[milestones](MILESTONES.md) owns delivery order and
+[technical debt](TECH-DEBT.md) records existing limitations. Java extraction,
 Go-wrapped plugin installation, non-Java analysis and architecture/test-strategy
 capabilities must not be described as present until their slices are implemented.

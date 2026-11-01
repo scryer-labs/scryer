@@ -1,24 +1,40 @@
 # Documentation
 
-Updated 2026-10-31. Each document has one responsibility. Completed roadmap items
-are marked **Done** with strikethrough; current reference contracts remain readable.
-Plans and decisions are not proof that a feature exists.
+Updated 2026-11-01. Start with the current reference for existing behavior and the
+milestones for next work. Planned features are not proof of implementation.
+
+## Current reference
 
 | Document | Responsibility |
 | --- | --- |
-| [Project README](../README.md) | Purpose, quick start, checks and documentation entry point. |
-| [Command reference](CLI.md) | Current CLI, report formats and evidence/analysis boundaries. |
-| [Architecture](../ARCHITECTURE.md) | Current Go/JVM layers, package responsibilities and contributor design rules. |
+| [Project README](../README.md) | Purpose, quick start and documentation entry point. |
+| [Command reference](CLI.md) | Current commands, report formats and evidence boundaries. |
+| [Architecture](ARCHITECTURE.md) | Current Go/JVM layers and package responsibilities. |
 | [Analyzer contracts](contracts/README.md) | Current Go interface, process transport and versioned reports. |
-| [Product direction](PRODUCT-DIRECTION.md) | Independent facts-tool positioning, CLI/engine handoff and the Orrery consumer loop. |
-| [Milestones](MILESTONES.md) | Single priority/status index for implemented and planned capabilities. |
-| [Analyzer distribution decision](decisions/001-analyzer-distribution.md) | Agreed repository/Go-wrapper/install direction, rationale and unresolved packaging details. |
-| [Scan scopes and fact-ownership decision](decisions/002-scan-scopes-and-fact-boundary.md) | Planned project/workspace configuration, source-first facts, JSON outcomes and consumer boundaries. |
-| [Stack discovery and shared-rule decision](decisions/003-stack-discovery-and-shared-rules.md) | Engine-independent stack detection, explicit auto-install composition and shared evidence-backed checks. |
-| [Technical debt](TECH-DEBT.md) | Existing implementation gaps and deferred maintenance, not a duplicate feature roadmap. |
-| [Verification history](../VERIFICATION.md) | Preserved early verification observations, not current test totals or current behavior. |
+| [Contributor instructions](../AGENTS.md) | Coding/commit conventions and Orrery acceptance-plan rules. Kept at the repository root as the collaboration entry point. |
 
-Reference docs say what works **now**. Decisions say **why and what was agreed**.
-Milestones say **what comes next**. Do not scatter next-step lists through command
-examples or rewrite historical verification as if checks were run today. Update
-changed agreements explicitly rather than leaving conflicting directions behind.
+## Direction and maintenance
+
+| Document | Responsibility |
+| --- | --- |
+| [Product direction](PRODUCT-DIRECTION.md) | Product boundaries, engine/consumer responsibilities and supported-platform direction. |
+| [Milestones](MILESTONES.md) | Single delivery-order/status index; completed items use **Done** and strikethrough. |
+| [Technical debt](TECH-DEBT.md) | Existing limitations and temporary capabilities to remove, separate from new features. |
+
+## Decisions and rationale
+
+Read current direction above for the consolidated position. These records preserve
+why agreements were made and how later decisions refine them; do not merge their
+historical positions into a second current specification.
+
+| Decision | Responsibility |
+| --- | --- |
+| [001 — Analyzer distribution](decisions/001-analyzer-distribution.md) | Independent Java repository, Go wrapper, installation and packaging boundaries. |
+| [002 — Scan scopes and fact ownership](decisions/002-scan-scopes-and-fact-boundary.md) | Project/workspace configuration, source-first collection and JSON outcomes; rule ownership refined by 003. |
+| [003 — Stack discovery and shared rules](decisions/003-stack-discovery-and-shared-rules.md) | Engine-independent stack detection, auto-install composition and evidence-backed checks. |
+
+## Historical evidence
+
+[Early Java verification](archive/VERIFICATION.md) preserves past increment checks.
+It is not a current acceptance guide, test total or roadmap. New acceptance evidence
+belongs to the relevant Orrery run, not an ever-growing root-level verification log.

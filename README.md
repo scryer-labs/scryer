@@ -58,12 +58,12 @@ Release publication is configured. See [runtime/package details](docs/CLI.md#bun
 
 - [Documentation index](docs/README.md): document ownership and navigation.
 - [Milestones](docs/MILESTONES.md): completed work and ordered future work.
-- [Architecture](ARCHITECTURE.md): current package responsibilities and coding rules.
+- [Architecture](docs/ARCHITECTURE.md): current package responsibilities and coding rules.
 - [Analyzer contracts](docs/contracts/README.md): current interface and process/report schemas.
 - [Analyzer extraction decision](docs/decisions/001-analyzer-distribution.md): planned
   independent Java repository, Go wrapper and analyzer installation.
 - [Technical debt](docs/TECH-DEBT.md): existing limitations, separate from new features.
-- [Verification history](VERIFICATION.md): earlier observations, not current test totals.
+- [Verification history](docs/archive/VERIFICATION.md): earlier observations, not current test totals.
 
 The next direction is explicit project/workspace commands with handwritten
 `.scryer/` configuration and JSON contracts, followed by independent Java engine

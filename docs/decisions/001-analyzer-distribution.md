@@ -10,7 +10,7 @@ The main repository now has a Go CLI/application/reporting layer, a Go
 remains in `analyzers/java/` as a Kotlin/JVM worker. The Go host owns snapshots,
 request orchestration and common presentation; Java owns language/build/test facts.
 The installed application currently bundles the worker. Only Java is composed.
-See [architecture](../../ARCHITECTURE.md) and [current contracts](../contracts/README.md).
+See [architecture](../ARCHITECTURE.md) and [current contracts](../contracts/README.md).
 
 This split is useful but does not provide an independent repository, installable
 analyzer discovery, a plugin registry or a public Go SDK. In particular, an
@@ -82,7 +82,7 @@ than embedding UI-specific interpretation inside language collectors.
 ## Delivery tracking
 
 [Milestones](../MILESTONES.md) owns priority/status. [Technical debt](../TECH-DEBT.md)
-owns existing limitations. Keep [architecture](../../ARCHITECTURE.md) descriptive
+owns existing limitations. Keep [architecture](../ARCHITECTURE.md) descriptive
 of implemented code until extraction actually changes package ownership.
 
 ## 2026-10-27 addendum: CLI semantics and state ownership

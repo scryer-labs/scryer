@@ -1,6 +1,6 @@
 # Scryer contributor instructions
 
-Follow the package responsibilities and readability guidelines in `ARCHITECTURE.md`. Prefer clear branches, named intermediate results and named arguments; retain lambdas and collection pipelines when they help readability.
+Follow the package responsibilities and readability guidelines in `docs/ARCHITECTURE.md`. Prefer clear branches, named intermediate results and named arguments; retain lambdas and collection pipelines when they help readability.
 
 Commit subjects use `<type>: <summary>`. Allowed types are:
 

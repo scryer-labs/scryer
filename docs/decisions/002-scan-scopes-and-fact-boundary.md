@@ -110,5 +110,5 @@ Cross-repository relationships prioritize libraries, IPC, then REST.
 
 [Milestones](../MILESTONES.md) is the only delivery-order index, including **2.1**
 for the post-extraction Orrery provider update. [CLI](../CLI.md),
-[architecture](../../ARCHITECTURE.md) and [current contracts](../contracts/README.md)
+[architecture](../ARCHITECTURE.md) and [current contracts](../contracts/README.md)
 remain descriptions of implemented behavior until corresponding code changes land.

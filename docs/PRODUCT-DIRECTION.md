@@ -2,7 +2,7 @@
 
 Updated 2026-10-31. Planned boundaries, not implemented commands or configuration.
 [Milestones](MILESTONES.md) owns delivery order; [CLI](CLI.md) and
-[architecture](../ARCHITECTURE.md) describe current behavior.
+[architecture](ARCHITECTURE.md) describe current behavior.
 
 ## Independent facts tool
 
@@ -119,9 +119,6 @@ Do not wait for every language or IPC mechanism before exposing useful project f
 
 ## Development acceptance
 
-The scryer-lab workspace now has the **DevOps / Daily Development** Orrery plan,
-created 2026-11-01 with checks aligned to GitHub Actions and local macOS toolchain
-paths. Invoke that plan and inspect its recorded results; Edward reviews the same
-run in Orrery. Do not replace it with
-separately executed local test/build commands or change its scope without agreement.
-See [contributor instructions](../AGENTS.md) for its local root and stable ID.
+[Contributor instructions](../AGENTS.md#development-acceptance) own the Orrery plan
+location, invocation rules and acceptance reporting. The current plan covers the
+combined CLI/Java-engine layout; update it alongside CI when repositories split.

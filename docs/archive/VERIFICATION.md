@@ -5,8 +5,8 @@ observations from successive early increments. Test totals, CLI placeholders,
 missing features and CI/package descriptions below describe their respective
 increments, not today's implementation. Do not combine these totals or treat
 historical failures/limitations as fresh verification. Current behavior is in the
-[command reference](docs/CLI.md), current CI in the workflow, and future work in
-[milestones](docs/MILESTONES.md). Re-run the repository checks for new changes.
+[command reference](../CLI.md), current CI in the workflow, and future work in
+[milestones](../MILESTONES.md). Re-run the repository checks for new changes.
 
 Scryer build/test/distribution command:
 
@@ -35,7 +35,7 @@ Petclinic was also scanned using a fresh, empty dependency cache. Collection com
 
 ## Package and readability refactor
 
-The package split and extracted scan service/collectors were verified with all 38 tests and `installDist`. Before/after JSON was compared structurally for the legacy fixture's static scan and Petclinic's resolved scan; both remained identical, including schema, declarations, notes and graphs. The extracted Gradle collector was also exercised against the legacy fixture: complete resolution, 65 components and 17 configurations. Target working trees remained clean. Architecture responsibilities and code-style guidelines are recorded in `ARCHITECTURE.md`.
+The package split and extracted scan service/collectors were verified with all 38 tests and `installDist`. Before/after JSON was compared structurally for the legacy fixture's static scan and Petclinic's resolved scan; both remained identical, including schema, declarations, notes and graphs. The extracted Gradle collector was also exercised against the legacy fixture: complete resolution, 65 components and 17 configurations. Target working trees remained clean. Architecture responsibilities and code-style guidelines are recorded in [architecture](../ARCHITECTURE.md).
 
 ## Markdown export and external repositories
 
