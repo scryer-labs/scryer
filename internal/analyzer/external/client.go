@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -15,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/contract"
+	"github.com/edwardnoaland/scryer/internal/engine"
 	"github.com/edwardnoaland/scryer/internal/process"
 )
 
@@ -46,7 +48,7 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 	if err != nil {
 		return contract.Document{}, err
 	}
-	executable, err := c.executable()
+	executable, err := c.executable(ctx)
 	if err != nil {
 		return contract.Document{}, err
 	}
@@ -98,19 +100,30 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 
 var _ contract.Analyzer = (*Client)(nil)
 
-// Explicit development overrides and PATH discovery do not persist an installation.
-func (c *Client) executable() (string, error) {
+// Explicit overrides win, followed by the installed package and development PATH discovery.
+func (c *Client) executable(ctx context.Context) (string, error) {
 	executable := c.Executable
 	if executable == "" {
 		key := "SCRYER_ENGINE_" + strings.ToUpper(strings.ReplaceAll(c.EngineID, "-", "_"))
 		executable = os.Getenv(key)
 	}
 	if executable == "" {
+		store, err := engine.DefaultStore()
+		if err != nil {
+			return "", err
+		}
+		installed, err := store.Find(ctx, c.EngineID)
+		if err == nil {
+			return installed.Executable, nil
+		}
+		if !errors.Is(err, engine.ErrNotInstalled) {
+			return "", fmt.Errorf("installed engine %q: %w", c.EngineID, err)
+		}
 		executable = "scryer-" + c.EngineID + "-engine"
 	}
 	resolved, err := exec.LookPath(executable)
 	if err != nil {
-		return "", fmt.Errorf("engine %q is unavailable: provide %s on PATH or set SCRYER_ENGINE_%s: %w", c.EngineID, "scryer-"+c.EngineID+"-engine", strings.ToUpper(strings.ReplaceAll(c.EngineID, "-", "_")), err)
+		return "", fmt.Errorf("engine %q is unavailable: install a local package, provide %s on PATH or set SCRYER_ENGINE_%s: %w", c.EngineID, "scryer-"+c.EngineID+"-engine", strings.ToUpper(strings.ReplaceAll(c.EngineID, "-", "_")), err)
 	}
 	return filepath.Abs(resolved)
 }

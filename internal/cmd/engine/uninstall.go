@@ -1,17 +1,24 @@
 package engine
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/edwardnoaland/scryer/internal/engine"
+	"github.com/spf13/cobra"
+)
 
 func newUninstallCommand() *cobra.Command {
-	var options mockOptions
-	command := &cobra.Command{
-		Use:   "uninstall <engine>",
-		Short: "Verify a mock uninstall connection without deleting anything",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return options.run(cmd, "uninstall", args)
-		},
+	var jsonOutput bool
+	command := &cobra.Command{Use: "uninstall <engine>", Short: "Remove an owned engine installation", Args: cobra.ExactArgs(1)}
+	bindJSON(command, &jsonOutput)
+	command.RunE = func(cmd *cobra.Command, args []string) error {
+		store, err := engine.DefaultStore()
+		if err != nil {
+			return err
+		}
+		installed, err := store.Uninstall(cmd.Context(), args[0])
+		if err != nil {
+			return err
+		}
+		return present(cmd, jsonOutput, result{Operation: "uninstall", Status: "uninstalled", Persisted: true, Engines: []engine.Installation{installed}})
 	}
-	options.bind(command)
 	return command
 }

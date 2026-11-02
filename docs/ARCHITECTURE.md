@@ -8,9 +8,10 @@ Scryer Core is a Go module; Java facts come from the independent scryer-java-eng
 | `internal/cmd` | Cobra composition, public commands/flags, signal cancellation and presentation choices |
 | `internal/cmd/project` | Project scope composition in project.go; scan/analyze arguments and presentation in separate operation files |
 | `internal/cmd/workspace` | Workspace scope composition in workspace.go; temporary CSV input in import.go |
-| `internal/cmd/engine` | Scope composition in engine.go; non-persistent list/install/uninstall mock connections in separate files |
+| `internal/cmd/engine` | Scope composition in engine.go; persistent local-package list/install/uninstall operations in separate files |
 | `internal/cmd/terminal` | Shared terminal color policy across scopes |
-| `internal/application` | Stack/snapshot lifecycle coordination and external-engine identity probing |
+| `internal/application` | Stack/snapshot lifecycle coordination and use-case orchestration |
+| `internal/engine` | Package manifest/identity probing, user storage, inventory locks, owned copying and deletion |
 | `internal/contract` | Analyzer interface, versioned requests/responses, report document requirements and uncertainty semantics |
 | `internal/analyzer/external` | Engine executable discovery, process protocol, request identity/version validation; no JVM or rendering |
 | `internal/repository` | Git ref resolution, shared clone, isolated standalone before/after checkouts and cleanup |
@@ -48,14 +49,14 @@ No existence of a test class, command success, static test route or method hit p
 
 ## Code and dependency rules
 
-Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod` for the current application; do not scatter modules through the existing tree. The independent Java repository now communicates through the JSON process contract; it imports no Core internal Go packages. Persistent installation and capability/template negotiation remain future work.
+Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod` for the current application; do not scatter modules through the existing tree. The independent Java repository now communicates through the JSON process contract; it imports no Core internal Go packages. Local package installation is persistent; release/source installation and capability/template negotiation remain future work.
 
 Core `scripts/build` produces `build/install/scryer/bin/scryer` with Go only.
 The engine's `scripts/build` produces its Go wrapper and worker jars under
 `build/install/scryer-java-engine/{bin,lib/java}`. Its optional runtime package adds
 `runtime/`. Core never selects a JDK/classpath; engine discovery uses
-`SCRYER_ENGINE_<ID>` (uppercase, hyphens replaced by underscores), then
-`scryer-<id>-engine` on PATH. Explicit invalid overrides fail without fallback.
+`SCRYER_ENGINE_<ID>` (uppercase, hyphens replaced by underscores), then persisted
+installed inventory, then `scryer-<id>-engine` on PATH. Explicit invalid overrides fail without fallback.
 
 On macOS, Core starts one process group containing the wrapper. The JVM inherits
 that group, as do ordinary child build/test processes, so cancellation reaches the
@@ -82,6 +83,38 @@ without computing a schedule.
 This file describes the implementation, not the future plugin system. The
 [documentation index](README.md) separates current contracts from plans;
 [milestones](MILESTONES.md) owns delivery order and
-[technical debt](TECH-DEBT.md) records existing limitations. Persistent
-Go-wrapped engine installation, non-Java analysis and architecture/test-strategy
+[technical debt](TECH-DEBT.md) records existing limitations. Release/source
+engine installation, non-Java analysis and architecture/test-strategy
 capabilities must not be described as present until their slices are implemented.
+
+## Installed package and fact-contract boundaries
+
+The default global home is ~/.config/scryer, matching Orrery on macOS rather than
+using the platform-native Library/Application Support directory. SCRYER_HOME
+remains an optional override.
+
+engine.json and .scryer-install.json describe local tool installation, not source
+facts. internal/engine owns that data; internal/contract owns request/response and
+report data. Install copies complete packages and validates describe without
+requiring the Java runtime to start. A staged package is renamed into inventory
+only after successful verification; installed packages are not overwritten.
+Inventory mutation is serialized across processes. Uninstall checks ownership
+before deletion; it never treats a source checkout as an installed engine.
+
+The current report v1 was preserved from Java extraction. Its envelope is generic,
+but fields/semantics still reflect Java dependencies, symbol descriptors and
+JaCoCo evidence. Do not describe it as a mature universal multilanguage schema.
+New languages should drive common-fact and language-extension refinements; local
+installation must not silently redesign the scan/analyze data contract.
+
+## Reporting modularity status after extraction
+
+Engine JSON versus Core presentation is separated. Inside Core, however, the
+current operation-based scan/analyze renderers still mix shared helpers with
+Java/JaCoCo-specific labels and fields (for example scan.go, markdown.go and
+analyze.go). A separate Java report module is agreed design, not implemented code.
+Extract those specialized views behind a small Core-local function/module boundary
+when report modularization is taken up; keep common rendering reusable and keep
+engines JSON-only. Do not claim that repository extraction completed this split.
+Project engine YAML initialization/reading also remains planned; the current worker
+retains existing parameter/environment/default build-tool selection behavior.

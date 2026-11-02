@@ -48,22 +48,31 @@ After the 2026-11-02 Java extraction, acceptance is ordered:
    Core-only packages; no Java or Gradle setup).
 2. Engine: `scryer-java-engine--daily-development` (Go wrapper, Kotlin facts/JSON,
    JVM worker and slim/bundled-Java-21 package checks).
-3. Workspace: `scryer-lab--scryer-java-engine-integration` (real external engine,
-   seven test_workspace project scans, Core reports, analyze/test execution,
-   working-tree snapshots and wrapper/JVM/target cancellation).
+3. Workspace: `scryer-lab--scryer-java-engine-integration` (persistent local-package
+   lifecycle in an isolated home, source independence, analyze/test execution,
+   snapshots/cancellation, then installing the current bundled engine for normal use).
+4. Modernization: `modernization--scryer-orrery-integration`, rooted at
+   `/Users/edwardnoaland/Desktop/ThoughtWorksProjects/modernization/test_workspace`.
+   Its seven project plans run in parallel through the formal scryer@v1.4 provider.
+   Keep seven-project scans here, not duplicated in scryer-lab.
 
-All three definitions live under scryer-lab. The integration plan sets an explicit
-engine executable to identify the built artifact; engine discovery otherwise uses
-PATH. Non-persistent management probes are not real installs. Never add Core
+The first three definitions live under scryer-lab. Integration installs a known
+complete artifact, then normal scans discover it without executable overrides.
+Its final step refreshes the owned default Java installation from the current
+bundled package so the modernization provider can consume it without a restart. Never add Core
 checkout/report-resource dependencies to engine tests. No Kotlin/Gradle files
 belong in this repository.
 
 If Orrery/provider implementation changes, also run `orrery--daily-dev-pipeline`.
 Provider operations use their resolved project target, not an arbitrary directory
 override. The existing `modernization--scryer-orrery-integration` in test_workspace
-remains the provider acceptance plan; provider processes need engine discovery in
-their environment. Do not add an implicit sibling-repository fallback to Core.
+is the provider acceptance plan; provider processes discover the persisted
+installation automatically. Do not add an implicit sibling-repository fallback to Core.
 
 Keep each repository's plan aligned with its CI workflow when build ownership
 changes. Packaging checks are local acceptance; uploading artifacts is CI-only.
 The shared-library/C ABI idea is a future pair experiment, not this extraction.
+
+Global installation/config storage defaults to ~/.config/scryer on macOS as well,
+matching Orrery/nvim; do not use os.UserConfigDir() or Library/Application Support.
+SCRYER_HOME remains an explicit override. Project engine YAML is a separate layer.

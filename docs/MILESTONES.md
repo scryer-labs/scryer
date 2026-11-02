@@ -60,8 +60,13 @@ See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable sli
    or source build is implemented. Core run `20261102T160505366Z-0c862886`, engine run
    `20261102T160505751Z-3446bd8a`, and workspace linkage run
    `20261102T160706145Z-be3a98f0` succeeded. Remote-list/install-all remain deferred.
-2. [ ] Verify install/list/invoke/uninstall against the user-created Java-engine
-   repository. Start with local packages/source directories and owned install data.
+2. [x] **Done (local packages)** — Persistent install/list/discovery/uninstall of
+   complete packages through engine.json and owned user storage. No source checkout
+   dependency remains after installation. Installation is platform/identity checked,
+   staged and locked; existing installs require explicit uninstall before reinstall.
+   Release downloads, archive extraction, source compilation and version switching
+   remain future work. Seven real project scans return to modernization's provider
+   integration, no longer duplicated inside the engine linkage plan.
 3. [x] **Done (behavior-preserving extraction)** — Move Kotlin production code,
    facts/JSON tests, Gradle and JVM/runtime packaging to scryer-java-engine. Core
    invokes wrapper execute through the existing v1 envelope and retains snapshots,
@@ -76,7 +81,9 @@ See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable sli
    Install compatible stable assets; also support source builds through an engine-owned
    build entry producing the same package layout. Source builds require dev toolchains.
 5. [ ] Provide automatic global config/data/cache defaults and optional SCRYER_HOME;
-   users must not initialize a global home. Core installs independently with go install.
+   users must not initialize a global home. The initial user home and persistent local
+   inventory are implemented; cache separation and additional preferences remain future
+   work. Core installs independently with go install.
    Core/engine CI and plans are already split, and composed acceptance identifies
    known artifacts; persistent installed-home/config acceptance is still pending.
 
@@ -206,3 +213,26 @@ blanket assignment of judgments to consumers. Business/design trade-offs,
 consultant-style advice, persistent evolution history and plan execution remain
 outside Scryer. The shared-rule capability does not block the current CLI/Java
 extraction and **2.1** Orrery adaptation sequence.
+
+## 2026-11-02 persistent local installation acceptance
+
+Engine project `20261102T190423713Z-12016f32`, repeatable installed-engine lifecycle
+`20261102T190808090Z-4cb58c91`, and modernization formal-provider integration
+`20261102T190934467Z-26d9261c` succeeded. Core `20261102T191115041Z-d7ae0ef0` also succeeded, including its final
+missing-engine diagnostic check. The linkage plan owns installation/lifecycle;
+seven project scans run only through modernization's existing v1.4 provider plans.
+A bundled Java engine is installed in the normal user home, without provider path
+configuration or a backend restart. This is a local package implementation, not
+GitHub release downloading, archive extraction or source compilation.
+
+Global-home correction: ~/.config/scryer is the default on macOS, matching
+Orrery/nvim; the initial Library installation was moved once. Acceptance succeeded:
+Core 20261102T193332344Z-d8e09434, engine 20261102T193414957Z-72a2c86b,
+installed-engine integration 20261102T193525437Z-576265e2, modernization formal
+provider integration 20261102T193539815Z-c4c90c1e. The former Library home no longer
+exists; no provider settings or backend restart were needed.
+
+Review clarification: Core/engine process and presentation ownership are separated,
+but Core-local common versus Java-specific report modules are still a pending task.
+Preserve the agreed modular report plan without claiming it is already implemented.
+Project engine YAML templates/initialization remain pending as well.

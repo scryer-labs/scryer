@@ -22,10 +22,10 @@ go install ./cmd/scryer
 
 Java scan/analyze uses the independently built
 [scryer-java-engine](https://github.com/scryer-labs/scryer-java-engine).
-Put its launcher on PATH, or select the development executable explicitly:
+Build/extract its complete local package, then install it once:
 
 ```sh
-export SCRYER_ENGINE_JAVA="/absolute/path/to/scryer-java-engine/build/bin/scryer-java-engine"
+./build/install/scryer/bin/scryer engine install java --from /absolute/path/to/scryer-java-engine/build/install/scryer-java-engine
 ./build/install/scryer/bin/scryer project scan ../legacy-maven-fixture --static
 ./build/install/scryer/bin/scryer project analyze ../repository --before HEAD~1 --after HEAD
 ```
@@ -34,7 +34,7 @@ Core starts the Go wrapper, which starts its JVM worker. The engine owns Java 21
 worker jars and runtime selection; Core owns snapshots, protocol validation and
 reports. No Kotlin sources or Gradle files remain in this repository. Missing
 engines produce an explicit error; default engine-free stack/LOC is still pending.
-Management commands remain non-persistent probes, not an installer.
+Local-package engine installation, listing and uninstall are persistent. Core automatically discovers installed engines. PATH and SCRYER_ENGINE_JAVA remain development overrides; release downloads and source builds are not implemented.
 
 Default Java scans evaluate target build configuration and may download metadata;
 `--static` skips build-model execution. Analyze runs target tests unless
@@ -53,7 +53,7 @@ node --test scripts/test-report-graph.cjs
 Core packages contain only the Go CLI, embedded reporting assets, README and
 license; no jars or Java runtime. Archives are written under `build/distributions/`.
 The engine owns its slim and Java-21-runtime packages. Both distributions can be
-relocated independently; engine discovery uses PATH or the explicit override.
+relocated independently; installed packages are copied in full and discovered automatically.
 
 The [CI workflow](.github/workflows/ci.yml) checks Go and browser report code,
 builds Core without Java, verifies extracted packages and standalone `go install`,
@@ -74,7 +74,7 @@ specified in [AGENTS.md](AGENTS.md).
 Current commands use project/workspace scopes; see [CLI](docs/CLI.md). The first
 reorganization preserves Java defaults and removes legacy command entries.
 `workspace import` remains a Mod-fed CSV adapter, not
-native scanning. Persistent engine installation, `.scryer/` configuration and default
+native scanning. Release/source installation, `.scryer/` project configuration and default
 engine-free stack/LOC scanning are planned next, not implemented. See
 [decision 004](docs/decisions/004-multilanguage-scopes-cli-and-engine-config.md) and
 [milestones](docs/MILESTONES.md). Consumers own business/design judgments, plan

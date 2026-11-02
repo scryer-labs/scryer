@@ -393,3 +393,41 @@ resident wrapper process while preserving independently distributed engine code.
 It is not a decision to adopt Go plugin or embed JVM through JNI. The independent
 process baseline remains available while ABI/memory/error/lifecycle tradeoffs are
 explored. Native workspace scanning and default stack/LOC remain deferred.
+
+## 2026-11-02 configuration/request and future scan clarification
+
+Engine-owned templates initialize persistent project options under
+.scryer/engines/<id>.yaml through Core. Build-tool selection and default test
+commands are examples of engine-owned settings; their final YAML shape remains
+engine-driven. This is not a stored copy of an execution request. Core generates
+protocolVersion/requestId/operation, resolves the selected project, refs and immutable
+SHAs, creates beforeRoot/afterRoot snapshots, and assembles the request using CLI
+selections and project configuration. Engines define their option semantics, not
+caller-owned snapshot lifecycle. Neither request envelopes nor ephemeral paths
+belong in project YAML. Template initialization remains planned, not implemented
+by the local-package installer.
+
+The response envelope is language-neutral; Java-specific data resides inside the
+report. The abbreviated {schemaVersion: 1} example is not a complete valid report.
+Do not inherit the current Java report's required fields or CLI build-tool flags
+as requirements for future engines merely because the transport envelope works.
+
+The existing Java scan focuses on build/dependency/version observations, with
+additional local metadata; it is a preserved legacy capability and an integration
+validation engine, not the reference design for future scan. C++, Rust, Go and
+TypeScript must start from the agreed source-fact goals: architecture/entities,
+symbols, ownership and declaration/implementation/call relations as supported,
+plus dependencies and explicit evidence/limits. Source facts must not intrinsically
+require a runnable project; builds can enhance resolution. Core's stack/LOC baseline
+is engine-independent. Define common facts and language-specific extensions from
+actual language cases; do not force them into Maven/Gradle/JaCoCo or Java-led report
+shapes. Java can remain unsupported for new capabilities until there is demand.
+
+## 2026-11-02 global directory convention
+
+The default global Scryer home is ~/.config/scryer, including on macOS, matching
+Edward's nvim/Orrery convention. Do not use os.UserConfigDir()'s macOS
+Library/Application Support default. SCRYER_HOME remains an optional explicit
+override. The development installation created at the former location was moved
+once; no pre-stability legacy-path fallback/migration feature is required.
+Global installed-package state remains separate from planned project engine YAML.

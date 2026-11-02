@@ -3,12 +3,12 @@
 Go owns public commands, snapshots and rendering. The independent Java engine
 imports no Core internal packages: the interoperable boundary is JSON, not Go
 struct linkage. `internal/contract.Analyzer` is Core's internal use-case interface.
-Only Java is composed today; generic installation/capability/config negotiation
-remains separate work.
+Only Java is composed today; capability/config negotiation remains separate work. Local package installation
+is persistent and separate from fact transport.
 
 ## Process transport
 
-Core resolves `SCRYER_ENGINE_JAVA` or `scryer-java-engine` on PATH and invokes
+Core resolves `SCRYER_ENGINE_JAVA`, its installed inventory, or `scryer-java-engine` on PATH and invokes
 `execute`. The engine's Go wrapper starts its JVM worker and forwards stdin,
 stdout and stderr without rendering or rewriting JSON. Each invocation accepts
 one request and returns one response. Diagnostics use stderr; framing is EOF,
@@ -18,8 +18,9 @@ a structured engine error or failed target tests can be part of a valid response
 
 The separate `describe` operation returns exactly one identity with protocolVersion
 1, id/name/version/source and mock false for the real Java engine. Core applies a
-10-second describe deadline. Non-persistent management probes still return mock
-receipts with persisted false; identity mock false describes the engine itself.
+10-second describe deadline. Persistent management returns installed/list/uninstalled receipts with persisted
+true; identity mock false describes the real engine. Installation metadata uses
+its own engine.json schema and is not a fact report.
 
 Request envelope:
 
@@ -100,3 +101,28 @@ Schemas are deliberately additive within v1; incompatible changes require a new 
 Working-tree analysis: Go may provide `comparisonRepository` (an isolated Git repository containing both immutable commit objects) independently of the original `repository` path. Java computes the diff there, while retaining the original path for report identity and target environment discovery. Both supplied checkout HEADs still match `before`/`after`. Go adds `afterSource` with `kind`, `ref`, `baseHead` and `snapshotSha` to reports for `--after .`. Consumers must label this as a private working-tree snapshot, not an original committed ref.
 
 Remote scan enrichment may include additive `toolUpdates` (`checkedAt`, `tools`, `notes`). Each row supplies `tool`, `channel`, nullable `current`/`latest`, `currentSource`, `status`, nullable `metadataUrl` and `note`. Java feature-level and unknown patch observations remain separate channels. Tool updates are repository facts plus remote release metadata; they do not establish compatibility or upgrade safety.
+
+## Current generality limits
+
+The transport envelope and Core orchestration are language-independent boundaries.
+Report v1 retains the existing Java-led shapes during extraction, including Maven/
+Gradle scopes, Java descriptors and JaCoCo provenance. Shape validation is not a
+JSON Schema-generated universal language model: document.go checks supported
+required shapes and graph/snapshot invariants, while additive fields are retained.
+A future engine may require deliberate common-field/extension evolution. Keep
+transport version, report schema version and local package schema independent.
+
+## Project configuration versus invocation requests
+
+The request examples above are runtime messages assembled by Core, not files to
+copy into .scryer/. Planned engine-provided templates supply persistent project
+settings (for example build-tool selection/default test command). Core combines
+those with the operation and CLI selection, resolves paths/refs/SHAs, generates
+request identity and owns temporary snapshot directories. Engine-specific YAML
+schemas and initialization are separate from the current local-package installer.
+
+The response envelope is generic; report is the stack-specific/common-fact payload.
+The Java report shown here preserves current behavior rather than prescribing the
+schema or scan priorities for C++, Rust, Go or TypeScript. Those engines must follow
+the source/architecture/symbol/relation fact goals in decision 004 instead of copying
+the Java dependency/version-oriented scan implementation.

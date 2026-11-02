@@ -19,8 +19,7 @@ scryer engine uninstall <engine>
 Project paths default to the current directory. This first reorganization preserves
 existing Java scan/analyze behavior, flags and report contracts. Scan still resolves
 build models by default; `--static` skips that. The planned engine-free `stack,loc`
-default and `--facts`, native workspace scan/configuration management, and persistent
-engine management are not implemented yet.
+default and `--facts`, native workspace scan/configuration management, and release/source engine installation are not implemented yet.
 
 `workspace import` is a temporary external-CSV adapter: it normalizes and reports
 facts without scanning code, registering projects or writing workspace config.
@@ -28,34 +27,60 @@ Old top-level `scan`, `analyze` and `analyze workspace` have been removed, not h
 or aliased. Consumers must use the scope-first commands. Orrery's new Scryer provider
 version adapts the commands now rather than waiting for Java-engine extraction.
 
-## Non-persistent engine management
-
-The engine commands now call an explicit external executable's `describe`
-operation, validate its JSON identity, and print a mock receipt:
+## Persistent local engine management
 
 ```sh
-scryer engine install java --executable ../scryer-java-engine/build/bin/scryer-java-engine
-scryer engine list --executable ../scryer-java-engine/build/bin/scryer-java-engine
-scryer engine uninstall java --executable ../scryer-java-engine/build/bin/scryer-java-engine
+scryer engine install java --from ../scryer-java-engine/build/install/scryer-java-engine
+scryer engine list --json
+scryer project scan /path/to/java-project --static --json
+scryer engine uninstall java --json
 ```
 
-`--executable` is required for this non-persistent slice. Add `--json` for a receipt
-containing operation, status `mock`, persisted false, executable and engine identity.
-Each command independently probes the provided engine; list is not a persisted
-installed inventory. Install/uninstall validate the requested ID against the returned
-identity; one executable represents one engine, not a batch source for other IDs.
-No package is copied/deleted, installation state is stored, global Scryer home is
-created, source build is invoked, or Java analyzer is selected by these operations.
-Project scan/analyze now invoke the independently built Java engine through the discovery described below.
+Install copies a complete local package, including worker jars and an optional
+bundled runtime, into owned user-level storage. The source can then be moved or
+removed. Each package contains engine.json (schemaVersion 1, engine identity,
+relative executable, OS and architecture); install checks platform and identity
+against the copied launcher's describe response before publishing it. The reserved
+.scryer-install.json records ownership, source and installation time. Foreign
+platforms, escaping links/paths, mismatched identities and unowned destinations
+are rejected. Internal links are relocated inside the copied package.
 
-The process identity contains protocolVersion 1, id/name/version/source and
-mock false for the real Java engine. Stdout must contain exactly one JSON identity; diagnostics use stderr.
-Core enforces a 10-second deadline and its existing process cancellation behavior.
-The execution protocol is documented in [contracts](contracts/README.md); persistent installation is not implemented.
+Install accepts multiple IDs with one --from directory per engine (repeat the
+flag or pass a comma-separated list of directories). Inputs are checked before
+installation; if a later engine fails, the command reports any already installed
+engines with status partial and exits nonzero. This is not a batch transaction.
+--executable remains available for a launcher inside a complete local package;
+it resolves engine.json rather than installing an arbitrary bin directory.
+Existing installations are not overwritten: uninstall before reinstalling.
+Archive extraction, release download, source compilation and version switching
+are later work. Installing a slim package still requires external Java 21;
+a bundled-runtime package does not.
+
+List and uninstall use persisted inventory and take no executable/source path.
+Uninstall removes only validated owned package data, preserving sources, project
+configuration and other engines. A missing uninstall target is an error. Empty
+list returns an empty array and does not create a global home.
+
+Add --json to return operation/status/persisted and engines. Each installation
+contains engine identity, executable, packageRoot, sourcePath and installedAt.
+Persisted is true; management no longer returns mock receipts. Protocol/report
+JSON remains a separate contract and is unchanged by installation metadata.
+
+The home defaults to ~/.config/scryer, matching the nvim/Orrery directory
+convention even on macOS, and is created automatically on installation. SCRYER_HOME is an optional
+advanced/test override. Users need not initialize or understand the directory.
+Mutations use an interprocess lock; incomplete copies are never listed as installs.
+Current persistent management targets macOS/Linux; Windows is to be supported.
+
+Discovery order is an explicit development executable/SCRYER_ENGINE_<ID> override,
+then the persisted installation, then scryer-<id>-engine on PATH. Invalid explicit
+overrides and broken installed metadata fail visibly rather than silently falling
+back. Normal installed-engine use needs no path environment variables. Core reads
+installed inventory per invocation, so Orrery need not restart after installation.
 
 ## Run
 
-Core requires Go, not Java/Gradle. The independent Java engine uses Java 21, Kotlin 2.2.21 and the Gradle 8.14.3 Wrapper. Put scryer-java-engine on PATH or set SCRYER_ENGINE_JAVA to its executable. Core starts the wrapper; the wrapper starts its JVM. Target repositories may use older JDKs and build tools.
+Core requires Go, not Java/Gradle. The independent Java engine uses Java 21, Kotlin 2.2.21 and the Gradle 8.14.3 Wrapper. Install its local package once; PATH or SCRYER_ENGINE_JAVA remain optional development overrides. Core starts the wrapper; the wrapper starts its JVM. Target repositories may use older JDKs and build tools.
 
 Run project analyze from inside the target Git repository (or a subdirectory):
 
@@ -177,7 +202,7 @@ Analyze now runs a conventional test lifecycle in the isolated after checkout by
 
 `--skip-tests` explicitly returns static analysis only and reports SKIPPED. Otherwise the report records after SHA, argument list, target JAVA_HOME, duration, exit code and a durable combined stdout/stderr log. SUCCEEDED means command exit 0, not proof that any test executed, covered a method or that a release package was produced. Failed, timed-out, unavailable or snapshot-mutating commands exit Scryer with code 1, while preserving static impact output. Tracked source/index or HEAD changes invalidate the command result for the requested snapshot.
 
-Scryer itself runs on JDK 21. `SCRYER_JAVA_HOME` selects the target build JVM only; this does not alter global mise configuration. Without an override, Gradle 4–6 can reuse an existing fixture-local Java 8 installation under the source repository's `.tooling/mise/data/installs/java`; otherwise they require an explicit compatible JVM. Other targets default to Scryer's runtime JDK; automatic JVM compatibility selection/provisioning is not yet available.
+The Java engine's JVM worker runs on JDK 21. `SCRYER_JAVA_HOME` selects the target build JVM only; this does not alter global mise configuration. Without an override, Gradle 4–6 can reuse an existing fixture-local Java 8 installation under the source repository's `.tooling/mise/data/installs/java`; otherwise they require an explicit compatible JVM. Other targets default to the engine's runtime JDK; automatic JVM compatibility selection/provisioning is not yet available.
 
 ```bash
 SCRYER_JAVA_HOME=/path/to/compatible/jdk scryer project analyze --before HEAD~1 --after HEAD
@@ -363,4 +388,4 @@ build/test JVM. Core packages contain no Java runtime or jars and no longer acce
 
 Core and engine remain OS/architecture-specific distributions. CI builds Ubuntu
 packages; macOS is the primary local acceptance platform. GitHub Release publication
-and persistent engine installation are not implemented yet.
+and release/source engine installation are not implemented yet.
