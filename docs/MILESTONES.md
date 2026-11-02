@@ -23,8 +23,12 @@ configuration below are not current capabilities.
 - [x] **Done** — ~~Remove refactor-plan generation.~~ See [TD-005](TECH-DEBT.md#td-005-remove-refactor-plan-generation-from-scryer); accepted by DevOps / Daily Development; run recorded in TD-005.
 - [x] **Done (design)** — ~~Agree multilanguage scopes, command skeleton, scan/analyze
   separation and engine-config ownership.~~ See decision 004; implementation is pending.
-- [ ] Finalize configuration/request/result schemas, output/exit semantics and the
-  old-to-new capability mapping before structural refactoring.
+- [x] **Done (design)** — ~~Agree minimal workspace/per-engine YAML ownership and
+  JSON-only engine results with Core-owned modular MD/HTML rendering.~~ Decision 004
+  records the pre-stability no-compatibility policy; no implementation is claimed.
+- [ ] Next: define minimal engine/project/workspace JSON contracts using mixed-project
+  and two-project examples; then remaining workspace fields/path rules, requests,
+  output/filter/exit semantics, engine-management details and old-to-new mapping.
 - [ ] Retain the Mod-fed workspace CSV adapter temporarily under
   [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation);
   migrate its entry into the new workspace command shape, then remove the adapter
@@ -35,9 +39,11 @@ configuration below are not current capabilities.
 - [ ] Implement scope-first project/workspace commands from decision 004, with optional
   paths defaulting to the current scope root. Preserve current Java behavior through
   explicit migration rather than requiring every engine to emulate Java.
-- [ ] Implement workspace init/add/remove and explicit membership. Support project
-  defaults and per-engine template initialization under project `.scryer/`; existing
-  user config wins. Workspace configuration must not contain engine settings.
+- [ ] Implement workspace init/add/remove and explicit membership. Initialize
+  `.scryer/engines/<engine-id>.yaml` from engine templates under projects, without
+  project.yaml. Existing files are not automatically overwritten. Workspace has only
+  workspace.yaml; engine config content is engine-owned and need not be backward
+  compatible before stability.
 - [ ] Implement shared `--facts` semantics: default stack/LOC, architecture instead of
   separate symbol/call user commands, workspace forwarding/aggregation, explicit
   unavailable/partial results. Decide filter, static test-inventory and LOC policies.
@@ -48,6 +54,10 @@ configuration below are not current capabilities.
   formats, stderr diagnostics/progress, exit codes and partial-result semantics.
   Include provenance and distinguish missing engine, incompatible engine,
   unsupported capability and execution failure. JSON mode stdout contains only JSON.
+- [ ] Implement distinct engine/project/workspace structured results; engines emit
+  JSON only. Core report modules reuse common components, stack-specific presentation
+  and separate scope views. Preserve unknown extensions in JSON-detail fallbacks;
+  no report plugin framework. Internal child scans need not generate MD/HTML.
 - [ ] Keep source/symbol extraction usable without target build/run success.
   Separate optional resolution and execution capabilities and report coverage gaps.
 - [ ] Write meaningful command/configuration contracts and migration examples.

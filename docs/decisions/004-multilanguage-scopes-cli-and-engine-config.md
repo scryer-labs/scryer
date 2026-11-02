@@ -1,6 +1,7 @@
 # Work decision 004: Multilanguage scopes, commands and engine configuration
 
 Date: 2026-11-02
+Updated: 2026-11-02, including configuration and report-layer refinements.
 Status: Agreed design direction and core command behavior; not implemented.
 Some flags, schemas and output defaults remain open as listed below.
 
@@ -146,18 +147,40 @@ a deliberate migration; exact generic override flags remain open.
 
 ## Project engine configuration lifecycle
 
-Workspace `.scryer/` owns members and shared scan defaults, not engine sections.
-Project `.scryer/` holds scan defaults and explicit per-engine configuration files,
-including build/test commands and engine options. Files are manually editable;
-JSON versus YAML, exact names/schema and precedence are not yet finalized.
-A candidate layout is `.scryer/engines/<engine-id>.yaml`, not an implemented format.
+Use YAML for the initial configuration layout. Workspace has only
+`.scryer/workspace.yaml`, owning explicit project members and shared scan defaults.
+Project has `.scryer/engines/<engine-id>.yaml` files, owning only each engine's
+configuration. Do not introduce `project.yaml` or project-level generic defaults
+in the initial slice. A directory that is both scopes can contain both layouts.
+Exact workspace fields/path rules and template-retrieval protocol remain to be
+specified; the division of files and ownership is agreed.
+
+Explicit CLI `--facts` wins. Workspace scan otherwise uses its workspace defaults,
+then built-in `stack,loc`. Standalone project scan otherwise uses `stack,loc`, without
+searching parent directories for workspace configuration. Workspace forwards its
+selected facts to member project scans. There is no project.yaml override layer.
+Engine YAML controls extraction details, not a second implicit facts-selection layer.
+
+Engine configuration is deliberately minimal and driven by actual scan/analyze
+needs. An engine may initially ship an empty YAML template and accept an empty
+configuration. It introduces fields only when a concrete need appears. Core obtains
+and initializes that template through a uniform boundary; it does not interpret
+engine-specific fields or centrally prescribe build/test option names.
+
+Before engines/configuration stabilize, there is **no old-config compatibility or
+migration requirement**. Fields/schema may change directly, with manual editing or
+explicit regeneration as necessary. Do not add version fallbacks, migration layers
+or compatibility scaffolding now. Revisit compatibility when engine/configuration
+maintenance actually requires preserving established user data. This supersedes
+the earlier proposal to require missing-field defaults for every new parameter.
 
 1. Workspace scan discovers stacks; the user explicitly installs missing engines.
 2. When a requested project scan/analyze needs an engine, use existing engine config.
 3. If missing, the engine probes the project and supplies an applicable default
    template; Core writes that section/file without overwriting another writer.
 4. Reuse user-edited config on subsequent operations. Do not reselect or overwrite
-   it silently on scan or engine upgrade. Report incompatible config explicitly.
+   it silently on scan or engine upgrade. Invalid config can be reported for manual
+   correction; it does not require implementing a migration mechanism.
 
 First-use initialization during scanning is an agreed exception to read-only scan
 behavior: report created files in terminal/JSON. Engines provide templates/probes;
@@ -186,16 +209,69 @@ engines' valid results or imply that no relationships exist.
 
 ## Reports and preservation requirements
 
+### Structured data flow
+
+The physical scope and execution layers correspond:
+
+```text
+workspace operation
+  -> project operation(s)
+       -> engine(s), each using its own project YAML
+       <- engine JSON facts
+  <- project JSON results
+<- workspace JSON result
+```
+
+JSON is the inter-layer fact contract and sole data basis for MD/HTML. Internal code
+may use typed structures; this does not require serializing/parsing JSON at every
+in-process call. Reports must not become a competing fact source. Workspace consumes
+project structured results, never parses their Markdown/HTML to recover facts.
+
+There are three distinct result contracts, sharing useful entity/relation/evidence
+primitives rather than one mandatory identical document shape:
+
+| Contract | Producer and consumer |
+| --- | --- |
+| Engine result | Engine returns structured facts, capabilities/gaps, provenance and engine-specific extensions to project orchestration. |
+| Project result | Core combines engine results, project identity and supported intra-project relations; consumed by workspace and project reports. |
+| Workspace result | Core aggregates project results and supported cross-project computations; consumed by workspace reports and external tools. |
+
+Engines implement the common engine-facing JSON contract; they do not need a workspace
+contract or knowledge of workspace reporting. Exact field names, identities, request/
+result schemas and aggregation rules remain the next design task. No independent
+engine-report CLI entry is required in this slice.
+
+### Reports and modular rendering
+
 JSON contains all facts actually collected in the requested scope, including entity
 identities, relationships, provenance and missing/unsupported/partial limitations.
 Markdown is information-equivalent rather than a truncated summary. HTML uses the
 same data; collapse/filter/layout affects presentation only. Complete output does
-not claim complete understanding of the source.
+not claim complete understanding of the source. New derived relations/metrics must
+enter the structured result before rendering; renderers do not invent facts.
 
-Interactive architecture HTML, possible embedding/reuse by Orrery and layout
-selection remain a separate design topic. Clean-architecture layer mappings need
-configuration/evidence; choosing a circular layout does not establish architecture.
-Output flags, default stdout/file delivery and exit-code policy remain open.
+Engines return JSON only and do not implement Markdown or HTML. Core owns modular
+report rendering with three boundaries:
+
+- Shared components for entities, relationships, metrics, evidence and missing states.
+- Stack-specific modules for supported Java/C++/Rust/etc. data presentation, without
+  rerunning language extraction or fact analysis.
+- Separate project/workspace views that compose those modules; no single identical
+  page/template is required for both scopes.
+
+Accept coordinated engine/Core-report changes for new stack-specific fields. Keep
+module interfaces clear so components can be extracted later, but do not introduce
+a report plugin registry, runtime module loading or engine-provided executable UI.
+If an extension has no specialized renderer yet, preserve its information through
+labeled JSON code blocks in Markdown and expandable JSON details in HTML. That is
+a completeness fallback, not a claim of a polished semantic view.
+
+Generate MD/HTML at the scope requested by the user. Workspace orchestration does
+not need to generate every child project's reports before aggregation. Interactive
+architecture HTML, possible Orrery embedding/reuse and layout selection remain a
+separate topic. Clean-architecture layer mappings need configuration/evidence;
+choosing a circular layout does not establish architecture. Output flags, default
+stdout/file delivery and exit-code policy remain open.
 
 ## Migration and next implementation boundary
 

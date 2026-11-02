@@ -17,8 +17,9 @@ Choose the type for the primary purpose of the commit. Keep summaries concise an
 ## Refactoring design reference
 
 Read [decision 004](docs/decisions/004-multilanguage-scopes-cli-and-engine-config.md)
-for the agreed multilanguage domain, scope-first commands and project engine-config
-lifecycle before the next refactoring slice. It separates agreed behavior from
+for the agreed multilanguage domain, scope-first commands, minimal engine YAML
+(no pre-stability compatibility work), three JSON result layers and modular Core
+reporting before the next refactoring slice. It separates agreed behavior from
 remaining open schema/flag details; it is not a claim of implemented capability.
 
 ## Development acceptance
@@ -27,7 +28,11 @@ Agreed 2026-10-31; configured 2026-11-01: use the Orrery **DevOps / Daily Develo
 plan for acceptance. Workspace root is
 `/Users/edwardnoaland/Desktop/experiment/scryer-lab`; plan ID is
 `scryer-lab--daily-development`. Read its manifest for the current revision before
-starting a run through Orrery's API. Checks follow `.github/workflows/ci.yml`, with
+starting a run through Orrery's API. As of the 2026-11-02 workspace relocation,
+this definition targets the Scryer project (not the workspace); its commands run at
+that project root without a `cd scryer` prefix. The start request still uses the
+scryer-lab workspace root. Resolve/read the current definition rather than restoring
+old workspace-scoped commands. Checks follow `.github/workflows/ci.yml`, with
 local macOS toolchain paths replacing hosted setup actions. Packaging checks remain
 local; GitHub artifact upload is a hosted workflow concern.
 

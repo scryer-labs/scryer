@@ -31,6 +31,10 @@ current commands and Java evidence remain unchanged by this cleanup.
 Shared CLI/fact contracts and presentation stay in Core. Engine interfaces do not
 import Orrery types or have to match Orrery provider interfaces. Terminal, JSON and
 other reports derive from the same facts; presentation must not invent evidence.
+Engines return only structured JSON; Core aggregates engine/project/workspace results
+through distinct contracts. Core generates MD/HTML from JSON using shared components,
+stack-specific report modules and separate scope views. Unknown extensions retain
+JSON-detail fallbacks; there is no report plugin framework in this slice.
 Every command, including engine management, must provide a JSON result contract.
 The exact default stdout/file delivery policy remains to be designed.
 
@@ -43,8 +47,11 @@ Scryer's workspace scope. Workspace must become a first-class scope rather than
 remain a special case under `analyze`.
 
 Workspace configuration retains explicit members, managed through init/add/remove.
-Project configuration owns per-engine options; engines supply detected default
-templates and Core initializes missing files without overwriting existing choices.
+Workspace initially uses only `.scryer/workspace.yaml`; project configuration uses
+`.scryer/engines/<engine-id>.yaml`, with no generic project.yaml. Engines supply
+minimal default templates (initially allowed to be empty), and Core initializes
+missing files without overwriting existing choices. Derive fields from real needs;
+pre-stability engine configs do not require compatibility/migration mechanisms.
 Workspace never owns engine-specific configuration. Scope-first commands, default
 stack/LOC scanning, analyze, report completeness and outstanding schema decisions
 are consolidated in [decision 004](decisions/004-multilanguage-scopes-cli-and-engine-config.md).
