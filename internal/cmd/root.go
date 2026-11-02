@@ -13,8 +13,7 @@ import (
 
 	"github.com/edwardnoaland/scryer/internal/analyzer/java"
 	"github.com/edwardnoaland/scryer/internal/application"
-	"github.com/edwardnoaland/scryer/internal/cmd/analyze"
-	"github.com/edwardnoaland/scryer/internal/cmd/scan"
+	projectcmd "github.com/edwardnoaland/scryer/internal/cmd/project"
 	workspacecmd "github.com/edwardnoaland/scryer/internal/cmd/workspace"
 	"github.com/spf13/cobra"
 )
@@ -23,9 +22,7 @@ func NewRoot(service *application.Service, out, errOut io.Writer) *cobra.Command
 	root := &cobra.Command{Use: "scryer", Short: "Repository facts and change/test evidence", SilenceUsage: true, SilenceErrors: true}
 	root.SetOut(out)
 	root.SetErr(errOut)
-	project := &cobra.Command{Use: "project", Short: "Scan and analyze a single repository"}
-	project.AddCommand(scan.New(service), analyze.New(service))
-	root.AddCommand(project, workspacecmd.New())
+	root.AddCommand(projectcmd.New(service), workspacecmd.New())
 
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error { return usageError{err} })
 	wrapCommandValidation(root)

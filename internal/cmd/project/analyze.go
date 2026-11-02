@@ -1,5 +1,4 @@
-// Package analyze owns public ref-analysis arguments and output selection.
-package analyze
+package project
 
 import (
 	"encoding/json"
@@ -18,7 +17,7 @@ import (
 type ExecutionError struct{ Status string }
 
 func (e ExecutionError) Error() string { return "after test command: " + e.Status }
-func New(service *application.Service) *cobra.Command {
+func newAnalyzeCommand(service *application.Service) *cobra.Command {
 	var request contract.AnalyzeRequest
 	var stack, output, color string
 	var jsonOutput, verbose bool
@@ -57,7 +56,7 @@ func New(service *application.Service) *cobra.Command {
 		return nil
 	}
 	command.RunE = func(cmd *cobra.Command, args []string) error {
-		return runProjectAnalysis(cmd, args, service, request, stack, output, color, jsonOutput, verbose)
+		return runAnalysis(cmd, args, service, request, stack, output, color, jsonOutput, verbose)
 	}
 
 	flags := command.Flags()
@@ -76,7 +75,7 @@ func New(service *application.Service) *cobra.Command {
 	return command
 }
 
-func runProjectAnalysis(cmd *cobra.Command, args []string, service *application.Service, request contract.AnalyzeRequest, stack, output, color string, jsonOutput, verbose bool) error {
+func runAnalysis(cmd *cobra.Command, args []string, service *application.Service, request contract.AnalyzeRequest, stack, output, color string, jsonOutput, verbose bool) error {
 	directory, err := os.Getwd()
 	if err != nil {
 		return err

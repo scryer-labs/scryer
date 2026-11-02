@@ -6,7 +6,9 @@ Scryer is one Go module with a Kotlin JVM analyzer. Public `project scan` and `p
 |---|---|
 | `cmd/scryer/main.go` | Dispatch to the application entry point only |
 | `internal/cmd` | Cobra composition, public commands/flags, signal cancellation and presentation choices |
-| `internal/cmd/scan`, `internal/cmd/analyze`, `internal/cmd/workspace` | Command-specific argument validation and invocation of application use cases |
+| `internal/cmd/project` | Project scope composition in project.go; scan/analyze arguments and presentation in separate operation files |
+| `internal/cmd/workspace` | Workspace scope composition in workspace.go; temporary CSV input in import.go |
+| `internal/cmd/terminal` | Shared terminal color policy across scopes |
 | `internal/application` | Stack selection and repository/snapshot lifecycle coordination |
 | `internal/contract` | Analyzer interface, versioned requests/responses, report document requirements and uncertainty semantics |
 | `internal/analyzer/java` | Java 21 worker discovery, process protocol, request identity/version validation; no rendering |

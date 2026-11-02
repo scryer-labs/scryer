@@ -1,5 +1,4 @@
-// Package scan owns public scan arguments and output choices; analyzers do not see presentation flags.
-package scan
+package project
 
 import (
 	"fmt"
@@ -12,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New(service *application.Service) *cobra.Command {
+func newScanCommand(service *application.Service) *cobra.Command {
 	var request contract.ScanRequest
 	var stack, output, color string
 	var jsonOutput, dependencies, tree bool
