@@ -1,6 +1,6 @@
 # Documentation
 
-Updated 2026-11-01. Start with the current reference for existing behavior and the
+Updated 2026-11-02. Start with the current reference for existing behavior and the
 milestones for next work. Planned features are not proof of implementation.
 
 ## Current reference
@@ -23,7 +23,8 @@ milestones for next work. Planned features are not proof of implementation.
 
 ## Decisions and rationale
 
-Read current direction above for the consolidated position. These records preserve
+Start with [decision 004](decisions/004-multilanguage-scopes-cli-and-engine-config.md)
+for the latest detailed design, and product direction for positioning. These records preserve
 why agreements were made and how later decisions refine them; do not merge their
 historical positions into a second current specification.
 
@@ -32,6 +33,7 @@ historical positions into a second current specification.
 | [001 — Analyzer distribution](decisions/001-analyzer-distribution.md) | Independent Java repository, Go wrapper, installation and packaging boundaries. |
 | [002 — Scan scopes and fact ownership](decisions/002-scan-scopes-and-fact-boundary.md) | Project/workspace configuration, source-first collection and JSON outcomes; rule ownership refined by 003. |
 | [003 — Stack discovery and shared rules](decisions/003-stack-discovery-and-shared-rules.md) | Engine-independent stack detection, auto-install composition and evidence-backed checks. |
+| [004 — Multilanguage scopes, CLI and configuration](decisions/004-multilanguage-scopes-cli-and-engine-config.md) | Consolidated scope-first commands, facts/analyze, per-project engine templates, complete reports and migration agreements; remaining open details explicitly listed. |
 
 ## Historical evidence
 

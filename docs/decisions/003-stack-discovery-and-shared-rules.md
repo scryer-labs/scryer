@@ -3,6 +3,10 @@
 Date: 2026-10-31
 Status: Agreed direction; discovery, auto-install and shared rules are not implemented.
 
+Later refinement: [decision 004](004-multilanguage-scopes-cli-and-engine-config.md)
+consolidates the scope-first command/configuration agreements and supersedes earlier
+conflicting manual-only setup, auto-install and temporary CSV-entry policies.
+
 ## Context and refinement of decision 002
 
 [Decision 002](002-scan-scopes-and-fact-boundary.md) made the consumer boundary too

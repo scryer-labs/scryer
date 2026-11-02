@@ -1,6 +1,6 @@
 # Technical debt and existing analysis limitations
 
-Updated 2026-11-01. Item IDs are not priority ranks. New analyzer installation,
+Updated 2026-11-02. Item IDs are not priority ranks. New analyzer installation,
 language support and architecture/test fact capabilities belong in
 [milestones](MILESTONES.md), not duplicated implementation tasks here. The CLI/configuration and
 engine-extraction sequence takes precedence unless a real regression requires a fix.
@@ -70,16 +70,19 @@ Orrery. Future bounded shared checks do not justify keeping this plan generator.
 
 - [ ] Status: temporary compatibility capability; blocked on workspace dependency scanning.
 
-Retain `analyze workspace --projects ... --dependencies ...` for now. It normalizes
-externally collected CSV facts and renders JSON/HTML; it does not scan repository
-dependencies itself. Orrery currently depends on Mod CLI collection followed by
-this adapter. The temporary command is accepted because Scryer cannot yet collect
-those workspace dependency facts directly.
+Retain the Mod-fed CSV capability for now: it normalizes externally collected facts
+and renders JSON/HTML; it does not scan repository dependencies itself. Orrery
+currently depends on Mod CLI collection followed by this adapter.
 
-After native `workspace scan` supports the needed dependency collection and the
+Under [decision 004](decisions/004-multilanguage-scopes-cli-and-engine-config.md),
+CLI restructuring moves this temporary input path into the workspace command shape
+and retires the old `analyze workspace` entry. The transitional command spelling is
+still open. This supersedes the earlier requirement to keep that exact entry until
+native scanning exists, and the prohibition on migrating the adapter's command.
+Do not present the external CSV path as native source scanning.
+
+After native workspace scanning supports the needed dependency collection and the
 Orrery provider/scan plans have migrated and been verified, completely remove the
-old CSV-adaptation command and its exclusive code/tests/docs. Do not keep a permanent
-alias or rename the same adapter into the new scan operation. Shared fact/report
-code still needed by native scanning may remain. Do not break the current Mod-based
-consumer before the replacement is usable. This supersedes earlier roadmap wording
-that CSV input support should remain indefinitely.
+temporary adapter and its exclusive code/tests/docs. Shared fact/report code still
+needed by native scanning may remain. Do not break the Mod-based consumer before
+the corresponding migration is ready; CSV input is not a permanent requirement.

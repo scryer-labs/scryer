@@ -14,6 +14,13 @@ Commit subjects use `<type>: <summary>`. Allowed types are:
 
 Choose the type for the primary purpose of the commit. Keep summaries concise and specific. Do not rewrite existing history unless the user requests it.
 
+## Refactoring design reference
+
+Read [decision 004](docs/decisions/004-multilanguage-scopes-cli-and-engine-config.md)
+for the agreed multilanguage domain, scope-first commands and project engine-config
+lifecycle before the next refactoring slice. It separates agreed behavior from
+remaining open schema/flag details; it is not a claim of implemented capability.
+
 ## Development acceptance
 
 Agreed 2026-10-31; configured 2026-11-01: use the Orrery **DevOps / Daily Development**

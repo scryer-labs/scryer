@@ -6,6 +6,10 @@ The blanket rule-judgment exclusion below is refined by
 [decision 003](003-stack-discovery-and-shared-rules.md): shared reproducible checks
 and bounded suggestions may belong to Scryer; consultant-style advice remains outside.
 
+Later refinement: [decision 004](004-multilanguage-scopes-cli-and-engine-config.md)
+consolidates the scope-first command/configuration agreements and supersedes earlier
+conflicting manual-only setup, auto-install and temporary CSV-entry policies.
+
 ## Context
 
 Orrery now supplies workspace/project context and consumes Scryer facts through

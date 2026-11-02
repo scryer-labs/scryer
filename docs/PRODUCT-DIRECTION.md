@@ -1,6 +1,6 @@
 # Product direction and engine handoff
 
-Updated 2026-10-31. Planned boundaries, not implemented commands or configuration.
+Updated 2026-11-02. Planned boundaries, not implemented commands or configuration.
 [Milestones](MILESTONES.md) owns delivery order; [CLI](CLI.md) and
 [architecture](ARCHITECTURE.md) describe current behavior.
 
@@ -42,23 +42,24 @@ A build-system workspace/module is a project-internal structure, not automatical
 Scryer's workspace scope. Workspace must become a first-class scope rather than
 remain a special case under `analyze`.
 
-Workspace and project `.scryer/` configuration will initially be handwritten.
-Workspace configuration retains membership, so repeated scans do not require
-re-entering project paths. Project configuration holds project-specific scan
-options; project scans can also use defaults without a configuration file.
-See [decision 002](decisions/002-scan-scopes-and-fact-boundary.md) for ownership,
-output and unsupported/partial-result principles. Filenames, schema and command
-grammar are not yet implemented or finalized.
+Workspace configuration retains explicit members, managed through init/add/remove.
+Project configuration owns per-engine options; engines supply detected default
+templates and Core initializes missing files without overwriting existing choices.
+Workspace never owns engine-specific configuration. Scope-first commands, default
+stack/LOC scanning, analyze, report completeness and outstanding schema decisions
+are consolidated in [decision 004](decisions/004-multilanguage-scopes-cli-and-engine-config.md).
+These are agreed design, not implemented CLI/configuration capabilities.
 
 ## Stack discovery and shared checks
 
 Core should identify project/workspace technology-stack signals without installed
 language engines, using lightweight file/manifest/build-declaration detection with
-source evidence. Workspace discovery uses configured membership. A composition use
-case can match these signals against an available-engine catalog and installed
-inventory, then install missing compatible engines. Start with a bundled catalog;
-auto-install follows installation lifecycle validation and requires an explicit
-command/option. Ordinary scanning does not silently install engines.
+source evidence. Workspace discovery uses configured membership. Users explicitly
+batch-install missing engines. Installed inventory and a remote available-engine
+list remain separate; no install-all or stack-driven auto-install is planned in
+this slice. This refines decision 003's earlier auto-install direction. Ordinary
+scans do not install engines, but first engine use may initialize its missing
+project configuration as agreed in decision 004.
 
 Shared checks operate on common facts rather than being reimplemented in every
 engine repository. Declarative mappings can describe language-to-fact normalization
@@ -91,7 +92,8 @@ engine boundary, verify local install/uninstall/list plus an actual protocol cal
 and move Java into the user-created `scryer-java-engine` repository. The `engine`
 category name is provisional. Keep existing Java capabilities and evidence during
 the split, with Java runtime requirements owned by the optional Java engine.
-Java feature expansion is not the next focus.
+Java validates the engine mechanism and preserves its current abilities; future
+capabilities may be unsupported until there is a concrete Java need.
 
 After extraction, milestone **2.1** updates Orrery's Scryer provider for the new CLI
 and engine contract. Add a new published provider version; do not edit immutable
@@ -106,8 +108,9 @@ source language.
 
 Facts should cover symbols, typed relations, architecture structure/pattern signals,
 internal dependencies and workspace-local cross-repository dependencies. Prioritize
-library/package relationships, then IPC (shared memory, named pipes and supported
-macOS mechanisms), then REST provider/consumer relationships. Preserve package,
+library/package relationships and concrete REST/named-pipe use cases. REST takes
+priority over other network mechanisms; GraphQL/RPC wait. Windows shared-memory
+validation remains deferred under the macOS-first agreement. Preserve package,
 version, configuration, source and engine/schema provenance. A matching name alone
 is not proof that a local checkout supplies a dependency or that two endpoints
 communicate. Candidate matches and unresolved relations remain explicit.

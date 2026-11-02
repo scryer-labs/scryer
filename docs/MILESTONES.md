@@ -1,8 +1,8 @@
 # Product milestones
 
-Updated 2026-11-01. This is the single priority/status index, not authorization to
+Updated 2026-11-02. This is the single priority/status index, not authorization to
 implement all stages. [Product direction](PRODUCT-DIRECTION.md) defines scope;
-[decisions](decisions/002-scan-scopes-and-fact-boundary.md) record agreements;
+[current design decision](decisions/004-multilanguage-scopes-cli-and-engine-config.md) records agreements;
 [technical debt](TECH-DEBT.md) records existing limitations. Planned commands and
 configuration below are not current capabilities.
 
@@ -21,24 +21,26 @@ configuration below are not current capabilities.
 ## Immediate cleanup and design checkpoint
 
 - [x] **Done** — ~~Remove refactor-plan generation.~~ See [TD-005](TECH-DEBT.md#td-005-remove-refactor-plan-generation-from-scryer); accepted by DevOps / Daily Development; run recorded in TD-005.
-- [ ] Before structural refactoring, pair on domain concepts, scope-first command
-  semantics and future engine/shared-rule extension boundaries. Agree concrete
-  journeys and contracts before changing the package structure.
+- [x] **Done (design)** — ~~Agree multilanguage scopes, command skeleton, scan/analyze
+  separation and engine-config ownership.~~ See decision 004; implementation is pending.
+- [ ] Finalize configuration/request/result schemas, output/exit semantics and the
+  old-to-new capability mapping before structural refactoring.
 - [ ] Retain the Mod-fed workspace CSV adapter temporarily under
   [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation);
-  remove it once native workspace dependency scanning and consumer migration work.
+  migrate its entry into the new workspace command shape, then remove the adapter
+  once native workspace dependency scanning and consumer migration work.
 
 ## Priority 1 — CLI, explicit scopes and portable configuration
 
-- [ ] Agree concrete project/workspace journeys and command grammar before changing
-  commands. Workspace becomes a first-class scope rather than `analyze workspace`.
-  Classify existing scan/analyze behavior and evidence matching
-  against the fact/shared-rule boundary; preserve existing behavior until
-  a deliberate migration is implemented.
-- [ ] Define handwritten workspace/project `.scryer/` configuration: retained,
-  explicit membership using workspace-relative paths; project-level scan options;
-  defaults for standalone project scans; root project `.` support. No directory-based
-  membership guessing or reverse membership duplicated in project configuration.
+- [ ] Implement scope-first project/workspace commands from decision 004, with optional
+  paths defaulting to the current scope root. Preserve current Java behavior through
+  explicit migration rather than requiring every engine to emulate Java.
+- [ ] Implement workspace init/add/remove and explicit membership. Support project
+  defaults and per-engine template initialization under project `.scryer/`; existing
+  user config wins. Workspace configuration must not contain engine settings.
+- [ ] Implement shared `--facts` semantics: default stack/LOC, architecture instead of
+  separate symbol/call user commands, workspace forwarding/aggregation, explicit
+  unavailable/partial results. Decide filter, static test-inventory and LOC policies.
 - [ ] Include engine-independent project/workspace technology-stack discovery in
   CLI design: retain evidence for file/manifest/build signals, support mixed stacks
   and use configured workspace membership without automatically registering projects.
@@ -62,11 +64,10 @@ See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable sli
    actual request/response before moving the Java implementation. Commands such as
    `scryer engine install`, `uninstall` and `list` are provisional. A failed install
    must not appear as a usable engine. Public download/update infrastructure can wait.
-3. [ ] Compose stack discovery, catalog/installed-inventory matching and installation
-   into explicit auto-install after the installation primitives are verified. Start
-   with a bundled available-engine catalog; preserve compatibility and per-engine
-   outcomes. Ordinary scans do not install engines implicitly. Exact grammar and
-   matching/version policy remain to be agreed.
+3. [ ] Support explicit batch install plus installed/remote available lists and
+   uninstall. No install-all or stack-driven auto-install in this slice. Initialize
+   missing project engine config through engine templates and Core-owned writes;
+   use Java Maven/Gradle defaults from decision 004.
 4. [ ] Move Java into the user-created `scryer-java-engine` repository, with a Go
    entry point around Kotlin/JVM. Preserve Java capabilities and evidence; Java
    runtime discovery/optional runtime packaging belong with that engine.
@@ -75,7 +76,9 @@ See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable sli
    retain host/engine compatibility, cancellation and package smoke checks.
 
 No dynamic Go ABI or general plugin framework is selected. Engine naming, package
-schema and exact install flags remain open. macOS is the primary acceptance target;
+schema and exact install flags remain open. Java is the validation engine, not a
+requirement that every future capability be added to Java. macOS is the primary
+acceptance target;
 Windows migration is deferred until both Scryer and Orrery are stable.
 
 ### 2.1 — Update Orrery after Java extraction
@@ -111,7 +114,9 @@ preselect an implementation order or promise complete semantic engines together.
 
 ## Priority 4 — Workspace-local cross-repository relationships
 
-Implement bounded patterns in this order. Existing CSV adaptation is temporary
+Start from concrete library/REST/named-pipe cases rather than a universal matcher.
+The list below groups capabilities, not a strict REST-versus-IPC delivery order.
+Existing CSV adaptation is temporary
 under [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation):
 
 1. [ ] Library/package dependencies: match consumers to providers within the explicit
@@ -120,8 +125,8 @@ under [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adapt
 2. [ ] IPC: supported shared-memory, named-pipe and macOS communication patterns,
    with evidence for endpoints and matching. Ubuntu-specific mechanisms are outside
    current scope; dynamic communication may remain unknown.
-3. [ ] REST API declarations/calls and supported provider/consumer matching; lower
-   priority than library relationships and IPC.
+3. [ ] REST API declarations/calls and supported provider/consumer matching using
+   Orrery as the concrete case. REST precedes other network mechanisms (GraphQL/RPC).
 
 Cross-repository edges retain their relation type and evidence. Dependencies, calls,
 IPC and REST do not become one undifferentiated arrow. Observed absence must remain
@@ -135,6 +140,9 @@ distinct from an engine's missing capability or incomplete scan coverage.
   no automatic synchronization or silent overwriting in the initial scope.
 - [ ] Revisit Windows development/distribution for the input-method project after
   Scryer and Orrery stabilize; do not add Windows acceptance work now.
+
+Branch-strategy observation remains lowest priority; it does not block scan/analyze,
+engine extraction or the relationship cases above.
 
 ## Later capability — Shared checks and bounded suggestions
 
