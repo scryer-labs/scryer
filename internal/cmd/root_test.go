@@ -131,7 +131,7 @@ func Test_should_show_scope_commands_when_root_help_is_requested(t *testing.T) {
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	for _, scope := range []string{"project", "workspace"} {
+	for _, scope := range []string{"project", "workspace", "engine"} {
 		if !strings.Contains(out.String(), scope) {
 			t.Fatalf("missing scope %s", scope)
 		}
@@ -149,6 +149,9 @@ func Test_should_return_usage_errors_when_nested_command_arguments_are_invalid(t
 		{"project", "scan", "--facts", "stack,loc"},
 		{"project", "analyze", "--before", "HEAD"},
 		{"workspace", "import"},
+		{"engine", "list", "extra"},
+		{"engine", "install"},
+		{"engine", "uninstall"},
 		{"workspace", "import", "--projects", "p.csv", "--dependencies", "d.csv", "-o", "bad.yaml"},
 	} {
 		t.Run(strings.Join(args, "_"), func(t *testing.T) {

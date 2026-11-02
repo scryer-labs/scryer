@@ -54,7 +54,9 @@ the later 2.1 checkpoint remains for installed-engine changes.
 
 See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable slices:
 
-1. [ ] Add engine list/install/uninstall with mocks and a minimal worker fixture.
+1. [x] **Done (command placeholders)** — ~~Add engine list/install/uninstall entry points.~~
+   They print only; real inventory/install/uninstall and a minimal worker fixture are
+   still pending. This slice uses only the Scryer plan, with no integration run.
    Defer remote-list; no install-all or stack-driven auto-install.
 2. [ ] Verify install/list/invoke/uninstall against the user-created Java-engine
    repository. Start with local packages/source directories and owned install data.

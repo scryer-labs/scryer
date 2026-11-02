@@ -11,19 +11,31 @@ registered today; workspace CSV processing is Go-only. Future features belong in
 scryer project scan [path]
 scryer project analyze [path] --before <ref> --after <ref|.>
 scryer workspace import --projects <projects.csv> --dependencies <dependencies.csv>
+scryer engine list
+scryer engine install <engine> [engines...]
+scryer engine uninstall <engine>
 ```
 
 Project paths default to the current directory. This first reorganization preserves
 existing Java scan/analyze behavior, flags and report contracts. Scan still resolves
 build models by default; `--static` skips that. The planned engine-free `stack,loc`
-default and `--facts`, native workspace scan/configuration management, and engine
-management are not implemented yet.
+default and `--facts`, native workspace scan/configuration management, and actual
+engine management are not implemented yet.
 
 `workspace import` is a temporary external-CSV adapter: it normalizes and reports
 facts without scanning code, registering projects or writing workspace config.
 Old top-level `scan`, `analyze` and `analyze workspace` have been removed, not hidden
 or aliased. Consumers must use the scope-first commands. Orrery's new Scryer provider
 version adapts the commands now rather than waiting for Java-engine extraction.
+
+## Engine command placeholders
+
+`engine list`, `engine install java cpp` and `engine uninstall java` currently print
+explicit "not implemented yet" messages only. Install accepts one or more IDs;
+uninstall accepts one. They do not discover engines, download/build/install/remove
+anything, create global configuration, or invoke a language engine. Placeholder
+success means the command was accepted, not that any management operation occurred.
+Structured management results and functional installation remain later slices.
 
 ## Run
 
