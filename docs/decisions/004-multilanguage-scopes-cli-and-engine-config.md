@@ -350,8 +350,8 @@ capabilities: return unsupported through Core and add Java features only on dema
 Keep the Mod-fed CSV adapter until native workspace dependency scanning and consumer
 migration are usable. During CLI migration move the temporary input capability into
 the workspace command shape with explicit external-input semantics. The first slice
-uses `workspace import` and hidden legacy forwarding entries to avoid breaking existing
-providers; retire old entries at the planned consumer-adaptation checkpoint. Do not call CSV normalization native source scanning.
+uses `workspace import`; the follow-up removes all legacy entries and immediately
+adapts the existing provider, rather than retaining compatibility until extraction. Do not call CSV normalization native source scanning.
 Later remove the temporary adapter, as tracked by TD-006. The transitional CSV entry is `workspace import --projects ... --dependencies ...`. Refactor-plan remains removed.
 
 The next implementation slice reorganizes the existing CLI into project/workspace
@@ -362,3 +362,13 @@ Engine installation then proceeds through the slices above. Define the external
 engine contract during extraction and defer native project-to-workspace aggregation
 contracts until needed. Do not block command reorganization on all future schemas,
 move every package at once or invent a general plugin/rule framework.
+
+
+## Immediate consumer adaptation update
+
+Agreed 2026-11-02: remove old CLI entries after committing command reorganization.
+Publish an Orrery Scryer provider version using only project scan/analyze and
+workspace import, and validate both repositories plus their integration now. Do not
+retain hidden aliases until Java extraction. This moves command-level consumer
+adaptation ahead of the original 2.1 checkpoint; 2.1 still covers later installed-engine
+contract changes. Native workspace CSV-adapter retirement remains a separate task.

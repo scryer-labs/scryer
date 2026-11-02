@@ -66,8 +66,8 @@ Release publication is configured. See [runtime/package details](docs/CLI.md#bun
 - [Verification history](docs/archive/VERIFICATION.md): earlier observations, not current test totals.
 
 Current commands use project/workspace scopes; see [CLI](docs/CLI.md). The first
-reorganization preserves Java defaults, while hidden legacy entries temporarily
-support existing consumers. `workspace import` remains a Mod-fed CSV adapter, not
+reorganization preserves Java defaults and removes legacy command entries.
+`workspace import` remains a Mod-fed CSV adapter, not
 native scanning. Engine extraction/installation, `.scryer/` configuration and default
 engine-free stack/LOC scanning are planned next, not implemented. See
 [decision 004](docs/decisions/004-multilanguage-scopes-cli-and-engine-config.md) and

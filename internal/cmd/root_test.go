@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -165,42 +164,15 @@ func Test_should_return_usage_errors_when_nested_command_arguments_are_invalid(t
 	}
 }
 
-func Test_should_preserve_json_when_transitional_entries_forward_to_scope_commands(t *testing.T) {
-	for _, args := range [][]string{{"scan", "--static", "--json"}, {"project", "scan", "--static", "--json"}} {
+func Test_should_reject_legacy_entries_when_only_scope_commands_are_supported(t *testing.T) {
+	for _, args := range [][]string{{"scan", "--json"}, {"analyze", "--before", "HEAD", "--after", "HEAD"}, {"analyze", "workspace"}} {
 		fake := &fakeAnalyzer{}
 		var out, diagnostics bytes.Buffer
 		root := NewRoot(&application.Service{Analyzer: fake}, &out, &diagnostics)
 		root.SetArgs(args)
-		if err := root.Execute(); err != nil {
-			t.Fatal(err)
-		}
-		if !json.Valid(out.Bytes()) || fake.calls != 1 {
-			t.Fatal("transitional invocation changed the JSON result")
-		}
-	}
-
-	dir := t.TempDir()
-	projects, dependencies := filepath.Join(dir, "projects.csv"), filepath.Join(dir, "dependencies.csv")
-	for path, contents := range map[string]string{projects: "projectId\na\nb\n", dependencies: "source,target\nb,a\n"} {
-		if err := os.WriteFile(path, []byte(contents), 0600); err != nil {
-			t.Fatal(err)
-		}
-	}
-	var expected []byte
-	for _, command := range [][]string{{"workspace", "import"}, {"analyze", "workspace"}} {
-		var out, diagnostics bytes.Buffer
-		root := NewRoot(nil, &out, &diagnostics)
-		root.SetArgs(append(command, "--projects", projects, "--dependencies", dependencies, "--json"))
-		if err := root.Execute(); err != nil {
-			t.Fatal(err)
-		}
-		if !json.Valid(out.Bytes()) {
-			t.Fatal("workspace stdout is not JSON")
-		}
-		if expected == nil {
-			expected = append([]byte{}, out.Bytes()...)
-		} else if !bytes.Equal(expected, out.Bytes()) {
-			t.Fatal("workspace fact contract changed between entries")
+		err := root.Execute()
+		if err == nil || exitCode(err) != 2 || fake.calls != 0 || out.Len() != 0 {
+			t.Fatalf("expected removed entry %v to fail without execution, got %v", args, err)
 		}
 	}
 }
@@ -218,7 +190,7 @@ func Test_should_preserve_analysis_options_when_project_analyze_uses_default_or_
 		}
 	}
 	t.Chdir(dir)
-	for _, entry := range [][]string{{"project", "analyze"}, {"analyze"}} {
+	for _, entry := range [][]string{{"project", "analyze"}} {
 		for _, path := range [][]string{nil, {dir}} {
 			fake := &fakeAnalyzer{}
 			var out, diagnostics bytes.Buffer
@@ -232,8 +204,8 @@ func Test_should_preserve_analysis_options_when_project_analyze_uses_default_or_
 			if fake.calls != 1 || request.BuildTool != "maven" || request.TestCommand != "./mvnw verify" || request.Before != request.After || len(request.Before) != 40 || !json.Valid(out.Bytes()) {
 				t.Fatal("nested analysis lost input options or snapshot resolution")
 			}
-			if (diagnostics.Len() != 0) != (len(entry) == 1) {
-				t.Fatal("compatibility warning must be emitted only by the legacy entry")
+			if diagnostics.Len() != 0 {
+				t.Fatal("unexpected analysis diagnostic")
 			}
 		}
 	}

@@ -21,10 +21,9 @@ management are not implemented yet.
 
 `workspace import` is a temporary external-CSV adapter: it normalizes and reports
 facts without scanning code, registering projects or writing workspace config.
-Old top-level `scan`, `analyze` and `analyze workspace` remain hidden compatibility
-entries until the existing provider migration. They use the same handlers and emit
-migration notices to stderr, leaving JSON stdout unchanged. New integrations should
-use the scope-first commands. These entries are temporary, not permanent aliases.
+Old top-level `scan`, `analyze` and `analyze workspace` have been removed, not hidden
+or aliased. Consumers must use the scope-first commands. Orrery's new Scryer provider
+version adapts the commands now rather than waiting for Java-engine extraction.
 
 ## Run
 

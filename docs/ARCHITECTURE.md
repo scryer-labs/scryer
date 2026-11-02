@@ -61,8 +61,7 @@ The former `refactor-plan generate` command, phase scheduling and platform-plan
 YAML exporter have been removed. Execution-plan generation belongs to consumers
 such as Orrery. The workspace CSV adapter is temporary compatibility code under
 [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation),
-not the future native workspace scanner. Hidden old entries share the same command
-handlers until provider migration; notices go to stderr, not machine-readable stdout. Renderers present the normalized facts
+not the future native workspace scanner. Legacy entries are removed; consumers must use the scope-first commands. Renderers present the normalized facts
 without computing a schedule.
 
 ## Documentation and future work

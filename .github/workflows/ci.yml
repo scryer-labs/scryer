@@ -79,12 +79,12 @@ jobs:
           done
           for launcher in "$package_check_dir"/*/*/bin/scryer; do
             "$launcher" --help
-            "$launcher" scan . --static
-            "$launcher" analyze --help
+            "$launcher" project scan . --static
+            "$launcher" project analyze --help
             if [[ -x "$(dirname "$launcher")/../runtime/bin/java" ]]; then
               # No Go or external Java required; an invalid JAVA_HOME must not
               # override the bundled analyzer runtime. Target builds are separate.
-              env -u SCRYER_ANALYZER_JAVA_HOME JAVA_HOME=/missing-java PATH=/usr/bin:/bin "$launcher" scan . --static --json > "$package_check_dir/bundled-scan.json"
+              env -u SCRYER_ANALYZER_JAVA_HOME JAVA_HOME=/missing-java PATH=/usr/bin:/bin "$launcher" project scan . --static --json > "$package_check_dir/bundled-scan.json"
               python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["schemaVersion"] == 1' "$package_check_dir/bundled-scan.json"
             fi
           done

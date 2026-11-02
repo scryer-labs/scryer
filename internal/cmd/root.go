@@ -27,39 +27,12 @@ func NewRoot(service *application.Service, out, errOut io.Writer) *cobra.Command
 	project.AddCommand(scan.New(service), analyze.New(service))
 	root.AddCommand(project, workspacecmd.New())
 
-	// Keep existing providers working until their planned CLI migration.
-	legacyScan := scan.New(service)
-	markLegacyEntry(legacyScan, "scryer project scan")
-	legacyAnalyze := analyze.New(service)
-	markLegacyEntry(legacyAnalyze, "scryer project analyze")
-	legacyWorkspace := workspacecmd.NewImport()
-	legacyWorkspace.Use = "workspace --projects <projects.csv> --dependencies <dependencies.csv>"
-	markLegacyEntry(legacyWorkspace, "scryer workspace import")
-	legacyAnalyze.AddCommand(legacyWorkspace)
-	root.AddCommand(legacyScan, legacyAnalyze)
-
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error { return usageError{err} })
 	wrapCommandValidation(root)
 	return root
 }
 
-// Cobra's built-in deprecation notice uses stdout; keep machine JSON clean.
-func markLegacyEntry(command *cobra.Command, replacement string) {
-	command.Hidden = true
-	command.Long += "\nDeprecated compatibility entry; use " + replacement + " instead."
-	validate := command.PreRunE
-	command.PreRunE = func(cmd *cobra.Command, args []string) error {
-		if validate != nil {
-			if err := validate(cmd, args); err != nil {
-				return err
-			}
-		}
-		fmt.Fprintln(cmd.ErrOrStderr(), "scryer: deprecated command; use "+replacement+" instead")
-		return nil
-	}
-}
-
-// Validation applies to nested scope commands as well as transitional entries.
+// Validation applies to all nested scope commands.
 func wrapCommandValidation(command *cobra.Command) {
 	arguments := command.Args
 	if arguments != nil {

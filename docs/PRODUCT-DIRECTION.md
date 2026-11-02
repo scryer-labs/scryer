@@ -104,8 +104,9 @@ the split, with Java runtime requirements owned by the optional Java engine.
 Java validates the engine mechanism and preserves its current abilities; future
 capabilities may be unsupported until there is a concrete Java need.
 
-After extraction, milestone **2.1** updates Orrery's Scryer provider for the new CLI
-and engine contract. Add a new published provider version; do not edit immutable
+Command-level consumer adaptation now ships immediately with provider v1.4; no
+legacy CLI entries remain. After extraction, milestone **2.1** handles the remaining
+installed-engine/configuration contract changes. Add a new published provider version; do not edit immutable
 published provider YAML. Validate standalone use and the Orrery integration.
 
 Implement engine-free default stack/LOC after extraction and the 2.1 checkpoint.

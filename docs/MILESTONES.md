@@ -39,13 +39,16 @@ configuration below are not current capabilities.
 - [x] **Done** — ~~Add project scan/analyze with optional
   paths defaulting to the current directory, preserving Java behavior.~~
 - [x] **Done** — ~~Add workspace import for external CSV
-  facts.~~ Hidden legacy entries preserve consumers until their planned migration.
+  facts.~~ Legacy entries are removed alongside immediate consumer adaptation.
 - [x] **Done** — ~~Keep Java flags/default behavior during this first slice.~~ No new
   stack/LOC, workspace-native scanning or engine installation support is claimed.
 
-Acceptance: **Daily Development** run `20261102T144247407Z-58cd8ba1` succeeded in all
-eight steps. Installed-CLI checks also verified default-path project scan with the
-real Java worker, scope help, workspace JSON/HTML, and matching legacy CSV JSON.
+Acceptance after legacy removal: Scryer **Daily Development** run
+`20261102T150144163Z-2704a5da`, Orrery daily run
+`20261102T150501275Z-8b2c0035`, and workspace integration run
+`20261102T150607227Z-b1fabe13` all succeeded. Old scan/analyze/analyze-workspace
+entry invocations now fail with usage errors. Provider v1.4 adapts commands now;
+the later 2.1 checkpoint remains for installed-engine changes.
 
 ## Priority 2 — Independent Java engine installation and extraction
 
@@ -74,8 +77,8 @@ Windows migration is deferred until both Scryer and Orrery are stable.
 
 ### 2.1 — Update Orrery after Java extraction
 
-- [ ] Adapt Orrery's Scryer provider and relevant scan-plan bindings to the new
-  command/configuration/engine contract after Priority 2. Publish a new provider
+- [ ] Adapt remaining installed-engine/configuration contracts after Priority 2;
+  command migration is already integrated through Scryer provider v1.4. Publish a new provider
   version instead of changing published YAML. Validate actual invocation, JSON,
   artifacts and partial/unsupported outcomes through Orrery, while retaining
   standalone CLI use.
