@@ -8,7 +8,7 @@ configuration below are not current capabilities.
 
 ## Done — current baseline
 
-- [x] **Done** — ~~Separate the Go/Cobra public CLI, repository/snapshot lifecycle and shared reporting from a Kotlin/JVM Java worker.~~ Java still lives in this repository.
+- [x] **Done** — ~~Separate the Go/Cobra public CLI, repository/snapshot lifecycle and shared reporting from a Kotlin/JVM Java worker.~~ Java now lives in the independent engine repository.
 - [x] **Done** — ~~Define a versioned analyzer request/response boundary with identity validation, cancellation and explicit partial/unknown evidence.~~ See [current contracts](contracts/README.md); this is not an installable plugin system.
 - [x] **Done (Java)** — ~~Collect static declarations/source signals, build-model dependency graphs and optional remote-version comparisons through Maven/Gradle adapters.~~
 - [x] **Done (Java, bounded)** — ~~Compare immutable before/after snapshots, Java methods/symbols, partial caller/indirect impact and bounded literal reflection.~~
@@ -16,7 +16,7 @@ configuration below are not current capabilities.
 - [x] **Done** — ~~Support isolated working-tree after snapshots, explicit build-tool selection and target/analyzer JVM separation.~~
 - [x] **Done** — ~~Render shared terminal/JSON/Markdown reports and standalone interactive HTML analysis reports.~~ Java scan file export currently writes Markdown; output support is command-specific.
 - [x] **Done** — ~~Normalize workspace dependency CSVs to JSON/HTML.~~ No Mod CLI or JVM is needed for CSV processing. This adapter is temporary under TD-006; former plan generation has been removed.
-- [x] **Done** — ~~Build/test Go, JVM and browser graph code in CI; package slim and Java-21-runtime distributions with extracted-package smoke checks.~~ Workflow artifacts are not published releases.
+- [x] **Done** — ~~Split Core Go/browser checks from independent engine Go/JVM checks; verify Core-only and engine slim/Java-21-runtime packages.~~ Workflow artifacts are not published releases.
 
 ## Immediate cleanup and design checkpoint
 
@@ -62,16 +62,31 @@ See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable sli
    `20261102T160706145Z-be3a98f0` succeeded. Remote-list/install-all remain deferred.
 2. [ ] Verify install/list/invoke/uninstall against the user-created Java-engine
    repository. Start with local packages/source directories and owned install data.
-3. [ ] Define the minimal external JSON/capability/template contract, extract Java
-   into its Go wrapper plus Kotlin worker, and verify existing features end to end.
-   No external engine imports Core's internal packages.
+3. [x] **Done (behavior-preserving extraction)** — Move Kotlin production code,
+   facts/JSON tests, Gradle and JVM/runtime packaging to scryer-java-engine. Core
+   invokes wrapper execute through the existing v1 envelope and retains snapshots,
+   validation and reporting. No engine imports Core internal packages or report
+   resources. Capability/template/config negotiations remain future work.
+   Acceptance: Core `20261102T170044849Z-e11cda2d`, engine
+   `20261102T170137267Z-6d5f1a23`, workspace integration
+   `20261102T170558213Z-f877edf4` all succeeded. The first integration attempt
+   incorrectly expected scan HTML; its assertion was corrected to existing scan
+   JSON/Markdown behavior, with analyze HTML retained. No scan feature was added.
 4. [ ] Package/release the independent engine with bundled Java 21 runtime on GitHub.
    Install compatible stable assets; also support source builds through an engine-owned
    build entry producing the same package layout. Source builds require dev toolchains.
 5. [ ] Provide automatic global config/data/cache defaults and optional SCRYER_HOME;
    users must not initialize a global home. Core installs independently with go install.
-   Split Core/engine CI and plans, and compose Core-plus-engine acceptance with isolated
-   homes, known artifacts and serialized dependent operations.
+   Core/engine CI and plans are already split, and composed acceptance identifies
+   known artifacts; persistent installed-home/config acceptance is still pending.
+
+Extraction was intentionally advanced ahead of real installation by the user's
+2026-11-02 instruction. The next pair session is a bounded **C ABI shared-library
+experiment**, beginning with mock describe, versioning, buffer ownership/freeing,
+errors, then cancellation/concurrency/lifecycle and Java worker startup. The goal
+includes reusable input-method plugin design experience. Keep the current
+Core → wrapper → JVM baseline; adopt a replacement only after comparing evidence.
+This is not an implementation task for the extraction slice.
 
 No dynamic Go ABI or general plugin framework is selected. Engine naming, package
 schema and exact install flags remain open. Java is the validation engine, not a

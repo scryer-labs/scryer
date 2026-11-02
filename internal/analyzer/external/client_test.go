@@ -1,4 +1,4 @@
-package java
+package external
 
 import (
 	"bytes"
@@ -54,7 +54,7 @@ func fakeClient(t *testing.T, mode string) (*Client, *bytes.Buffer) {
 		t.Fatal(err)
 	}
 	progress := &bytes.Buffer{}
-	return &Client{Java: exe, Classpath: "unused", Progress: progress}, progress
+	return &Client{Executable: exe, EngineID: "java", Progress: progress}, progress
 }
 func TestProtocolAndProgressAreSeparated(t *testing.T) {
 	client, progress := fakeClient(t, "good")
@@ -93,22 +93,19 @@ func TestCancellationStopsWorker(t *testing.T) {
 	}
 }
 
-func TestJavaRuntimeSelection(t *testing.T) {
-	installation := filepath.Join(t.TempDir(), "bin", "scryer")
-	bundled := filepath.Join(filepath.Dir(installation), "..", "runtime", "bin", "java")
-	if got := javaExecutable(installation, "", "/target-java8"); got != "/target-java8/bin/java" {
-		t.Fatal(got)
-	}
-	if err := os.MkdirAll(filepath.Dir(bundled), 0755); err != nil {
+func Test_should_use_explicit_engine_when_discovery_is_configured(t *testing.T) {
+	executable, err := os.Executable()
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(bundled, []byte("runtime"), 0755); err != nil {
-		t.Fatal(err)
+	t.Setenv("SCRYER_ENGINE_JAVA", executable)
+	client := New("java", io.Discard)
+	resolved, err := client.executable()
+	if err != nil || resolved != executable {
+		t.Fatalf("unexpected executable %q: %v", resolved, err)
 	}
-	if got := javaExecutable(installation, "", "/target-java8"); got != bundled {
-		t.Fatal(got)
-	}
-	if got := javaExecutable(installation, "/explicit-java21", "/target-java8"); got != "/explicit-java21/bin/java" {
-		t.Fatal(got)
+	client.Executable = filepath.Join(t.TempDir(), "missing-engine")
+	if _, err := client.executable(); err == nil {
+		t.Fatal("invalid explicit engine silently fell back")
 	}
 }

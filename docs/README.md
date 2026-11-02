@@ -9,7 +9,7 @@ milestones for next work. Planned features are not proof of implementation.
 | --- | --- |
 | [Project README](../README.md) | Purpose, quick start and documentation entry point. |
 | [Command reference](CLI.md) | Current commands, report formats and evidence boundaries. |
-| [Architecture](ARCHITECTURE.md) | Current Go/JVM layers and package responsibilities. |
+| [Architecture](ARCHITECTURE.md) | Current Core/external-engine layers and package responsibilities. |
 | [Analyzer contracts](contracts/README.md) | Current Go interface, process transport and versioned reports. |
 | [Contributor instructions](../AGENTS.md) | Coding/commit conventions and Orrery acceptance-plan rules. Kept at the repository root as the collaboration entry point. |
 

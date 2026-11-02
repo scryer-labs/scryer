@@ -17,7 +17,6 @@ func Test_should_reject_identity_when_engine_response_is_incomplete_or_not_mock_
 	for _, response := range []string{
 		`not JSON`, `{}`, `null`, valid + `{}`, valid + `trailing text`,
 		strings.Replace(valid, `"protocolVersion":1`, `"protocolVersion":2`, 1),
-		strings.Replace(valid, `"mock":true`, `"mock":false`, 1),
 		strings.Replace(valid, `"id":"java"`, `"id":""`, 1),
 	} {
 		if _, err := decodeEngineIdentity([]byte(response)); err == nil {

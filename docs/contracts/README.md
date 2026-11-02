@@ -1,10 +1,25 @@
 # Analyzer contract v1
 
-Go owns the public commands, repository/snapshot lifecycle and report rendering. An analyzer supplies facts through `internal/contract.Analyzer`; no analyzer receives color, verbosity or output-file parameters. Only Java is registered today. The planned [independent analyzer distribution](../decisions/001-analyzer-distribution.md) is not an existing install/discovery protocol. An external Go analyzer cannot import the host's `internal/contract` package; M1 must establish the public/protocol boundary before extraction. An in-host analyzer may implement the Go interface directly; an external Go-wrapped analyzer needs the planned public/protocol boundary.
+Go owns public commands, snapshots and rendering. The independent Java engine
+imports no Core internal packages: the interoperable boundary is JSON, not Go
+struct linkage. `internal/contract.Analyzer` is Core's internal use-case interface.
+Only Java is composed today; generic installation/capability/config negotiation
+remains separate work.
 
 ## Process transport
 
-The Java adapter starts one JVM per operation, sends one UTF-8 JSON request to stdin and closes it, then expects exactly one JSON response on stdout. Progress/diagnostics use stderr. JSON framing is EOF, not JSON Lines. Requests are limited to 1 MiB by the JVM worker. Paths are absolute filesystem paths, never file URIs. Exit status 0 means a response was delivered; the response can still contain a structured analyzer error. Target-test failure is a valid analysis result, not a transport error.
+Core resolves `SCRYER_ENGINE_JAVA` or `scryer-java-engine` on PATH and invokes
+`execute`. The engine's Go wrapper starts its JVM worker and forwards stdin,
+stdout and stderr without rendering or rewriting JSON. Each invocation accepts
+one request and returns one response. Diagnostics use stderr; framing is EOF,
+not JSON Lines. Requests are limited to 1 MiB by the JVM worker. Paths are absolute
+filesystem paths. Exit 0 means delivery, not necessarily successful analysis:
+a structured engine error or failed target tests can be part of a valid response.
+
+The separate `describe` operation returns exactly one identity with protocolVersion
+1, id/name/version/source and mock false for the real Java engine. Core applies a
+10-second describe deadline. Non-persistent management probes still return mock
+receipts with persisted false; identity mock false describes the engine itself.
 
 Request envelope:
 
@@ -53,7 +68,7 @@ Response envelope:
 }
 ```
 
-The abbreviated `report` above is not a valid complete report. An error response has `report: null` and `error: {"code": "JAVA_ANALYZER_ERROR", "message": "..."}`. Go rejects mismatched version/request/operation/stack, malformed reports, duplicate symbol IDs, graph edges referencing missing nodes and extra stdout documents. Analyze report refs must match the requested SHAs. Go cancellation terminates the JVM process group and child build processes on POSIX, then removes isolated checkouts.
+The abbreviated `report` above is not a valid complete report. An error response has `report: null` and `error: {"code": "JAVA_ANALYZER_ERROR", "message": "..."}`. Go rejects mismatched version/request/operation/stack, malformed reports, duplicate symbol IDs, graph edges referencing missing nodes and extra stdout documents. Analyze report refs must match the requested SHAs. Go cancellation terminates the shared wrapper/JVM process group and ordinary child build processes on POSIX, then removes isolated checkouts.
 
 ## Report fields
 

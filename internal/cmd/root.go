@@ -11,7 +11,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/edwardnoaland/scryer/internal/analyzer/java"
+	"github.com/edwardnoaland/scryer/internal/analyzer/external"
 	"github.com/edwardnoaland/scryer/internal/application"
 	enginecmd "github.com/edwardnoaland/scryer/internal/cmd/engine"
 	projectcmd "github.com/edwardnoaland/scryer/internal/cmd/project"
@@ -58,7 +58,7 @@ func wrapCommandValidation(command *cobra.Command) {
 func Execute() int {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	root := NewRoot(&application.Service{Analyzer: java.New(os.Stderr)}, os.Stdout, os.Stderr)
+	root := NewRoot(&application.Service{Analyzer: external.New("java", os.Stderr)}, os.Stdout, os.Stderr)
 	if err := root.ExecuteContext(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, "scryer:", err)
 		return exitCode(err)

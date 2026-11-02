@@ -1,9 +1,9 @@
 # Work decision 001: Independent analyzer distribution and Go integration
 
 Date: 2026-10-25
-Status: Agreed direction; extraction, installation and plugin packaging are not implemented.
+Status: Java repository/process extraction implemented 2026-11-02; persistent installation and release publication remain planned.
 
-## Context and current implementation
+## Original context before repository extraction
 
 The main repository now has a Go CLI/application/reporting layer, a Go
 `internal/contract.Analyzer` interface and a Java process adapter. Java analysis
@@ -115,3 +115,20 @@ version. Choose the next language afterward. macOS is the current primary
 acceptance platform; Windows migration is deferred. Decision 002 also supersedes
 any reading of cross-stack analysis here as ownership of architectural/test-quality
 verdicts: Scryer supplies facts and bounded evidence; consumers judge them.
+
+## 2026-11-02 extraction and next experiment
+
+Java/Kotlin sources, fact tests, Gradle wrapper and JVM/runtime packaging now belong
+to scryer-java-engine. Core builds with Go only and invokes the independently built
+wrapper via the existing v1 JSON request/response envelope. The wrapper launches
+the unchanged JVM worker; Core retains snapshots, validation and all presentation.
+Kotlin presentation fixtures and Core report-resource dependencies were removed.
+Discovery is PATH or SCRYER_ENGINE_JAVA; management is still non-persistent.
+This slice deliberately precedes real installation, by the user's updated order.
+
+After extraction passes, pair with Edward on a separate C ABI shared-library
+experiment: begin with describe, then versioning, buffer ownership/freeing, errors,
+cancellation and lifecycle, and finally worker startup. The motivation includes
+reusable ABI design experience for his input-method plugins. This is an experiment,
+not an adopted replacement for process isolation; the current baseline remains
+Core → Go wrapper → JVM. Do not implement dynamic loading during extraction.

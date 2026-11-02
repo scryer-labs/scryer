@@ -13,7 +13,7 @@ import (
 	"github.com/edwardnoaland/scryer/internal/process"
 )
 
-// EngineIdentity is the mock process handshake, not the future scanning contract.
+// EngineIdentity is the independent engine identity handshake.
 type EngineIdentity struct {
 	ProtocolVersion int    `json:"protocolVersion"`
 	ID              string `json:"id"`
@@ -60,8 +60,8 @@ func decodeEngineIdentity(data []byte) (EngineIdentity, error) {
 	if decoder.Decode(new(any)) != io.EOF {
 		return EngineIdentity{}, fmt.Errorf("engine must return exactly one JSON identity")
 	}
-	if identity.ProtocolVersion != 1 || !identity.Mock {
-		return EngineIdentity{}, fmt.Errorf("expected mock engine protocolVersion 1")
+	if identity.ProtocolVersion != 1 {
+		return EngineIdentity{}, fmt.Errorf("expected engine protocolVersion 1")
 	}
 	for _, value := range []string{identity.ID, identity.Name, identity.Version, identity.Source} {
 		if strings.TrimSpace(value) == "" {

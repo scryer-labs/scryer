@@ -28,9 +28,9 @@ Old top-level `scan`, `analyze` and `analyze workspace` have been removed, not h
 or aliased. Consumers must use the scope-first commands. Orrery's new Scryer provider
 version adapts the commands now rather than waiting for Java-engine extraction.
 
-## Mock engine connection
+## Non-persistent engine management
 
-The engine commands now call an explicit external mock executable's `describe`
+The engine commands now call an explicit external executable's `describe`
 operation, validate its JSON identity, and print a mock receipt:
 
 ```sh
@@ -46,16 +46,16 @@ installed inventory. Install/uninstall validate the requested ID against the ret
 identity; one executable represents one engine, not a batch source for other IDs.
 No package is copied/deleted, installation state is stored, global Scryer home is
 created, source build is invoked, or Java analyzer is selected by these operations.
-The existing bundled Java scanner remains separate and unchanged.
+Project scan/analyze now invoke the independently built Java engine through the discovery described below.
 
-The mock process identity contains protocolVersion 1, id/name/version/source and
-mock true. Stdout must contain exactly one JSON identity; diagnostics use stderr.
+The process identity contains protocolVersion 1, id/name/version/source and
+mock false for the real Java engine. Stdout must contain exactly one JSON identity; diagnostics use stderr.
 Core enforces a 10-second deadline and its existing process cancellation behavior.
-This small handshake is not the finalized language-scanning protocol or installer.
+The execution protocol is documented in [contracts](contracts/README.md); persistent installation is not implemented.
 
 ## Run
 
-The Java analyzer uses Java 21, Kotlin 2.2.21 and the Gradle 8.14.3 Wrapper; public commands are provided by Go/Cobra. Target repositories may use older JDKs and build tools.
+Core requires Go, not Java/Gradle. The independent Java engine uses Java 21, Kotlin 2.2.21 and the Gradle 8.14.3 Wrapper. Put scryer-java-engine on PATH or set SCRYER_ENGINE_JAVA to its executable. Core starts the wrapper; the wrapper starts its JVM. Target repositories may use older JDKs and build tools.
 
 Run project analyze from inside the target Git repository (or a subdirectory):
 
@@ -353,15 +353,14 @@ dependency scanning and the Orrery migration replace it; see
 
 ## Bundled Java runtime
 
-The `-with-java21` ZIP/TAR is a relocatable **directory distribution**, not one
-monolithic executable: keep `bin/`, `lib/` and `runtime/` together and run
-`bin/scryer`. Runtime selection is explicit `SCRYER_ANALYZER_JAVA_HOME`, then
-bundled `runtime/`, then `JAVA_HOME`/PATH. The package does not modify global Java
-configuration. Symlinked launchers resolve back to the installation directory.
+Java runtime packaging belongs to the independent engine repository. Its
+`-with-java21` ZIP/TAR keeps `bin/`, `lib/java/` and `runtime/` together and runs
+`bin/scryer-java-engine`. Runtime selection is SCRYER_ANALYZER_JAVA_HOME, then the
+engine's bundled runtime, then JAVA_HOME/PATH. SCRYER_JAVA_CLASSPATH remains an
+engine-owned development override. SCRYER_JAVA_HOME separately selects the target
+build/test JVM. Core packages contain no Java runtime or jars and no longer accept
+`scripts/package --with-runtime`.
 
-Packages are OS/architecture-specific; CI currently produces Linux amd64,
-while local packaging uses the build host. A future Podman image should extract
-the matching archive into a compatible base image. This is not a Windows `.exe`
-or a promise of compatibility with every Linux libc/base image. Target builds
-may still need Git, Maven/Gradle wrappers, network access and another JDK selected
-with `SCRYER_JAVA_HOME`. The Java 21 runtime is for Scryer's analyzer.
+Core and engine remain OS/architecture-specific distributions. CI builds Ubuntu
+packages; macOS is the primary local acceptance platform. GitHub Release publication
+and persistent engine installation are not implemented yet.

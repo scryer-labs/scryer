@@ -382,3 +382,14 @@ workspace import, and validate both repositories plus their integration now. Do 
 retain hidden aliases until Java extraction. This moves command-level consumer
 adaptation ahead of the original 2.1 checkpoint; 2.1 still covers later installed-engine
 contract changes. Native workspace CSV-adapter retirement remains a separate task.
+
+## 2026-11-02 extraction refinement
+
+Preserve Core → Go wrapper → JVM for the repository extraction. Core and engine
+CI/plans separate with the code; engine produces JSON only, including in its tests.
+After acceptance, the next pair session experiments with a C ABI dynamically loaded
+wrapper that starts the JVM inside Core's process context. This could remove a
+resident wrapper process while preserving independently distributed engine code.
+It is not a decision to adopt Go plugin or embed JVM through JNI. The independent
+process baseline remains available while ABI/memory/error/lifecycle tradeoffs are
+explored. Native workspace scanning and default stack/LOC remain deferred.

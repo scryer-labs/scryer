@@ -7,13 +7,13 @@ engine-extraction sequence takes precedence unless a real regression requires a 
 
 ## TD-001: Finish the Go/JVM migration cleanup
 
-- [ ] Status: deferred; preserve behavior during analyzer extraction.
+- [x] Status: resolved during independent Java-engine extraction, 2026-11-02.
 
-The old Kotlin CLI/renderers remain in test sources as migration regression
-fixtures; public commands/rendering already live in Go. Decide which checks remain
-useful when Java moves, migrate shared report/contract coverage to its owner and
-remove duplicate fixtures only after equivalent checks exist. Do not delete the
-regression baseline just because production no longer calls it.
+Kotlin CLI/rendering fixtures and their presentation tests were removed rather
+than coupling engine tests to Core resources. Fact/JSON assertions from mixed
+suites remain with the engine. Core owns terminal/MD/HTML/browser regression tests;
+workspace acceptance exercises real engine JSON through Core scan/analyze reports.
+No Kotlin sources or Gradle build files remain in Core.
 
 ## TD-002: Java resolution and reflection boundaries
 
@@ -47,9 +47,8 @@ missing evidence or test adequacy from current reports.
 Packages are host-specific directory distributions; current CI builds Ubuntu/Linux
 amd64 packages and uploads workflow artifacts. Windows-native distribution,
 additional OS/architecture coverage and published release installation are not
-proven by those artifact checks. Separate core and analyzer packaging without
-breaking relocation, runtime discovery, legal notices or the distinction between
-the analyzer JVM and target JVM. Installer/repository design is owned by
+proven by those artifact checks. Core and engine packaging are now separate; maintain relocation, runtime
+discovery, legal notices and the distinction between analyzer and target JVMs. Installer/repository design is owned by
 [decision 001](decisions/001-analyzer-distribution.md).
 
 ## TD-005: Remove refactor-plan generation from Scryer

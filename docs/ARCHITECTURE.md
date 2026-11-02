@@ -1,6 +1,6 @@
 # Scryer layered architecture
 
-Scryer is one Go module with a Kotlin JVM analyzer. Public `project scan` and `project analyze` are shared use cases owned by Go. The initial stack is Java; introducing C++ does not require adopting Java AST/bytecode structures.
+Scryer Core is a Go module; Java facts come from the independent scryer-java-engine repository. Public `project scan` and `project analyze` are shared use cases owned by Go. The initial stack is Java; introducing C++ does not require adopting Java AST/bytecode structures.
 
 | Layer / location | Responsibility |
 |---|---|
@@ -10,16 +10,16 @@ Scryer is one Go module with a Kotlin JVM analyzer. Public `project scan` and `p
 | `internal/cmd/workspace` | Workspace scope composition in workspace.go; temporary CSV input in import.go |
 | `internal/cmd/engine` | Scope composition in engine.go; non-persistent list/install/uninstall mock connections in separate files |
 | `internal/cmd/terminal` | Shared terminal color policy across scopes |
-| `internal/application` | Stack/snapshot lifecycle coordination and explicit mock-engine identity probing |
+| `internal/application` | Stack/snapshot lifecycle coordination and external-engine identity probing |
 | `internal/contract` | Analyzer interface, versioned requests/responses, report document requirements and uncertainty semantics |
-| `internal/analyzer/java` | Java 21 worker discovery, process protocol, request identity/version validation; no rendering |
+| `internal/analyzer/external` | Engine executable discovery, process protocol, request identity/version validation; no JVM or rendering |
 | `internal/repository` | Git ref resolution, shared clone, isolated standalone before/after checkouts and cleanup |
 | `internal/process` | Subprocess cancellation/process-group lifecycle |
 | `internal/report` | Terminal, JSON, Markdown, Mermaid and offline HTML rendering, atomic output replacement |
 | `internal/report/assets` | Shared HTML/CSS/JS/logo assets embedded into the Go binary |
-| `analyzers/java/src/main/kotlin` | Java/JVM facts, symbol/impact analysis, Maven/Gradle models and test/coverage evidence |
+| External `scryer-java-engine` repository | Go wrapper, Kotlin/JVM facts, Maven/Gradle models and test/coverage evidence |
 
-The flow is `main → Cobra command → application → Analyzer interface → Java process adapter → Kotlin worker → validated report → Go renderer`. No technology-specific rendering or output-file flags cross the analyzer boundary. Presentation does not recompute evidence. JSON output preserves additive fields and nulls.
+The flow is `main → Cobra command → application → Analyzer interface → external process adapter → independent Go engine wrapper → Kotlin worker → validated report → Go renderer`. No technology-specific rendering or output-file flags cross the analyzer boundary. Presentation does not recompute evidence. JSON output preserves additive fields and nulls.
 
 Go resolves refs to immutable SHAs and creates isolated snapshots. Kotlin consumes those directories, verifies their SHAs, identifies changed Java symbols from Git differences, builds attributed source graphs, runs target tests and matches evidence. Java owns Maven/Gradle and target-JDK details. Go owns the outer lifecycle/cancellation, while Java build/test runners retain command-specific timeout, log and snapshot-integrity handling. Retained artifacts live in the cache, not in temporary checkouts.
 
@@ -38,7 +38,7 @@ Go resolves refs to immutable SHAs and creates isolated snapshots. Kotlin consum
 - `analyze.report`: Java projection into the compatible versioned report document; no presentation.
 - `worker`: one request/response over stdin/stdout. Progress/errors are separate from report facts.
 
-The old Kotlin command/rendering code is retained **only under test sources** as regression fixtures. It is not part of the installed JVM analyzer or the public command path. Public rendering assets are owned by Go; those tests receive the same assets as test resources.
+The Java packages above live only in the engine repository. Kotlin produces JSON facts and has no CLI rendering, Markdown/HTML assets or dependency on Core reporting resources. Old Kotlin presentation fixtures/tests were removed; Core owns presentation regression checks.
 
 ## Contract and evidence rules
 
@@ -48,9 +48,19 @@ No existence of a test class, command success, static test route or method hit p
 
 ## Code and dependency rules
 
-Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod` for the current application; do not scatter modules through the existing tree. Independently versioned analyzer repositories are now planned in [decision 001](decisions/001-analyzer-distribution.md), which records the next independent distribution boundary. That extraction and an external Go contract boundary are not implemented yet.
+Keep `main` thin and dependencies directed toward the contract/application boundaries. CLI must not parse Java symbols or coverage data; analyzers must not render terminal/Markdown/HTML. Prefer named operations, readable collection transformations and explicit side-effect/error handling. Presentation labels are never identity/matching keys. Keep one root `go.mod` for the current application; do not scatter modules through the existing tree. The independent Java repository now communicates through the JSON process contract; it imports no Core internal Go packages. Persistent installation and capability/template negotiation remain future work.
 
-Build tooling compiles the JVM analyzer and Go executable into `build/install/scryer`: `bin/scryer` is Go, `lib/java/*.jar` is the worker runtime. The slim native package needs external Java 21; `scripts/package --with-runtime` adds a host-specific Java 21 image under `runtime/`, selected before inherited JAVA_HOME unless SCRYER_ANALYZER_JAVA_HOME is explicit. CI tests Go, JVM and browser graph behavior, then checks extracted packages.
+Core `scripts/build` produces `build/install/scryer/bin/scryer` with Go only.
+The engine's `scripts/build` produces its Go wrapper and worker jars under
+`build/install/scryer-java-engine/{bin,lib/java}`. Its optional runtime package adds
+`runtime/`. Core never selects a JDK/classpath; engine discovery uses
+`SCRYER_ENGINE_<ID>` (uppercase, hyphens replaced by underscores), then
+`scryer-<id>-engine` on PATH. Explicit invalid overrides fail without fallback.
+
+On macOS, Core starts one process group containing the wrapper. The JVM inherits
+that group, as do ordinary child build/test processes, so cancellation reaches the
+whole group. The wrapper must not create a separate JVM process group. Windows
+whole-tree cancellation remains outside current platform acceptance.
 
 ## Workspace facts
 
@@ -72,6 +82,6 @@ without computing a schedule.
 This file describes the implementation, not the future plugin system. The
 [documentation index](README.md) separates current contracts from plans;
 [milestones](MILESTONES.md) owns delivery order and
-[technical debt](TECH-DEBT.md) records existing limitations. Java extraction,
-Go-wrapped plugin installation, non-Java analysis and architecture/test-strategy
+[technical debt](TECH-DEBT.md) records existing limitations. Persistent
+Go-wrapped engine installation, non-Java analysis and architecture/test-strategy
 capabilities must not be described as present until their slices are implemented.

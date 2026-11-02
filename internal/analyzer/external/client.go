@@ -1,5 +1,5 @@
-// Package java adapts the JVM worker to the common analyzer contract.
-package java
+// Package external adapts independent engines to the common analyzer contract.
+package external
 
 import (
 	"bytes"
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -18,13 +19,15 @@ import (
 )
 
 type Client struct {
-	Classpath string
-	Java      string
-	Progress  io.Writer
+	Executable string
+	EngineID   string
+	Progress   io.Writer
 }
 
-func New(progress io.Writer) *Client { return &Client{Progress: progress} }
-func (c *Client) Stack() string      { return "java" }
+func New(engineID string, progress io.Writer) *Client {
+	return &Client{EngineID: engineID, Progress: progress}
+}
+func (c *Client) Stack() string { return c.EngineID }
 func (c *Client) Scan(ctx context.Context, r contract.ScanRequest) (contract.Document, error) {
 	return c.call(ctx, contract.Request{Operation: "scan", Scan: &r})
 }
@@ -43,40 +46,11 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 	if err != nil {
 		return contract.Document{}, err
 	}
-	classpath := c.Classpath
-	if classpath == "" {
-		classpath = os.Getenv("SCRYER_JAVA_CLASSPATH")
+	executable, err := c.executable()
+	if err != nil {
+		return contract.Document{}, err
 	}
-	if classpath == "" {
-		executable, err := os.Executable()
-		if err != nil {
-			return contract.Document{}, err
-		}
-		executable, err = filepath.EvalSymlinks(executable)
-		if err != nil {
-			return contract.Document{}, err
-		}
-		directory := filepath.Join(filepath.Dir(executable), "..", "lib", "java")
-		jars, _ := filepath.Glob(filepath.Join(directory, "*.jar"))
-		if len(jars) == 0 {
-			return contract.Document{}, fmt.Errorf("Java analyzer not installed: run scripts/build or set SCRYER_JAVA_CLASSPATH")
-		}
-		classpath = strings.Join(jars, string(os.PathListSeparator))
-	}
-	executable := c.Java
-	if executable == "" {
-		installation, err := os.Executable()
-		if err != nil {
-			return contract.Document{}, err
-		}
-		installation, err = filepath.EvalSymlinks(installation)
-		if err != nil {
-			return contract.Document{}, err
-		}
-		executable = javaExecutable(installation, os.Getenv("SCRYER_ANALYZER_JAVA_HOME"), os.Getenv("JAVA_HOME"))
-	}
-	// Target build/test timeouts remain stack-specific; the caller owns cancellation of the complete run.
-	cmd := process.Command(ctx, "", executable, "-cp", classpath, "com.edwardnoaland.scryer.worker.WorkerKt")
+	cmd := process.Command(ctx, "", executable, "execute")
 	cmd.Stdin = bytes.NewReader(data)
 	cmd.Stderr = c.Progress
 	var output bytes.Buffer
@@ -86,7 +60,7 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 		return contract.Document{}, ctx.Err()
 	}
 	if err != nil {
-		return contract.Document{}, fmt.Errorf("Java analyzer failed: %w (analyzer requires Java 21; set SCRYER_ANALYZER_JAVA_HOME)", err)
+		return contract.Document{}, fmt.Errorf("engine execution failed: %w", err)
 	}
 	decoder := json.NewDecoder(&output)
 	var response contract.Response
@@ -124,18 +98,19 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 
 var _ contract.Analyzer = (*Client)(nil)
 
-// Explicit analyzer configuration wins; bundled Java avoids inheriting a target
-// project's Java 8/11 JAVA_HOME. Target build/test Java selection stays separate.
-func javaExecutable(installation, overrideHome, javaHome string) string {
-	if overrideHome != "" {
-		return filepath.Join(overrideHome, "bin", "java")
+// Explicit development overrides and PATH discovery do not persist an installation.
+func (c *Client) executable() (string, error) {
+	executable := c.Executable
+	if executable == "" {
+		key := "SCRYER_ENGINE_" + strings.ToUpper(strings.ReplaceAll(c.EngineID, "-", "_"))
+		executable = os.Getenv(key)
 	}
-	bundled := filepath.Join(filepath.Dir(installation), "..", "runtime", "bin", "java")
-	if info, err := os.Stat(bundled); err == nil && !info.IsDir() {
-		return bundled
+	if executable == "" {
+		executable = "scryer-" + c.EngineID + "-engine"
 	}
-	if javaHome != "" {
-		return filepath.Join(javaHome, "bin", "java")
+	resolved, err := exec.LookPath(executable)
+	if err != nil {
+		return "", fmt.Errorf("engine %q is unavailable: provide %s on PATH or set SCRYER_ENGINE_%s: %w", c.EngineID, "scryer-"+c.EngineID+"-engine", strings.ToUpper(strings.ReplaceAll(c.EngineID, "-", "_")), err)
 	}
-	return "java"
+	return filepath.Abs(resolved)
 }

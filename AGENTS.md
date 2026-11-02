@@ -42,24 +42,28 @@ commands/scope without agreement. Read-only inspection and documentation checks
 remain appropriate. Report exactly which checks ran and any missing acceptance
 evidence; documentation checks are not code-pipeline acceptance.
 
-Routine acceptance also includes the workspace integration plan
-`modernization--scryer-orrery-integration`, rooted at
-`/Users/edwardnoaland/Desktop/ThoughtWorksProjects/modernization/test_workspace`.
-Run Scryer's plan first, then this integration plan. It runs seven project scans in
-parallel through Scryer v1.4 and retains JSON, without a verification script or Mod.
-If Orrery/provider implementation changes, also run `orrery--daily-dev-pipeline` in
-scryer-lab; otherwise do not add Orrery's full pipeline to every Scryer change.
-Provider operations use their project target, not an arbitrary directory override.
+After the 2026-11-02 Java extraction, acceptance is ordered:
 
-The current plan assumes the combined Go CLI/Kotlin Java-engine repository layout.
-When CLI and language engines are split into independent repositories, update the
-plan targets, toolchains, build/test/package steps and cross-repository compatibility
-checks together with the corresponding CI workflows. Do not treat today's plan as
-permanent acceptance coverage for the extracted architecture.
+1. Scryer: `scryer-lab--daily-development` (Go/report tests, standalone build/install,
+   Core-only packages; no Java or Gradle setup).
+2. Engine: `scryer-java-engine--daily-development` (Go wrapper, Kotlin facts/JSON,
+   JVM worker and slim/bundled-Java-21 package checks).
+3. Workspace: `scryer-lab--scryer-java-engine-integration` (real external engine,
+   seven test_workspace project scans, Core reports, analyze/test execution,
+   working-tree snapshots and wrapper/JVM/target cancellation).
 
+All three definitions live under scryer-lab. The integration plan sets an explicit
+engine executable to identify the built artifact; engine discovery otherwise uses
+PATH. Non-persistent management probes are not real installs. Never add Core
+checkout/report-resource dependencies to engine tests. No Kotlin/Gradle files
+belong in this repository.
 
-For the initial independent mock-engine connection slice, the user explicitly
-selects three acceptance plans: Scryer daily, scryer-java-engine--daily-development
-(project), then scryer-lab--scryer-java-engine-integration (workspace), all rooted in
-scryer-lab. No persisted engine installation or Java extraction is part of this
-slice; do not add the old scanning integration or Orrery pipeline to it.
+If Orrery/provider implementation changes, also run `orrery--daily-dev-pipeline`.
+Provider operations use their resolved project target, not an arbitrary directory
+override. The existing `modernization--scryer-orrery-integration` in test_workspace
+remains the provider acceptance plan; provider processes need engine discovery in
+their environment. Do not add an implicit sibling-repository fallback to Core.
+
+Keep each repository's plan aligned with its CI workflow when build ownership
+changes. Packaging checks are local acceptance; uploading artifacts is CI-only.
+The shared-library/C ABI idea is a future pair experiment, not this extraction.

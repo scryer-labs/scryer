@@ -2,11 +2,9 @@
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$root"
-./gradlew --no-daemon --console=plain -g "$root/.tooling/gradle" --project-cache-dir "$root/.tooling/project-cache" build installDist
-mkdir -p build/install/scryer/bin build/install/scryer/lib/java
-# Remove old owned distribution jars so obsolete backend versions cannot remain on the classpath.
-rm -f build/install/scryer/lib/java/*.jar
-cp build/install/scryer-java/lib/*.jar build/install/scryer/lib/java/
+mkdir -p build/install/scryer/bin
 go build -trimpath -o build/install/scryer/bin/scryer.new ./cmd/scryer
 mv -f build/install/scryer/bin/scryer.new build/install/scryer/bin/scryer
-rm -f build/install/scryer/bin/scryer.bat build/install/scryer/lib/*.jar
+# Remove artifacts owned by the former combined CLI/JVM distribution.
+rm -rf build/install/scryer/lib build/install/scryer/runtime
+rm -f build/install/scryer/bin/scryer.bat
