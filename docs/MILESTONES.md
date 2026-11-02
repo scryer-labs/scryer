@@ -54,10 +54,12 @@ the later 2.1 checkpoint remains for installed-engine changes.
 
 See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable slices:
 
-1. [x] **Done (command placeholders)** — ~~Add engine list/install/uninstall entry points.~~
-   They print only; real inventory/install/uninstall and a minimal worker fixture are
-   still pending. This slice uses only the Scryer plan, with no integration run.
-   Defer remote-list; no install-all or stack-driven auto-install.
+1. [x] **Done (mock process connection)** — ~~Add engine list/install/uninstall and
+   probe an independent Go mock engine.~~ Explicit --executable calls describe and
+   verifies identity; receipts are mock/non-persistent. No inventory, package install
+   or source build is implemented. Core run `20261102T160505366Z-0c862886`, engine run
+   `20261102T160505751Z-3446bd8a`, and workspace linkage run
+   `20261102T160706145Z-be3a98f0` succeeded. Remote-list/install-all remain deferred.
 2. [ ] Verify install/list/invoke/uninstall against the user-created Java-engine
    repository. Start with local packages/source directories and owned install data.
 3. [ ] Define the minimal external JSON/capability/template contract, extract Java

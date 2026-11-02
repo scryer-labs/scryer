@@ -19,7 +19,7 @@ scryer engine uninstall <engine>
 Project paths default to the current directory. This first reorganization preserves
 existing Java scan/analyze behavior, flags and report contracts. Scan still resolves
 build models by default; `--static` skips that. The planned engine-free `stack,loc`
-default and `--facts`, native workspace scan/configuration management, and actual
+default and `--facts`, native workspace scan/configuration management, and persistent
 engine management are not implemented yet.
 
 `workspace import` is a temporary external-CSV adapter: it normalizes and reports
@@ -28,14 +28,30 @@ Old top-level `scan`, `analyze` and `analyze workspace` have been removed, not h
 or aliased. Consumers must use the scope-first commands. Orrery's new Scryer provider
 version adapts the commands now rather than waiting for Java-engine extraction.
 
-## Engine command placeholders
+## Mock engine connection
 
-`engine list`, `engine install java cpp` and `engine uninstall java` currently print
-explicit "not implemented yet" messages only. Install accepts one or more IDs;
-uninstall accepts one. They do not discover engines, download/build/install/remove
-anything, create global configuration, or invoke a language engine. Placeholder
-success means the command was accepted, not that any management operation occurred.
-Structured management results and functional installation remain later slices.
+The engine commands now call an explicit external mock executable's `describe`
+operation, validate its JSON identity, and print a mock receipt:
+
+```sh
+scryer engine install java --executable ../scryer-java-engine/build/bin/scryer-java-engine
+scryer engine list --executable ../scryer-java-engine/build/bin/scryer-java-engine
+scryer engine uninstall java --executable ../scryer-java-engine/build/bin/scryer-java-engine
+```
+
+`--executable` is required for this non-persistent slice. Add `--json` for a receipt
+containing operation, status `mock`, persisted false, executable and engine identity.
+Each command independently probes the provided engine; list is not a persisted
+installed inventory. Install/uninstall validate the requested ID against the returned
+identity; one executable represents one engine, not a batch source for other IDs.
+No package is copied/deleted, installation state is stored, global Scryer home is
+created, source build is invoked, or Java analyzer is selected by these operations.
+The existing bundled Java scanner remains separate and unchanged.
+
+The mock process identity contains protocolVersion 1, id/name/version/source and
+mock true. Stdout must contain exactly one JSON identity; diagnostics use stderr.
+Core enforces a 10-second deadline and its existing process cancellation behavior.
+This small handshake is not the finalized language-scanning protocol or installer.
 
 ## Run
 

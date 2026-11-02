@@ -1,19 +1,17 @@
 package engine
 
-import (
-	"fmt"
-
-	"github.com/spf13/cobra"
-)
+import "github.com/spf13/cobra"
 
 func newUninstallCommand() *cobra.Command {
-	return &cobra.Command{
+	var options mockOptions
+	command := &cobra.Command{
 		Use:   "uninstall <engine>",
-		Short: "Uninstall an engine (not implemented yet)",
+		Short: "Verify a mock uninstall connection without deleting anything",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := fmt.Fprintf(cmd.OutOrStdout(), "engine uninstall: not implemented yet (requested: %s)\n", args[0])
-			return err
+			return options.run(cmd, "uninstall", args)
 		},
 	}
+	options.bind(command)
+	return command
 }

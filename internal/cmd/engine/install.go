@@ -1,20 +1,17 @@
 package engine
 
-import (
-	"fmt"
-	"strings"
-
-	"github.com/spf13/cobra"
-)
+import "github.com/spf13/cobra"
 
 func newInstallCommand() *cobra.Command {
-	return &cobra.Command{
+	var options mockOptions
+	command := &cobra.Command{
 		Use:   "install <engine> [engines...]",
-		Short: "Install one or more engines (not implemented yet)",
+		Short: "Verify a mock install connection without persisting state",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := fmt.Fprintf(cmd.OutOrStdout(), "engine install: not implemented yet (requested: %s)\n", strings.Join(args, ", "))
-			return err
+			return options.run(cmd, "install", args)
 		},
 	}
+	options.bind(command)
+	return command
 }

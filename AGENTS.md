@@ -56,3 +56,10 @@ When CLI and language engines are split into independent repositories, update th
 plan targets, toolchains, build/test/package steps and cross-repository compatibility
 checks together with the corresponding CI workflows. Do not treat today's plan as
 permanent acceptance coverage for the extracted architecture.
+
+
+For the initial independent mock-engine connection slice, the user explicitly
+selects three acceptance plans: Scryer daily, scryer-java-engine--daily-development
+(project), then scryer-lab--scryer-java-engine-integration (workspace), all rooted in
+scryer-lab. No persisted engine installation or Java extraction is part of this
+slice; do not add the old scanning integration or Orrery pipeline to it.

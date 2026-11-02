@@ -1,19 +1,17 @@
 package engine
 
-import (
-	"fmt"
-
-	"github.com/spf13/cobra"
-)
+import "github.com/spf13/cobra"
 
 func newListCommand() *cobra.Command {
-	return &cobra.Command{
+	var options mockOptions
+	command := &cobra.Command{
 		Use:   "list",
-		Short: "List installed engines (not implemented yet)",
+		Short: "Describe an explicit mock engine (no installed inventory)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := fmt.Fprintln(cmd.OutOrStdout(), "engine list: not implemented yet")
-			return err
+			return options.run(cmd, "list", nil)
 		},
 	}
+	options.bind(command)
+	return command
 }
