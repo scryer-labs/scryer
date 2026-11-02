@@ -334,8 +334,18 @@ integration plan covers installation/discovery/invocation/uninstall and project 
 An overall acceptance entry may reference these plans without copying their commands.
 Identify the exact built artifacts and isolate test homes/project configuration from
 normal installations. Order dependent build/install/consume steps and avoid concurrent
-cleaning of one checkout. External platform/fixture end-to-end design is deferred;
-this agreement records only Scryer/Core/engine acceptance responsibilities.
+cleaning of one checkout.
+
+The immediate acceptance ground is now the existing `test_workspace` (workspace
+`modernization`): its workspace integration plan references seven project scans in
+parallel, calling Scryer v1.4 directly and retaining JSON. No integration shell script
+or Mod collection is required. Provider operations scan their resolved project target;
+no directory override is needed. This supersedes the earlier fixture-deferral and
+script-driven integration approach, without expanding native workspace scanning.
+
+For routine changes run Scryer's plan followed by this integration plan. Add Orrery's
+plan when Orrery/provider implementation changes. Exact local plan roots/IDs and API
+invocation rules live in [contributor instructions](../../AGENTS.md#development-acceptance).
 
 ## Migration and next implementation boundary
 

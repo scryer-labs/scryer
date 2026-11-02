@@ -42,6 +42,15 @@ commands/scope without agreement. Read-only inspection and documentation checks
 remain appropriate. Report exactly which checks ran and any missing acceptance
 evidence; documentation checks are not code-pipeline acceptance.
 
+Routine acceptance also includes the workspace integration plan
+`modernization--scryer-orrery-integration`, rooted at
+`/Users/edwardnoaland/Desktop/ThoughtWorksProjects/modernization/test_workspace`.
+Run Scryer's plan first, then this integration plan. It runs seven project scans in
+parallel through Scryer v1.4 and retains JSON, without a verification script or Mod.
+If Orrery/provider implementation changes, also run `orrery--daily-dev-pipeline` in
+scryer-lab; otherwise do not add Orrery's full pipeline to every Scryer change.
+Provider operations use their project target, not an arbitrary directory override.
+
 The current plan assumes the combined Go CLI/Kotlin Java-engine repository layout.
 When CLI and language engines are split into independent repositories, update the
 plan targets, toolchains, build/test/package steps and cross-repository compatibility
