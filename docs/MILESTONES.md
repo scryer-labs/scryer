@@ -26,19 +26,63 @@ configuration below are not current capabilities.
 - [x] **Done (design)** — ~~Agree minimal workspace/per-engine YAML ownership and
   JSON-only engine results with Core-owned modular MD/HTML rendering.~~ Decision 004
   records the pre-stability no-compatibility policy; no implementation is claimed.
-- [ ] Next: define minimal engine/project/workspace JSON contracts using mixed-project
-  and two-project examples; then remaining workspace fields/path rules, requests,
-  output/filter/exit semantics, engine-management details and old-to-new mapping.
+- [ ] Next: reorganize current command entries while preserving Java behavior. Do not
+  wait for future engine/workspace schemas. Define the external engine contract during
+  extraction and native workspace aggregation contracts when that capability is built.
 - [ ] Retain the Mod-fed workspace CSV adapter temporarily under
   [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation);
   migrate its entry into the new workspace command shape, then remove the adapter
   once native workspace dependency scanning and consumer migration work.
 
-## Priority 1 — CLI, explicit scopes and portable configuration
+## Priority 1 — Reorganize existing commands
 
 - [ ] Implement scope-first project/workspace commands from decision 004, with optional
   paths defaulting to the current scope root. Preserve current Java behavior through
   explicit migration rather than requiring every engine to emulate Java.
+- [ ] Move the temporary Mod-fed CSV input under workspace commands, clearly distinct
+  from native scanning. Preserve consumer compatibility through a deliberate transition.
+- [ ] Keep Java flags/default behavior during this first slice; no mock claims of new
+  stack/LOC, workspace-native scanning or engine installation support.
+
+## Priority 2 — Independent Java engine installation and extraction
+
+See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable slices:
+
+1. [ ] Add engine list/install/uninstall with mocks and a minimal worker fixture.
+   Defer remote-list; no install-all or stack-driven auto-install.
+2. [ ] Verify install/list/invoke/uninstall against the user-created Java-engine
+   repository. Start with local packages/source directories and owned install data.
+3. [ ] Define the minimal external JSON/capability/template contract, extract Java
+   into its Go wrapper plus Kotlin worker, and verify existing features end to end.
+   No external engine imports Core's internal packages.
+4. [ ] Package/release the independent engine with bundled Java 21 runtime on GitHub.
+   Install compatible stable assets; also support source builds through an engine-owned
+   build entry producing the same package layout. Source builds require dev toolchains.
+5. [ ] Provide automatic global config/data/cache defaults and optional SCRYER_HOME;
+   users must not initialize a global home. Core installs independently with go install.
+   Split Core/engine CI and plans, and compose Core-plus-engine acceptance with isolated
+   homes, known artifacts and serialized dependent operations.
+
+No dynamic Go ABI or general plugin framework is selected. Engine naming, package
+schema and exact install flags remain open. Java is the validation engine, not a
+requirement that every future capability be added to Java. macOS is the primary
+acceptance target;
+Windows migration is deferred until both Scryer and Orrery are stable.
+
+### 2.1 — Update Orrery after Java extraction
+
+- [ ] Adapt Orrery's Scryer provider and relevant scan-plan bindings to the new
+  command/configuration/engine contract after Priority 2. Publish a new provider
+  version instead of changing published YAML. Validate actual invocation, JSON,
+  artifacts and partial/unsupported outcomes through Orrery, while retaining
+  standalone CLI use.
+
+## After extraction and 2.1 — Core baseline and configuration
+
+Default stack/LOC scanning is implemented after Java extraction to validate that
+Core works without any installed engine or Java. This work is deliberately deferred
+from the initial command-only slice. Follow decision 004 for the behavior below.
+
 - [ ] Implement workspace init/add/remove and explicit membership. Initialize
   `.scryer/engines/<engine-id>.yaml` from engine templates under projects, without
   project.yaml. Existing files are not automatically overwritten. Workspace has only
@@ -62,42 +106,6 @@ configuration below are not current capabilities.
   Separate optional resolution and execution capabilities and report coverage gaps.
 - [ ] Write meaningful command/configuration contracts and migration examples.
   Current CLI remains documented in [CLI](CLI.md) until implementation changes it.
-
-## Priority 2 — Independent Java engine installation and extraction
-
-See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable slices:
-
-1. [ ] Finish the logical external boundary from the current Go/Java adapter.
-   External engines must not import Core's `internal/` packages. Define the minimal
-   public protocol/contract, identity/version and capability handshake.
-2. [ ] Verify install/uninstall/list using a minimal local engine package and an
-   actual request/response before moving the Java implementation. Commands such as
-   `scryer engine install`, `uninstall` and `list` are provisional. A failed install
-   must not appear as a usable engine. Public download/update infrastructure can wait.
-3. [ ] Support explicit batch install plus installed/remote available lists and
-   uninstall. No install-all or stack-driven auto-install in this slice. Initialize
-   missing project engine config through engine templates and Core-owned writes;
-   use Java Maven/Gradle defaults from decision 004.
-4. [ ] Move Java into the user-created `scryer-java-engine` repository, with a Go
-   entry point around Kotlin/JVM. Preserve Java capabilities and evidence; Java
-   runtime discovery/optional runtime packaging belong with that engine.
-5. [ ] Invoke installed Java through ordinary Core commands; keep non-Java Core
-   operations usable without a JVM. Split tests/builds/releases by ownership and
-   retain host/engine compatibility, cancellation and package smoke checks.
-
-No dynamic Go ABI or general plugin framework is selected. Engine naming, package
-schema and exact install flags remain open. Java is the validation engine, not a
-requirement that every future capability be added to Java. macOS is the primary
-acceptance target;
-Windows migration is deferred until both Scryer and Orrery are stable.
-
-### 2.1 — Update Orrery after Java extraction
-
-- [ ] Adapt Orrery's Scryer provider and relevant scan-plan bindings to the new
-  command/configuration/engine contract after Priority 2. Publish a new provider
-  version instead of changing published YAML. Validate actual invocation, JSON,
-  artifacts and partial/unsupported outcomes through Orrery, while retaining
-  standalone CLI use.
 
 ## Priority 3 — Additional languages and mixed-project facts
 

@@ -273,6 +273,70 @@ separate topic. Clean-architecture layer mappings need configuration/evidence;
 choosing a circular layout does not establish architecture. Output flags, default
 stdout/file delivery and exit-code policy remain open.
 
+## Engine process, installation and local state refinements
+
+Agreed after the initial command design: engine wrappers remain Go executables,
+invoked as independent processes through JSON, not statically linked libraries or
+Go shared-library plugins. Start a process per operation; no persistent daemon,
+listening port or service manager is required. Java's Go wrapper can own a JVM worker
+child process. Core owns outer cancellation/result checks; the engine owns its
+internal process/runtime details. Exact external protocol is defined during extraction,
+not a prerequisite for the first command reorganization.
+
+Deliver installation in small slices:
+
+1. Expose engine list/install/uninstall with mocked boundaries/minimal JSON worker
+   fixtures before moving Java. Remote-list is deferred.
+2. Use the user-created Java-engine repository to verify real local installation,
+   discovery, invocation, listing and uninstall. Uninstall removes owned install
+   data, not source checkouts or project engine configuration.
+3. Move existing Java scanning/analyze capabilities and their tests into that engine;
+   run end-to-end Core/engine checks to preserve current behavior and evidence.
+4. Publish an OS/architecture-specific stable GitHub Release package with the Go
+   wrapper, JVM worker/dependencies, defaults and bundled Java 21 runtime. Install
+   selects the compatible stable asset and validates it. This is a directory
+   distribution, not a `.dylib`/static library. Start with macOS support.
+
+Release installation must not require a local Go compiler or separately installed
+Java. The engine runtime is distinct from toolchains needed to build/test the target
+project. Reuse the current bundled-runtime packaging experience; do not assume
+packing the engine makes arbitrary target builds self-contained.
+
+Support source installation for engines under development, beginning with a local
+source directory. The engine repository supplies an agreed build/package entry that
+produces the same installation layout as release packages. Core does not hardcode
+Gradle/Cargo/etc. Source installation requires the developer's build toolchain and
+records source identity; installed contents must not depend on the checkout staying
+in place. Git URL/ref syntax and build-entry/manifest schema remain open.
+
+Global Scryer state holds local config, engine installations/selected versions and
+installation metadata; downloads/source-build intermediates are separate cache data.
+Choose platform defaults automatically and create directories only when needed.
+Users need not know the home path, initialize global config or set environment
+variables. Missing global config uses built-in defaults. `SCRYER_HOME` is an optional
+advanced/test override, not a normal installation step. Exact default paths and file
+schemas remain open. Engine templates stay in their packages, project options stay
+in project YAML, and workspace membership stays in workspace YAML.
+
+After extraction, Core must install independently with `go install` at its published
+module path (with Go's binary directory on PATH), without building Kotlin or needing
+Java. Default stack/LOC runs without engines. This is a planned acceptance condition,
+not what the current combined build already provides.
+
+## Scryer acceptance layers
+
+As repositories separate, evolve the current acceptance plan and CI into Core
+checks, per-engine checks, and a composed Core-plus-engine integration plan. Core
+checks include standalone installation and engine-free baseline scanning when those
+features land. Engine checks cover JSON/default-template/packaging behavior; the
+integration plan covers installation/discovery/invocation/uninstall and project config.
+
+An overall acceptance entry may reference these plans without copying their commands.
+Identify the exact built artifacts and isolate test homes/project configuration from
+normal installations. Order dependent build/install/consume steps and avoid concurrent
+cleaning of one checkout. External platform/fixture end-to-end design is deferred;
+this agreement records only Scryer/Core/engine acceptance responsibilities.
+
 ## Migration and next implementation boundary
 
 Preserve current Java scan/analyze features, source/runtime separation, cancellation,
@@ -290,7 +354,11 @@ the workspace command shape with explicit external-input semantics; retire the o
 Later remove the temporary adapter, as tracked by TD-006. Exact transitional grammar
 is open. Refactor-plan remains removed.
 
-The next step is a small implementation-ready contract: configuration/request/result
-schemas, remaining flag/default/exit semantics and an old-to-new capability mapping.
-Then take runnable slices, preserving Java and temporary Orrery input compatibility;
-do not start by moving every package or inventing an all-purpose plugin/rule framework.
+The next implementation slice reorganizes the existing CLI into project/workspace
+commands with optional project paths, while preserving current Java scan/analyze
+behavior and the temporary CSV capability. New default stack/LOC and engine-free
+scanning wait until Java extraction and the existing consumer-adaptation checkpoint.
+Engine installation then proceeds through the slices above. Define the external
+engine contract during extraction and defer native project-to-workspace aggregation
+contracts until needed. Do not block command reorganization on all future schemas,
+move every package at once or invent a general plugin/rule framework.

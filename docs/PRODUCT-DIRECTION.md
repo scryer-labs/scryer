@@ -94,9 +94,11 @@ in place. Keep platform boundaries clear without adding Windows work now.
 
 ## Engine handoff and consumer loop
 
-First agree CLI/configuration/output contracts. Then establish the minimal external
-engine boundary, verify local install/uninstall/list plus an actual protocol call,
-and move Java into the user-created `scryer-java-engine` repository. The `engine`
+First reorganize existing commands, preserving Java behavior. Then verify engine
+management with mocks and a minimal worker, install from a user-created Java-engine
+repository, and move Java behind an independent Go-wrapper process. Publish packages
+with bundled Java runtime and support development installs from source. Define the
+external contract as extraction needs it, without blocking the first CLI slice. The `engine`
 category name is provisional. Keep existing Java capabilities and evidence during
 the split, with Java runtime requirements owned by the optional Java engine.
 Java validates the engine mechanism and preserves its current abilities; future
@@ -106,7 +108,10 @@ After extraction, milestone **2.1** updates Orrery's Scryer provider for the new
 and engine contract. Add a new published provider version; do not edit immutable
 published provider YAML. Validate standalone use and the Orrery integration.
 
-The next language is chosen at that point. C++, Rust, TypeScript, Go and Markdown
+Implement engine-free default stack/LOC after extraction and the 2.1 checkpoint.
+Core global state is automatic and transparent to users; standalone Core go install
+must not require Java. Core, engine and their integration get separate/composable
+acceptance plans. The next language is chosen after the extraction checkpoint. C++, Rust, TypeScript, Go and Markdown
 are target capabilities; their implementation order is undecided. Mixed-language
 projects include Scriptorium Ink (Tauri), Orrery (TypeScript/HTML/CSS/Rust) and
 Scryer (Go/Kotlin). Compose available engines and expose coverage gaps before
