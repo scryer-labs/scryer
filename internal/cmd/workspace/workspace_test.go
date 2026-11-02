@@ -1,4 +1,4 @@
-package analyze
+package workspace
 
 import (
 	"bytes"
@@ -17,10 +17,10 @@ func TestWorkspaceDoesNotRequireProjectRefsOrAnalyzer(t *testing.T) {
 	if err := os.WriteFile(d, []byte("source,target\nb,a\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	command := New(nil)
+	command := New()
 	var out bytes.Buffer
 	command.SetOut(&out)
-	command.SetArgs([]string{"workspace", "--projects", p, "--dependencies", d})
+	command.SetArgs([]string{"import", "--projects", p, "--dependencies", d})
 	if err := command.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -37,12 +37,12 @@ func TestWorkspaceJSONFileAndStdout(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	command := New(nil)
+	command := New()
 	var out, progress bytes.Buffer
 	command.SetOut(&out)
 	command.SetErr(&progress)
 	output := filepath.Join(dir, "report.json")
-	command.SetArgs([]string{"workspace", "--projects", p, "--dependencies", d, "--json", "-o", output})
+	command.SetArgs([]string{"import", "--projects", p, "--dependencies", d, "--json", "-o", output})
 	if err := command.Execute(); err != nil {
 		t.Fatal(err)
 	}

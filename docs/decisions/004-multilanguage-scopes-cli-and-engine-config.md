@@ -349,10 +349,10 @@ capabilities: return unsupported through Core and add Java features only on dema
 
 Keep the Mod-fed CSV adapter until native workspace dependency scanning and consumer
 migration are usable. During CLI migration move the temporary input capability into
-the workspace command shape with explicit external-input semantics; retire the old
-`analyze workspace` entry then. Do not call CSV normalization native source scanning.
-Later remove the temporary adapter, as tracked by TD-006. Exact transitional grammar
-is open. Refactor-plan remains removed.
+the workspace command shape with explicit external-input semantics. The first slice
+uses `workspace import` and hidden legacy forwarding entries to avoid breaking existing
+providers; retire old entries at the planned consumer-adaptation checkpoint. Do not call CSV normalization native source scanning.
+Later remove the temporary adapter, as tracked by TD-006. The transitional CSV entry is `workspace import --projects ... --dependencies ...`. Refactor-plan remains removed.
 
 The next implementation slice reorganizes the existing CLI into project/workspace
 commands with optional project paths, while preserving current Java scan/analyze

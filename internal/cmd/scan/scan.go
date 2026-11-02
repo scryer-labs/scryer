@@ -16,7 +16,8 @@ func New(service *application.Service) *cobra.Command {
 	var request contract.ScanRequest
 	var stack, output, color string
 	var jsonOutput, dependencies, tree bool
-	command := &cobra.Command{Use: "scan <path>", Short: "Collect repository facts", Args: cobra.ExactArgs(1)}
+	command := &cobra.Command{Use: "scan [path]", Short: "Collect project facts (currently Java)",
+		Long: "Collect project facts using the existing Java analyzer. Path defaults to the current directory. This transitional command still resolves build models by default; use --static to avoid that. Engine-free stack/LOC defaults and --facts are not implemented yet.", Args: cobra.MaximumNArgs(1)}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if request.BuildTool != "" && request.BuildTool != "maven" && request.BuildTool != "gradle" {
 			return fmt.Errorf("--build-tool must be maven or gradle")
@@ -27,7 +28,10 @@ func New(service *application.Service) *cobra.Command {
 		return nil
 	}
 	command.RunE = func(cmd *cobra.Command, args []string) error {
-		request.Repository = args[0]
+		request.Repository = "."
+		if len(args) == 1 {
+			request.Repository = args[0]
+		}
 		document, err := service.Scan(cmd.Context(), stack, request)
 		if err != nil {
 			return err

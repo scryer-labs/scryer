@@ -1,20 +1,41 @@
 # Command reference
 
-Updated 2026-11-01. Current command behavior, analysis boundaries and report formats.
+Updated 2026-11-02. Current command behavior, analysis boundaries and report formats.
 Run build/test examples from the repository root. Only the Java analyzer is
 registered today; workspace CSV processing is Go-only. Future features belong in
 [milestones](MILESTONES.md), not in the current CLI contract.
+
+## Current command layout
+
+```text
+scryer project scan [path]
+scryer project analyze [path] --before <ref> --after <ref|.>
+scryer workspace import --projects <projects.csv> --dependencies <dependencies.csv>
+```
+
+Project paths default to the current directory. This first reorganization preserves
+existing Java scan/analyze behavior, flags and report contracts. Scan still resolves
+build models by default; `--static` skips that. The planned engine-free `stack,loc`
+default and `--facts`, native workspace scan/configuration management, and engine
+management are not implemented yet.
+
+`workspace import` is a temporary external-CSV adapter: it normalizes and reports
+facts without scanning code, registering projects or writing workspace config.
+Old top-level `scan`, `analyze` and `analyze workspace` remain hidden compatibility
+entries until the existing provider migration. They use the same handlers and emit
+migration notices to stderr, leaving JSON stdout unchanged. New integrations should
+use the scope-first commands. These entries are temporary, not permanent aliases.
 
 ## Run
 
 The Java analyzer uses Java 21, Kotlin 2.2.21 and the Gradle 8.14.3 Wrapper; public commands are provided by Go/Cobra. Target repositories may use older JDKs and build tools.
 
-Run analyze from inside the target Git repository (or a subdirectory):
+Run project analyze from inside the target Git repository (or a subdirectory):
 
 ```sh
-scryer analyze --before HEAD~1 --after HEAD
-scryer analyze --before HEAD~1 --after HEAD --skip-tests
-scryer analyze --help
+scryer project analyze --before HEAD~1 --after HEAD
+scryer project analyze --before HEAD~1 --after HEAD --skip-tests
+scryer project analyze --help
 ```
 
 References resolve to commit SHAs through Git: SHA IDs, branches, tags and expressions such as `HEAD~1` are accepted. The comparison is a direct before-to-after snapshot diff, not a merge-base diff. Commit-to-commit comparisons exclude working-tree changes; use `--after .` for the supported isolated working-tree mode described below. Output lists statuses, before/after paths (including detected renames), and zero-context old/new line ranges. A zero-length range is an insertion/deletion boundary. Binary, mode-only and pure rename changes can have no textual ranges. Rename detection uses Git similarity heuristics.
@@ -35,26 +56,26 @@ The collector currently includes Java files outside `.git`, `.tooling`, `.gradle
 export JAVA_HOME="$(mise where java)"
 ./scripts/build
 export PATH="$PWD/build/install/scryer/bin:$PATH"
-scryer scan ../legacy-java-fixture
+scryer project scan ../legacy-java-fixture
 ```
 
 Default scan shows a concise summary, attempts dependency resolution with the target repository's Wrapper, and retains the full model internally. This evaluates target build configuration and may download dependency metadata/plugins; it does **not** compile, test or package the target. Arbitrary build configuration code can have its own side effects. Use `--static` to inspect local declarations/source signals without executing target configuration or downloading anything.
 
 ```sh
-scryer scan . --dependencies        # all observed direct declarations, grouped by module/configuration
-scryer scan . --dependency-tree     # resolved graph per module/configuration, rendered as a tree
-scryer scan . --json                # complete versioned facts model, no presentation truncation
-scryer scan . --static              # local facts only; resolution is not_requested
-scryer scan . --color always        # force styled output
-scryer scan . -o reports/scan.md    # also write a Markdown report
-scryer scan . --json -o scan.md     # JSON stdout plus a Markdown file
+scryer project scan . --dependencies        # all observed direct declarations, grouped by module/configuration
+scryer project scan . --dependency-tree     # resolved graph per module/configuration, rendered as a tree
+scryer project scan . --json                # complete versioned facts model, no presentation truncation
+scryer project scan . --static              # local facts only; resolution is not_requested
+scryer project scan . --color always        # force styled output
+scryer project scan . -o reports/scan.md    # also write a Markdown report
+scryer project scan . --json -o scan.md     # JSON stdout plus a Markdown file
 ```
 
 `-o <OUTPUT_FILE>` (alias `--output`) writes UTF-8 Markdown, creates missing parent directories and replaces an existing report. The terminal/JSON output is retained; the file confirmation goes to stderr. Markdown includes modules, all observed direct dependencies with declared/selected versions, source/test facts, suggested commands and all collection notes/failures. `--dependency-tree` additionally includes a plain-text tree in the file. Reports have no terminal color codes. Collection status and unknown facts remain explicit; exporting a report does not verify the target build or tests.
 
 Flags may be combined. JSON always remains plain machine-readable JSON even with `--color always`; dependency/tree view flags do not trim JSON. `--color auto|always|never` defaults to auto, which enables color only for an interactive stdout and honors `NO_COLOR`. Explicit always overrides automatic detection. The Go reporting layer supplies terminal styling, with cyan/bold headings, dim metadata, green complete/configured values, yellow signals/conflicts/partial collection and red unknown/unresolved values. Shared graph nodes use `[already shown]` references; JSON retains every edge.
 
-Quote paths with spaces. The supplied path must contain a recognized build/settings definition; scan does not search arbitrary ancestor repositories. Exit codes: 0 facts collected (possibly partial); 1 invalid/unreadable input; 2 invalid CLI arguments. Check `resolution.status`/notes rather than treating exit 0 as full resolution or a passing target build.
+Quote paths with spaces. The selected path (current directory by default) must contain a recognized build/settings definition; scan does not search arbitrary ancestor repositories. Exit codes: 0 facts collected (possibly partial); 1 invalid/unreadable input; 2 invalid CLI arguments. Check `resolution.status`/notes rather than treating exit 0 as full resolution or a passing target build.
 
 ## Summary and count semantics
 
@@ -96,7 +117,7 @@ Gradle dependencies can be computed by arbitrary code, so static DSL parsing rem
 Scryer runs on Java 21. For an older target Wrapper, set a compatible JVM for the child process:
 
 ```sh
-SCRYER_JAVA_HOME=/path/to/jdk8 scryer scan /path/to/legacy-project
+SCRYER_JAVA_HOME=/path/to/jdk8 scryer project scan /path/to/legacy-project
 ```
 
 For the existing fixture, a project-local Java 8 under `.tooling/mise/data/installs/java` is auto-detected. A toolchain declaration is distinct from the JVM used to evaluate the build. Missing/incompatible target JVM, timeout or resolution failure produces unavailable/partial facts with notes. Global Java settings are not changed.
@@ -132,7 +153,7 @@ Analyze now runs a conventional test lifecycle in the isolated after checkout by
 Scryer itself runs on JDK 21. `SCRYER_JAVA_HOME` selects the target build JVM only; this does not alter global mise configuration. Without an override, Gradle 4–6 can reuse an existing fixture-local Java 8 installation under the source repository's `.tooling/mise/data/installs/java`; otherwise they require an explicit compatible JVM. Other targets default to Scryer's runtime JDK; automatic JVM compatibility selection/provisioning is not yet available.
 
 ```bash
-SCRYER_JAVA_HOME=/path/to/compatible/jdk scryer analyze --before HEAD~1 --after HEAD
+SCRYER_JAVA_HOME=/path/to/compatible/jdk scryer project analyze --before HEAD~1 --after HEAD
 ```
 
 `SCRYER_TEST_TIMEOUT_SECONDS` sets a positive per-command timeout (default 600 seconds). `SCRYER_CACHE_HOME` selects build caches and retained logs (default `${java.io.tmpdir}/scryer-cache`). Run logs live under `runs/analyze-*/test.log` and remain after checkouts are removed. Progress goes to stderr. `clean` and build outputs operate inside the temporary after checkout; caches and logs are outside it. Test/plugin code executes normally with the current user's environment; an isolated checkout isolates repository files, not arbitrary process side effects.
@@ -184,28 +205,28 @@ Default terminal output now leads with command/test outcomes and method evidence
 HTML's impact map is a local SVG graph with pan/zoom/fit, draggable nodes with live call-edge updates, node selection and evidence details, collapse/expand calls, one-hop neighbor focus and restore. Filtering/collapse counts show visible versus total scope nodes/edges; no graph facts are silently discarded. Shared descendants stay visible through expanded callers, and SCC layout preserves recursive/disconnected components without enumerating infinite paths. Before views show static facts only. Dashed edges identify potential dispatch/reference/reflection; animations never simulate test execution. Dark/light themes, responsive layouts, keyboard controls and `prefers-reduced-motion` are supported. The map uses no graph service or runtime dependency. The Scryer Labs logo is bundled from `internal/report/assets/scryer-logo.png` and embedded as a data URI, so the report remains a single portable file.
 
 ```bash
-scryer analyze --before HEAD~1 --after HEAD
-scryer analyze --before HEAD~1 --after HEAD --verbose
-scryer analyze --before HEAD~1 --after HEAD --json -o report.json
-scryer analyze --before HEAD~1 --after HEAD -o report.md
-scryer analyze --before HEAD~1 --after HEAD -o report.html
+scryer project analyze --before HEAD~1 --after HEAD
+scryer project analyze --before HEAD~1 --after HEAD --verbose
+scryer project analyze --before HEAD~1 --after HEAD --json -o report.json
+scryer project analyze --before HEAD~1 --after HEAD -o report.md
+scryer project analyze --before HEAD~1 --after HEAD -o report.html
 ```
 
 Graph algorithm checks use Node's built-in test runner: `node --test scripts/test-report-graph.cjs`; CI runs these alongside Kotlin tests and validates browser scripts. Node is needed only for these frontend checks, not to run Scryer or open its reports. The checks cover cycles, shared descendants, collapse/restore, focus/filter subsets, edge kinds and a 12,000-node chain.
 
 ## Remote dependency release comparison
 
-`scryer scan . --remote-list` queries Maven Central release metadata for direct dependencies only. Selected versions take precedence over declarations; multiple selected versions remain separate rows. Each coordinate is queried once per scan, with four concurrent workers and 5-second connection/10-second request timeouts. `--static --remote-list` skips build-model execution but still performs remote metadata queries. No private repository credentials, mirrors or project repository URLs are consulted. Not-found artifacts, network errors and unresolved current versions remain explicit; partial lookup failures do not fail repository inspection. `--json` includes the enrichment and keeps progress on stderr.
+`scryer project scan . --remote-list` queries Maven Central release metadata for direct dependencies only. Selected versions take precedence over declarations; multiple selected versions remain separate rows. Each coordinate is queried once per scan, with four concurrent workers and 5-second connection/10-second request timeouts. `--static --remote-list` skips build-model execution but still performs remote metadata queries. No private repository credentials, mirrors or project repository URLs are consulted. Not-found artifacts, network errors and unresolved current versions remain explicit; partial lookup failures do not fail repository inspection. `--json` includes the enrichment and keeps progress on stderr.
 
 `--color auto|always|never` applies to comparisons (green current, yellow update/ahead, red unknown/unavailable); `NO_COLOR` disables auto coloring. The remote release is the repository's `<release>` field, not a guarantee of stability, Java compatibility or a recommended upgrade. Comparison uses Maven version ordering. Coordinates are sent to Maven Central only when the flag is supplied. See [Maven metadata semantics](https://maven.apache.org/repositories/metadata.html).
 
-Use `scryer scan . --remote-list -o dependency-report.md` to include the same comparison rows, lookup timestamp, metadata URLs and failure notes in Markdown. `--json -o dependency-report.md` keeps stdout JSON while saving the Markdown report. The report contains text statuses without terminal escape sequences.
+Use `scryer project scan . --remote-list -o dependency-report.md` to include the same comparison rows, lookup timestamp, metadata URLs and failure notes in Markdown. `--json -o dependency-report.md` keeps stdout JSON while saving the Markdown report. The report contains text statuses without terminal escape sequences.
 
 ## Custom analyze test lifecycle
 
 ```bash
-scryer analyze --before HEAD~1 --after HEAD --test-command './gradlew clean test integrationTest --rerun-tasks --no-build-cache'
-scryer analyze --before HEAD~1 --after HEAD --test-command './mvnw -B -Pintegration clean verify' -o report.html
+scryer project analyze --before HEAD~1 --after HEAD --test-command './gradlew clean test integrationTest --rerun-tasks --no-build-cache'
+scryer project analyze --before HEAD~1 --after HEAD --test-command './mvnw -B -Pintegration clean verify' -o report.html
 ```
 
 The quoted string is passed verbatim to `sh -c` at the isolated after checkout root. It replaces the default test command; Scryer adds no clean/test/task flags. Shell quoting, pipes and environment assignments follow POSIX shell semantics. POSIX support applies to this first version; Windows native execution is not implemented. Build-model collection remains separate and uses conventional Wrappers for before/after; a custom test command does not replace model discovery.
@@ -219,8 +240,8 @@ Choose a lifecycle that actually reruns the intended tests and produces JUnit XM
 When both Maven and Gradle are present, choose explicitly:
 
 ```sh
-scryer scan ../external/spring-petclinic-migration --build-tool maven --dependencies
-scryer analyze --before <ref> --after <ref> --build-tool maven
+scryer project scan ../external/spring-petclinic-migration --build-tool maven --dependencies
+scryer project analyze --before <ref> --after <ref> --build-tool maven
 ```
 
 `--build-tool gradle` is also supported. Scan lists all detected build tools, but reads modules/dependency declarations and resolves dependencies only for the selected tool. The selection is retained in JSON (`selectedBuildTool`), terminal and Markdown output. `--static` still performs no build commands.
@@ -236,8 +257,8 @@ Current selected versions are matched within the declaration's module and scope.
 ## Analyze another repository or uncommitted changes
 
 ```sh
-scryer analyze ../external/spring-petclinic-migration --before HEAD --after . --build-tool maven -o report.html
-scryer analyze ../external/spring-petclinic-migration --before HEAD~1 --after HEAD
+scryer project analyze ../external/spring-petclinic-migration --before HEAD --after . --build-tool maven -o report.html
+scryer project analyze ../external/spring-petclinic-migration --before HEAD~1 --after HEAD
 ```
 
 The optional path defaults to the current directory. Git refs are resolved in the selected repository. `--after .` captures its current files, including staged and unstaged changes, deletions and non-ignored untracked files. If a staged file also has unstaged edits, the current file content wins. Ignored untracked caches/build products are excluded; tracked/staged files remain included even when an ignore rule matches them.
@@ -263,7 +284,7 @@ Changed Java files containing anonymous classes no longer abort method-change an
 Read cross-repository facts without Java, build execution or network access:
 
 ```bash
-scryer analyze workspace --projects projects.csv --dependencies dependencies.csv
+scryer workspace import --projects projects.csv --dependencies dependencies.csv
 ```
 
 Projects require `projectId`, `artifactId` or `projectName`. When both `groupId`
@@ -275,15 +296,15 @@ Duplicate project identities, ambiguous references and unknown consumers are
 errors; targets outside the project list are printed explicitly. Repeated edges
 are collapsed into one repository relationship, regardless of scope/version.
 These are declared relationships, not execution evidence or release constraints. A directory literally named
-`workspace` can still be analyzed using `scryer analyze ./workspace --before … --after …`.
+`workspace` can still be analyzed using `scryer project analyze ./workspace --before … --after …`.
 
 
 ## Workspace dependency reports
 
 ```bash
-scryer analyze workspace --projects projects.csv --dependencies dependencies.csv -o dependencies.json
-scryer analyze workspace --projects projects.csv --dependencies dependencies.csv -o dependencies.html
-scryer analyze workspace --projects projects.csv --dependencies dependencies.csv --json
+scryer workspace import --projects projects.csv --dependencies dependencies.csv -o dependencies.json
+scryer workspace import --projects projects.csv --dependencies dependencies.csv -o dependencies.html
+scryer workspace import --projects projects.csv --dependencies dependencies.csv --json
 ```
 
 Workspace JSON schema version 1 contains `kind`, `edgeDirection`, `facts.projects`,

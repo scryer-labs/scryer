@@ -74,12 +74,13 @@ Retain the Mod-fed CSV capability for now: it normalizes externally collected fa
 and renders JSON/HTML; it does not scan repository dependencies itself. Orrery
 currently depends on Mod CLI collection followed by this adapter.
 
-Under [decision 004](decisions/004-multilanguage-scopes-cli-and-engine-config.md),
-CLI restructuring moves this temporary input path into the workspace command shape
-and retires the old `analyze workspace` entry. The transitional command spelling is
-still open. This supersedes the earlier requirement to keep that exact entry until
-native scanning exists, and the prohibition on migrating the adapter's command.
-Do not present the external CSV path as native source scanning.
+The scope-first entry is now `workspace import --projects ... --dependencies ...`.
+Hidden `analyze workspace` continues to forward to the same handler until the existing
+provider migration; its stderr notice does not alter the JSON contract. Remove that
+compatibility entry at the consumer-adaptation checkpoint. It is not a permanent alias.
+This deliberate transition under [decision 004](decisions/004-multilanguage-scopes-cli-and-engine-config.md)
+supersedes the earlier all-at-once retirement wording. Do not present CSV normalization
+as native source scanning.
 
 After native workspace scanning supports the needed dependency collection and the
 Orrery provider/scan plans have migrated and been verified, completely remove the

@@ -16,8 +16,8 @@ analyzer. Run these commands from the repository root:
 ```sh
 ./scripts/build
 ./build/install/scryer/bin/scryer --help
-./build/install/scryer/bin/scryer scan ../legacy-maven-fixture --static
-./build/install/scryer/bin/scryer analyze ../repository --before HEAD~1 --after HEAD
+./build/install/scryer/bin/scryer project scan ../legacy-maven-fixture --static
+./build/install/scryer/bin/scryer project analyze ../repository --before HEAD~1 --after HEAD
 ```
 
 `go build ./cmd/scryer` builds only the Go executable. For development, point
@@ -65,14 +65,13 @@ Release publication is configured. See [runtime/package details](docs/CLI.md#bun
 - [Technical debt](docs/TECH-DEBT.md): existing limitations, separate from new features.
 - [Verification history](docs/archive/VERIFICATION.md): earlier observations, not current test totals.
 
-The next direction is explicit project/workspace commands with handwritten
-`.scryer/` configuration and JSON contracts, followed by independent Java engine
-installation/extraction and an Orrery provider update. These changes are **not
-implemented**; current usage remains in [CLI](docs/CLI.md). See
-[decision 002](docs/decisions/002-scan-scopes-and-fact-boundary.md) and
-[milestones](docs/MILESTONES.md). Scryer supplies facts through language engines;
-shared evidence-backed checks may follow, while consumers own business/design
-judgments, plan execution and long-lived history. macOS is the
-primary development/acceptance platform; Windows migration is deferred.
+Current commands use project/workspace scopes; see [CLI](docs/CLI.md). The first
+reorganization preserves Java defaults, while hidden legacy entries temporarily
+support existing consumers. `workspace import` remains a Mod-fed CSV adapter, not
+native scanning. Engine extraction/installation, `.scryer/` configuration and default
+engine-free stack/LOC scanning are planned next, not implemented. See
+[decision 004](docs/decisions/004-multilanguage-scopes-cli-and-engine-config.md) and
+[milestones](docs/MILESTONES.md). Consumers own business/design judgments, plan
+execution and long-lived history. macOS remains the primary acceptance platform.
 
 Contributions follow [AGENTS.md](AGENTS.md), including `<type>: <summary>` commits.

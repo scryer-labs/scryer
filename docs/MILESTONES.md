@@ -26,7 +26,7 @@ configuration below are not current capabilities.
 - [x] **Done (design)** — ~~Agree minimal workspace/per-engine YAML ownership and
   JSON-only engine results with Core-owned modular MD/HTML rendering.~~ Decision 004
   records the pre-stability no-compatibility policy; no implementation is claimed.
-- [ ] Next: reorganize current command entries while preserving Java behavior. Do not
+- [x] **Done** — ~~Reorganize current command entries while preserving Java behavior.~~ Do not
   wait for future engine/workspace schemas. Define the external engine contract during
   extraction and native workspace aggregation contracts when that capability is built.
 - [ ] Retain the Mod-fed workspace CSV adapter temporarily under
@@ -36,13 +36,16 @@ configuration below are not current capabilities.
 
 ## Priority 1 — Reorganize existing commands
 
-- [ ] Implement scope-first project/workspace commands from decision 004, with optional
-  paths defaulting to the current scope root. Preserve current Java behavior through
-  explicit migration rather than requiring every engine to emulate Java.
-- [ ] Move the temporary Mod-fed CSV input under workspace commands, clearly distinct
-  from native scanning. Preserve consumer compatibility through a deliberate transition.
-- [ ] Keep Java flags/default behavior during this first slice; no mock claims of new
-  stack/LOC, workspace-native scanning or engine installation support.
+- [x] **Done** — ~~Add project scan/analyze with optional
+  paths defaulting to the current directory, preserving Java behavior.~~
+- [x] **Done** — ~~Add workspace import for external CSV
+  facts.~~ Hidden legacy entries preserve consumers until their planned migration.
+- [x] **Done** — ~~Keep Java flags/default behavior during this first slice.~~ No new
+  stack/LOC, workspace-native scanning or engine installation support is claimed.
+
+Acceptance: **Daily Development** run `20261102T144247407Z-58cd8ba1` succeeded in all
+eight steps. Installed-CLI checks also verified default-path project scan with the
+real Java worker, scope help, workspace JSON/HTML, and matching legacy CSV JSON.
 
 ## Priority 2 — Independent Java engine installation and extraction
 

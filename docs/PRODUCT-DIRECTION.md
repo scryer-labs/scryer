@@ -43,8 +43,8 @@ The exact default stdout/file delivery policy remains to be designed.
 A project is a repository and may contain multiple languages and build modules.
 A workspace explicitly groups projects and their cross-repository relationships.
 A build-system workspace/module is a project-internal structure, not automatically
-Scryer's workspace scope. Workspace must become a first-class scope rather than
-remain a special case under `analyze`.
+Scryer's workspace scope. The CLI now exposes project/workspace scopes. Native workspace orchestration remains
+planned; its current import operation only adapts external CSV.
 
 Workspace configuration retains explicit members, managed through init/add/remove.
 Workspace initially uses only `.scryer/workspace.yaml`; project configuration uses
@@ -94,7 +94,7 @@ in place. Keep platform boundaries clear without adding Windows work now.
 
 ## Engine handoff and consumer loop
 
-First reorganize existing commands, preserving Java behavior. Then verify engine
+The first command reorganization preserves Java behavior. Then verify engine
 management with mocks and a minimal worker, install from a user-created Java-engine
 repository, and move Java behind an independent Go-wrapper process. Publish packages
 with bundled Java runtime and support development installs from source. Define the

@@ -1,12 +1,12 @@
 # Scryer layered architecture
 
-Scryer is one Go module with a Kotlin JVM analyzer. Public `scan` and `analyze` are shared use cases owned by Go. The initial stack is Java; introducing C++ does not require adopting Java AST/bytecode structures.
+Scryer is one Go module with a Kotlin JVM analyzer. Public `project scan` and `project analyze` are shared use cases owned by Go. The initial stack is Java; introducing C++ does not require adopting Java AST/bytecode structures.
 
 | Layer / location | Responsibility |
 |---|---|
 | `cmd/scryer/main.go` | Dispatch to the application entry point only |
 | `internal/cmd` | Cobra composition, public commands/flags, signal cancellation and presentation choices |
-| `internal/cmd/scan`, `internal/cmd/analyze` | Command-specific argument validation and invocation of application use cases |
+| `internal/cmd/scan`, `internal/cmd/analyze`, `internal/cmd/workspace` | Command-specific argument validation and invocation of application use cases |
 | `internal/application` | Stack selection and repository/snapshot lifecycle coordination |
 | `internal/contract` | Analyzer interface, versioned requests/responses, report document requirements and uncertainty semantics |
 | `internal/analyzer/java` | Java 21 worker discovery, process protocol, request identity/version validation; no rendering |
@@ -51,7 +51,7 @@ Build tooling compiles the JVM analyzer and Go executable into `build/install/sc
 
 ## Workspace facts
 
-`analyze workspace` is a Go-only use case. `internal/workspace` owns CSV adapters
+`workspace import` is a Go-only temporary external-CSV use case. `internal/workspace` owns CSV adapters
 and cross-repository facts; the command owns flags and terminal presentation.
 No JVM analyzer is needed. Dependency arrows run from consumer to dependency.
 Declared edges are not runtime calls or inferred release-phase constraints.
@@ -61,7 +61,8 @@ The former `refactor-plan generate` command, phase scheduling and platform-plan
 YAML exporter have been removed. Execution-plan generation belongs to consumers
 such as Orrery. The workspace CSV adapter is temporary compatibility code under
 [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation),
-not the future native workspace scanner. Renderers present the normalized facts
+not the future native workspace scanner. Hidden old entries share the same command
+handlers until provider migration; notices go to stderr, not machine-readable stdout. Renderers present the normalized facts
 without computing a schedule.
 
 ## Documentation and future work

@@ -1,26 +1,29 @@
-package analyze
+// Package workspace exposes workspace-scoped external fact input.
+package workspace
 
 import (
 	"fmt"
-	"github.com/edwardnoaland/scryer/internal/report"
 
+	"github.com/edwardnoaland/scryer/internal/report"
 	"github.com/edwardnoaland/scryer/internal/workspace"
 	"github.com/spf13/cobra"
 )
 
-func newWorkspaceCommand() *cobra.Command {
+func New() *cobra.Command {
+	command := &cobra.Command{Use: "workspace", Short: "Work with workspace facts"}
+	command.AddCommand(NewImport())
+	return command
+}
+
+func NewImport() *cobra.Command {
 	var projects, dependencies, output string
 	var jsonOutput bool
 	command := &cobra.Command{
-		Use:   "workspace --projects <projects.csv> --dependencies <dependencies.csv>",
-		Short: "Read workspace project and dependency facts from CSV",
+		Use:   "import --projects <projects.csv> --dependencies <dependencies.csv>",
+		Short: "Read external project/dependency CSV facts (temporary adapter)",
+		Long:  "Read and normalize external project/dependency CSV facts, then print or export a report. This temporary adapter does not scan project source, register projects or modify workspace configuration.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if output != "" {
-				if _, err := report.WorkspaceFormat(output); err != nil {
-					return err
-				}
-			}
 			if output != "" || jsonOutput {
 				facts, err := workspace.ReadCSV(projects, dependencies)
 				if err != nil {
@@ -43,6 +46,16 @@ func newWorkspaceCommand() *cobra.Command {
 			}
 			return runWorkspaceAnalysis(cmd, projects, dependencies)
 		},
+	}
+	command.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if projects == "" || dependencies == "" {
+			return fmt.Errorf("--projects and --dependencies are required")
+		}
+		if output != "" {
+			_, err := report.WorkspaceFormat(output)
+			return err
+		}
+		return nil
 	}
 	command.Flags().StringVar(&projects, "projects", "", "Projects CSV (artifactId, projectId or projectName)")
 	command.Flags().StringVar(&dependencies, "dependencies", "", "Dependencies CSV (source,target or Moderne coordinates)")
