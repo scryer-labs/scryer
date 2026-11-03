@@ -32,7 +32,7 @@ func (s terminalStyle) status(value string) string {
 	}
 }
 func (s terminalStyle) fact(value string) string {
-	// A combined Java source/target row can contain one known and one unknown version.
+	// A combined fact row can contain one known and one unknown version.
 	parts := strings.Split(value, " / ")
 	for i, part := range parts {
 		parts[i] = s.status(part)

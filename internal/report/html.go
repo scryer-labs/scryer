@@ -3,6 +3,7 @@ package report
 import (
 	"embed"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -53,6 +54,16 @@ func HTML(document contract.Document) ([]byte, error) {
 		return nil, err
 	}
 	template = strings.ReplaceAll(template, "__SCRYER_LOGO__", "data:image/png;base64,"+base64.StdEncoding.EncodeToString(logo))
+	view := viewFor(document.Stack).analysis
+	runtimeRows := [][2]string{}
+	if view.runtimeField != "" {
+		runtimeRows = append(runtimeRows, [2]string{view.htmlRuntimeLabel, view.runtimeField})
+	}
+	runtimeJSON, err := json.Marshal(runtimeRows)
+	if err != nil {
+		return nil, err
+	}
+	template = strings.ReplaceAll(template, "__SCRYER_EXECUTION_DETAILS__", string(runtimeJSON))
 	data, err := JSON(document)
 	if err != nil {
 		return nil, err

@@ -107,14 +107,15 @@ JaCoCo evidence. Do not describe it as a mature universal multilanguage schema.
 New languages should drive common-fact and language-extension refinements; local
 installation must not silently redesign the scan/analyze data contract.
 
-## Reporting modularity status after extraction
+## Report views by engine
 
-Engine JSON versus Core presentation is separated. Inside Core, however, the
-current operation-based scan/analyze renderers still mix shared helpers with
-Java/JaCoCo-specific labels and fields (for example scan.go, markdown.go and
-analyze.go). A separate Java report module is agreed design, not implemented code.
-Extract those specialized views behind a small Core-local function/module boundary
-when report modularization is taken up; keep common rendering reusable and keep
-engines JSON-only. Do not claim that repository extraction completed this split.
-Project engine YAML initialization/reading also remains planned; the current worker
-retains existing parameter/environment/default build-tool selection behavior.
+Core selects an engine view by document stack in internal/report/engine_view.go.
+The Java view in java.go owns the Java scan presentation and dependency projection,
+and supplies Java-specific analyze labels, source fences and runtime fields.
+Shared report code still owns JSON, formatting primitives, analyze layout and
+offline HTML. A scan with no specialized view renders the structured facts.
+Unlabelled legacy documents retain the Java view.
+
+This is a Core-local presentation boundary, not a plugin loader or a change to
+the existing JSON schema. New engines still need deliberate fact-contract design.
+Project engine YAML initialization and reading remain planned.

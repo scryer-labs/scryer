@@ -72,9 +72,9 @@ func Terminal(document contract.Document, out io.Writer, dependencies, tree, ver
 		return err
 	}
 	if document.Operation == "scan" {
-		scanTerminal(data, out, dependencies, tree, color)
+		viewFor(document.Stack).scanTerminal(data, out, dependencies, tree, color)
 	} else {
-		analyzeTerminal(data, out, verbose, color)
+		analyzeTerminal(data, out, verbose, color, viewFor(document.Stack).analysis)
 	}
 	return nil
 }
@@ -84,9 +84,9 @@ func Markdown(document contract.Document, tree bool) ([]byte, error) {
 		return nil, err
 	}
 	if document.Operation == "scan" {
-		return []byte(scanMarkdown(data, tree)), nil
+		return []byte(viewFor(document.Stack).scanMarkdown(data, tree)), nil
 	}
-	return []byte(analyzeMarkdown(data)), nil
+	return []byte(analyzeMarkdown(data, viewFor(document.Stack).analysis)), nil
 }
 
 // WriteFile atomically replaces only after rendering has succeeded, preserving an existing report on failure.
@@ -135,63 +135,4 @@ func notes(values ...any) []string {
 		}
 	}
 	return result
-}
-func group(dependencies []Object) ([]string, map[string][]Object) {
-	order := []string{}
-	groups := map[string][]Object{}
-	for _, dependency := range dependencies {
-		key := str(dependency, "module") + " / " + str(dependency, "configuration")
-		if _, ok := groups[key]; !ok {
-			order = append(order, key)
-		}
-		groups[key] = append(groups[key], dependency)
-	}
-	return order, groups
-}
-func directDeclarations(data Object) []Object {
-	result := []Object{}
-	seen := map[string]bool{}
-	add := func(d Object) {
-		key := str(d, "module") + "|" + str(d, "configuration") + "|" + str(d, "notation") + "|" + str(d, "version") + "|" + str(d, "type") + "|" + str(d, "classifier")
-		if !seen[key] {
-			seen[key] = true
-			result = append(result, d)
-		}
-	}
-	for _, d := range objects(data["dependencies"]) {
-		if str(d, "kind") != "managed declaration" {
-			add(d)
-		}
-	}
-	for _, project := range objects(field(data, "resolution")["projects"]) {
-		for _, d := range objects(project["declaredDependencies"]) {
-			if str(d, "kind") == "dependency" && d["group"] != nil {
-				add(Object{"module": project["id"], "configuration": d["configuration"], "notation": str(d, "group") + ":" + str(d, "artifact"), "version": d["version"], "declaredVersion": d["version"], "source": "evaluated Gradle model"})
-			}
-		}
-	}
-	return result
-}
-func selectedVersions(data Object, dependency Object) string {
-	versions := map[string]bool{}
-	coordinate := str(dependency, "notation")
-	for _, graph := range objects(field(data, "resolution")["configurations"]) {
-		if graph["module"] != dependency["module"] {
-			continue
-		}
-		for _, node := range objects(graph["nodes"]) {
-			if str(node, "group")+":"+str(node, "artifact") == coordinate && node["version"] != nil {
-				versions[str(node, "version")] = true
-			}
-		}
-	}
-	result := []string{}
-	for version := range versions {
-		result = append(result, version)
-	}
-	sort.Strings(result)
-	if len(result) == 0 {
-		return "unavailable"
-	}
-	return strings.Join(result, " / ")
 }

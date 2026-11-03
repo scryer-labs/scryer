@@ -169,7 +169,7 @@
   }
   function renderExecution() {
     const execution = report.execution;
-    replace($('execution-facts'), [facts([['After SHA', execution.afterSha], ['Command status', execution.status], ['Command', execution.command.join(' ') || '(not executed)'], ['Target JAVA_HOME', execution.javaHome], ['Exit code', execution.exitCode], ['Duration', `${execution.durationMillis}ms`], ['Run log', execution.log], ['Artifact manifest', report.evidence.manifest]])]);
+    replace($('execution-facts'), [facts([['After SHA', execution.afterSha], ['Command status', execution.status], ['Command', execution.command.join(' ') || '(not executed)'], ...(__SCRYER_EXECUTION_DETAILS__).map(([label, field]) => [label, execution[field]]), ['Exit code', execution.exitCode], ['Duration', `${execution.durationMillis}ms`], ['Run log', execution.log], ['Artifact manifest', report.evidence.manifest]])]);
     replace($('test-reports'), report.evidence.tests.length ? report.evidence.tests.map(test => {
       const block = node('div', null, 'report-block'); block.append(node('h4', test.artifact.source));
       block.append(simpleTable(['Class', 'Test record', 'Status', 'Seconds'], test.cases.map(record => [record.className, record.name, record.status, record.seconds]))); return block;

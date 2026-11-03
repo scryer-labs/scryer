@@ -19,13 +19,13 @@ func percent(value any) string {
 	}
 	return fmt.Sprintf("%.1f%%", v)
 }
-func analyzeTerminal(data Object, out io.Writer, verbose, color bool) {
+func analyzeTerminal(data Object, out io.Writer, verbose, color bool, view analyzeView) {
 	style := terminalStyle{color}
 	execution := field(data, "execution")
 	evidence := field(data, "evidence")
 	after := field(data, "after")
 	matching := field(data, "matching")
-	fmt.Fprintf(out, "%s\nRepository: %s\nBefore: %s\nAfter: %s\nChanged files: %d\nChanged Java methods: %d\nAfter test command: %s\nTest records: %s (records, not unique IDs)\n", style.heading("Scryer analysis"), str(data, "repository"), str(data, "beforeSha"), afterLabel(data), len(array(data["files"])), len(array(data["changes"])), style.status(str(execution, "status")), style.counts(field(evidence, "testRecords")))
+	fmt.Fprintf(out, "%s\nRepository: %s\nBefore: %s\nAfter: %s\nChanged files: %d\n%s: %d\nAfter test command: %s\nTest records: %s (records, not unique IDs)\n", style.heading("Scryer analysis"), str(data, "repository"), str(data, "beforeSha"), afterLabel(data), len(array(data["files"])), view.changedSymbols, len(array(data["changes"])), style.status(str(execution, "status")), style.counts(field(evidence, "testRecords")))
 	roles := map[string]int{}
 	for _, node := range objects(after["nodes"]) {
 		roles[str(node, "role")]++
@@ -116,7 +116,11 @@ func analyzeTerminal(data Object, out io.Writer, verbose, color bool) {
 				fmt.Fprintln(out, "  Note: "+note)
 			}
 		}
-		fmt.Fprintf(out, "\nExecution details\n  Command: %s\n  JAVA_HOME: %s; exit: %s; duration: %sms\n", join(execution["command"]), str(execution, "javaHome"), str(execution, "exitCode"), str(execution, "durationMillis"))
+		fmt.Fprintf(out, "\nExecution details\n  Command: %s\n  ", join(execution["command"]))
+		if view.runtimeField != "" {
+			fmt.Fprintf(out, "%s: %s; ", view.runtimeLabel, str(execution, view.runtimeField))
+		}
+		fmt.Fprintf(out, "exit: %s; duration: %sms\n", str(execution, "exitCode"), str(execution, "durationMillis"))
 		for _, test := range objects(evidence["tests"]) {
 			fmt.Fprintln(out, "  Test report: "+str(field(test, "artifact"), "source"))
 			for _, record := range objects(test["cases"]) {
@@ -182,13 +186,13 @@ func terminalGraph(snapshot Object, out io.Writer, color bool) {
 		}
 	}
 }
-func analyzeMarkdown(data Object) string {
+func analyzeMarkdown(data Object, view analyzeView) string {
 	var b strings.Builder
 	section(&b, 1, "Scryer analysis")
 	execution := field(data, "execution")
 	evidence := field(data, "evidence")
 	matching := field(data, "matching")
-	table(&b, []string{"Fact", "Value"}, rows([]string{"Repository", str(data, "repository")}, []string{"Before", str(data, "beforeSha")}, []string{"After", afterLabel(data)}, []string{"Generated", str(data, "generatedAt")}, []string{"Changed files", fmt.Sprint(len(array(data["files"])))}, []string{"Changed Java methods", fmt.Sprint(len(array(data["changes"])))}, []string{"After command", str(execution, "status")}, []string{"Test records", counts(field(evidence, "testRecords"))}))
+	table(&b, []string{"Fact", "Value"}, rows([]string{"Repository", str(data, "repository")}, []string{"Before", str(data, "beforeSha")}, []string{"After", afterLabel(data)}, []string{"Generated", str(data, "generatedAt")}, []string{"Changed files", fmt.Sprint(len(array(data["files"])))}, []string{view.changedSymbols, fmt.Sprint(len(array(data["changes"])))}, []string{"After command", str(execution, "status")}, []string{"Test records", counts(field(evidence, "testRecords"))}))
 	b.WriteString("Test records are not unique test IDs. Method hits and static routes do not prove a particular caller path or individual-test attribution. Percentages are not safety scores.\n\n")
 	allNodes := append(objects(field(data, "before")["nodes"]), objects(field(data, "after")["nodes"])...)
 	names := labels(allNodes)
@@ -254,12 +258,17 @@ func analyzeMarkdown(data Object) string {
 		for _, name := range []string{"before", "after"} {
 			if version := field(change, name); version != nil {
 				fmt.Fprintln(&b, escape(name+": "+str(version, "signature")+"; "+str(version, "path")+":"+str(field(version, "lines"), "start"))+"\n")
-				block(&b, "java", str(version, "source"))
+				block(&b, view.sourceLanguage, str(version, "source"))
 			}
 		}
 	}
 	section(&b, 2, "Execution and artifacts")
-	table(&b, []string{"Fact", "Value"}, rows([]string{"Status", str(execution, "status")}, []string{"After SHA", str(execution, "afterSha")}, []string{"JAVA_HOME", str(execution, "javaHome")}, []string{"Exit", str(execution, "exitCode")}, []string{"Duration", str(execution, "durationMillis") + "ms"}, []string{"Log", str(execution, "log")}, []string{"Manifest", str(evidence, "manifest")}))
+	executionRows := rows([]string{"Status", str(execution, "status")}, []string{"After SHA", str(execution, "afterSha")})
+	if view.runtimeField != "" {
+		executionRows = append(executionRows, []string{view.runtimeLabel, str(execution, view.runtimeField)})
+	}
+	executionRows = append(executionRows, rows([]string{"Exit", str(execution, "exitCode")}, []string{"Duration", str(execution, "durationMillis") + "ms"}, []string{"Log", str(execution, "log")}, []string{"Manifest", str(evidence, "manifest")})...)
+	table(&b, []string{"Fact", "Value"}, executionRows)
 	command := []string{}
 	for _, part := range array(execution["command"]) {
 		command = append(command, text(part))

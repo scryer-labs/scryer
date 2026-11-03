@@ -232,7 +232,5 @@ installed-engine integration 20261102T193525437Z-576265e2, modernization formal
 provider integration 20261102T193539815Z-c4c90c1e. The former Library home no longer
 exists; no provider settings or backend restart were needed.
 
-Review clarification: Core/engine process and presentation ownership are separated,
-but Core-local common versus Java-specific report modules are still a pending task.
-Preserve the agreed modular report plan without claiming it is already implemented.
-Project engine YAML templates/initialization remain pending as well.
+Core report views now separate Java-specific presentation from shared formatting.
+C ABI and project engine YAML remain pending.
