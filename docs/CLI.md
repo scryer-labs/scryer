@@ -16,16 +16,42 @@ scryer engine install <engine> [engines...]
 scryer engine uninstall <engine>
 ```
 
-Project paths default to the current directory. This first reorganization preserves
-existing Java scan/analyze behavior, flags and report contracts. Scan still resolves
-build models by default; `--static` skips that. The planned engine-free `stack,loc`
-default and `--facts`, native workspace scan/configuration management, and release/source engine installation are not implemented yet.
+Project paths default to the current directory. Project scan collects stack and LOC
+by default. Explicit Java scan options select the existing Java engine. On that
+path, `--static` skips build-model resolution. Native workspace scan/configuration
+management and release/source engine installation are pending.
 
 `workspace import` is a temporary external-CSV adapter: it normalizes and reports
 facts without scanning code, registering projects or writing workspace config.
 Old top-level `scan`, `analyze` and `analyze workspace` have been removed, not hidden
 or aliased. Consumers must use the scope-first commands. Orrery's new Scryer provider
 version adapts the commands now rather than waiting for Java-engine extraction.
+
+## Engine-free project facts
+
+```sh
+scryer project scan --facts stack,loc
+scryer project scan /path/to/project --facts loc --json
+scryer project scan --facts stack -o stack.md
+```
+
+Select `stack`, `loc`, or both. Stack lists observed file languages and paths
+to recognized build manifests. LOC groups physical lines by detected file
+language and counts code, comments and blanks using the embedded scc processor.
+The JSON includes the selected sections and skipped-file counters. Terminal
+and Markdown views show the same observations. Frameworks and tool versions
+are future stack facts.
+
+Git projects scan tracked and non-ignored untracked files under the supplied
+path. Other directories scan regular files recursively, excluding Git metadata.
+Deleted files, symlink entries and submodule directories from the Git index are
+skipped. Files over 8 MiB and files containing a NUL byte are excluded from counts.
+The language classifier uses filenames, shebangs and content heuristics.
+
+Default and explicitly selected stack/LOC facts run without installed engines.
+Use `--stack java` for the existing Java report. Explicit `--static`,
+`--build-tool`, `--remote-list`, `--dependencies` and `--dependency-tree`
+also select the Java path. These options conflict with `--facts`.
 
 ## Persistent local engine management
 
@@ -108,7 +134,7 @@ The collector currently includes Java files outside `.git`, `.tooling`, `.gradle
 export JAVA_HOME="$(mise where java)"
 ./scripts/build
 export PATH="$PWD/build/install/scryer/bin:$PATH"
-scryer project scan ../legacy-java-fixture
+scryer project scan ../legacy-java-fixture --stack java
 ```
 
 Default scan shows a concise summary, attempts dependency resolution with the target repository's Wrapper, and retains the full model internally. This evaluates target build configuration and may download dependency metadata/plugins; it does **not** compile, test or package the target. Arbitrary build configuration code can have its own side effects. Use `--static` to inspect local declarations/source signals without executing target configuration or downloading anything.
@@ -116,11 +142,11 @@ Default scan shows a concise summary, attempts dependency resolution with the ta
 ```sh
 scryer project scan . --dependencies        # all observed direct declarations, grouped by module/configuration
 scryer project scan . --dependency-tree     # resolved graph per module/configuration, rendered as a tree
-scryer project scan . --json                # complete versioned facts model, no presentation truncation
+scryer project scan . --stack java --json   # complete versioned facts model, no presentation truncation
 scryer project scan . --static              # local facts only; resolution is not_requested
-scryer project scan . --color always        # force styled output
-scryer project scan . -o reports/scan.md    # also write a Markdown report
-scryer project scan . --json -o scan.md     # JSON stdout plus a Markdown file
+scryer project scan . --stack java --color always        # force styled output
+scryer project scan . --stack java -o reports/scan.md    # also write a Markdown report
+scryer project scan . --stack java --json -o scan.md     # JSON stdout plus a Markdown file
 ```
 
 `-o <OUTPUT_FILE>` (alias `--output`) writes UTF-8 Markdown, creates missing parent directories and replaces an existing report. The terminal/JSON output is retained; the file confirmation goes to stderr. Markdown includes modules, all observed direct dependencies with declared/selected versions, source/test facts, suggested commands and all collection notes/failures. `--dependency-tree` additionally includes a plain-text tree in the file. Reports have no terminal color codes. Collection status and unknown facts remain explicit; exporting a report does not verify the target build or tests.
@@ -169,7 +195,7 @@ Gradle dependencies can be computed by arbitrary code, so static DSL parsing rem
 Scryer runs on Java 21. For an older target Wrapper, set a compatible JVM for the child process:
 
 ```sh
-SCRYER_JAVA_HOME=/path/to/jdk8 scryer project scan /path/to/legacy-project
+SCRYER_JAVA_HOME=/path/to/jdk8 scryer project scan /path/to/legacy-project --stack java
 ```
 
 For the existing fixture, a project-local Java 8 under `.tooling/mise/data/installs/java` is auto-detected. A toolchain declaration is distinct from the JVM used to evaluate the build. Missing/incompatible target JVM, timeout or resolution failure produces unavailable/partial facts with notes. Global Java settings are not changed.

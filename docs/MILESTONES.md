@@ -111,9 +111,10 @@ Windows migration is deferred until both Scryer and Orrery are stable.
 
 ## After extraction and 2.1 — Core baseline and configuration
 
-Default stack/LOC scanning is implemented after Java extraction to validate that
-Core works without any installed engine or Java. This work is deliberately deferred
-from the initial command-only slice. Follow decision 004 for the behavior below.
+The default project scan and explicit `--facts stack,loc` use Core without
+installed engines. They report detected file languages, build manifest evidence
+and scc line counts. Explicit Java scan options select the Java engine.
+Follow decision 004 for the behavior below.
 
 - [ ] Implement workspace init/add/remove and explicit membership. Initialize
   `.scryer/engines/<engine-id>.yaml` from engine templates under projects, without

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/edwardnoaland/scryer/internal/contract"
+	"github.com/edwardnoaland/scryer/internal/projectfacts"
 	"github.com/edwardnoaland/scryer/internal/repository"
 )
 
@@ -46,6 +47,14 @@ func (s *Service) Scan(ctx context.Context, stack string, request contract.ScanR
 	request.Repository = absolute
 	return s.Analyzer.Scan(ctx, request)
 }
+func (s *Service) ScanFacts(ctx context.Context, directory string, stack, loc bool) (contract.Document, error) {
+	facts, err := projectfacts.Collect(ctx, directory, stack, loc)
+	if err != nil {
+		return contract.Document{}, err
+	}
+	return contract.NewDocument("", contract.ProjectFactsOperation, facts)
+}
+
 func (s *Service) Analyze(ctx context.Context, stack, directory string, request contract.AnalyzeRequest) (document contract.Document, err error) {
 	if err := s.selectStack(stack); err != nil {
 		return contract.Document{}, err

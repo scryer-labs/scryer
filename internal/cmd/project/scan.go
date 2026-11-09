@@ -3,6 +3,7 @@ package project
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/application"
 	"github.com/edwardnoaland/scryer/internal/cmd/terminal"
@@ -15,9 +16,36 @@ func newScanCommand(service *application.Service) *cobra.Command {
 	var request contract.ScanRequest
 	var stack, output, color string
 	var jsonOutput, dependencies, tree bool
-	command := &cobra.Command{Use: "scan [path]", Short: "Collect project facts (currently Java)",
-		Long: "Collect project facts using the existing Java analyzer. Path defaults to the current directory. This transitional command still resolves build models by default; use --static to avoid that. Engine-free stack/LOC defaults and --facts are not implemented yet.", Args: cobra.MaximumNArgs(1)}
+	var facts string
+	var useCore, collectStack, collectLOC bool
+	command := &cobra.Command{Use: "scan [path]", Short: "Collect project facts",
+		Long: "Collect stack and line counts by default. Select either with --facts. Explicit Java scan options select the Java engine. Path defaults to the current directory.", Args: cobra.MaximumNArgs(1)}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
+		javaFlag := ""
+		for _, flag := range []string{"stack", "static", "remote-list", "build-tool", "dependencies", "dependency-tree"} {
+			if cmd.Flags().Changed(flag) {
+				javaFlag = flag
+				break
+			}
+		}
+		useCore = javaFlag == ""
+		collectStack, collectLOC = true, true
+		if cmd.Flags().Changed("facts") {
+			if javaFlag != "" {
+				return fmt.Errorf("--%s cannot be combined with --facts", javaFlag)
+			}
+			collectStack, collectLOC = false, false
+			for _, fact := range strings.Split(facts, ",") {
+				switch strings.TrimSpace(fact) {
+				case "stack":
+					collectStack = true
+				case "loc":
+					collectLOC = true
+				default:
+					return fmt.Errorf("unsupported fact %q; choose stack or loc", fact)
+				}
+			}
+		}
 		if request.BuildTool != "" && request.BuildTool != "maven" && request.BuildTool != "gradle" {
 			return fmt.Errorf("--build-tool must be maven or gradle")
 		}
@@ -31,7 +59,13 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		if len(args) == 1 {
 			request.Repository = args[0]
 		}
-		document, err := service.Scan(cmd.Context(), stack, request)
+		var document contract.Document
+		var err error
+		if useCore {
+			document, err = service.ScanFacts(cmd.Context(), request.Repository, collectStack, collectLOC)
+		} else {
+			document, err = service.Scan(cmd.Context(), stack, request)
+		}
 		if err != nil {
 			return err
 		}
@@ -65,6 +99,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		return nil
 	}
 	flags := command.Flags()
+	flags.StringVar(&facts, "facts", "", "Collect stack, loc, or both without an engine")
 	flags.StringVar(&stack, "stack", "java", "Technology stack (currently java)")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle")
 	flags.BoolVar(&request.Static, "static", false, "Skip build-model execution")

@@ -71,6 +71,9 @@ func Terminal(document contract.Document, out io.Writer, dependencies, tree, ver
 	if err != nil {
 		return err
 	}
+	if document.Operation == contract.ProjectFactsOperation {
+		return writeProjectFacts(out, data)
+	}
 	if document.Operation == "scan" {
 		viewFor(document.Stack).scanTerminal(data, out, dependencies, tree, color)
 	} else {
@@ -82,6 +85,9 @@ func Markdown(document contract.Document, tree bool) ([]byte, error) {
 	data, err := decode(document)
 	if err != nil {
 		return nil, err
+	}
+	if document.Operation == contract.ProjectFactsOperation {
+		return []byte(projectFactsMarkdown(data)), nil
 	}
 	if document.Operation == "scan" {
 		return []byte(viewFor(document.Stack).scanMarkdown(data, tree)), nil

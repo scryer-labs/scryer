@@ -33,7 +33,7 @@ Build/extract its complete local package, then install it once:
 Core starts the Go wrapper, which starts its JVM worker. The engine owns Java 21,
 worker jars and runtime selection; Core owns snapshots, protocol validation and
 reports. No Kotlin sources or Gradle files remain in this repository. Missing
-engines produce an explicit error; default engine-free stack/LOC is still pending.
+engines produce an explicit error for engine operations.
 Local-package engine installation, listing and uninstall are persistent. Core automatically discovers installed engines. PATH and SCRYER_ENGINE_JAVA remain development overrides; release downloads and source builds are not implemented.
 
 Default Java scans evaluate target build configuration and may download metadata;
@@ -71,11 +71,10 @@ specified in [AGENTS.md](AGENTS.md).
 - [Technical debt](docs/TECH-DEBT.md): existing limitations, separate from new features.
 - [Verification history](docs/archive/VERIFICATION.md): earlier observations, not current test totals.
 
-Current commands use project/workspace scopes; see [CLI](docs/CLI.md). The first
-reorganization preserves Java defaults and removes legacy command entries.
+Current commands use project/workspace scopes; see [CLI](docs/CLI.md). Project scan defaults to Core stack and LOC facts.
 `workspace import` remains a Mod-fed CSV adapter, not
-native scanning. Release/source installation, `.scryer/` project configuration and default
-engine-free stack/LOC scanning are planned next, not implemented. See
+native scanning. Release/source installation and `.scryer/` project configuration remain planned.
+Use `scryer project scan --facts stack,loc` for explicit fact selection. See
 [decision 004](docs/decisions/004-multilanguage-scopes-cli-and-engine-config.md) and
 [milestones](docs/MILESTONES.md). Consumers own business/design judgments, plan
 execution and long-lived history. macOS remains the primary acceptance platform.

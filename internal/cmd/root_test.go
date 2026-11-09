@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -146,7 +147,8 @@ func Test_should_show_scope_commands_when_root_help_is_requested(t *testing.T) {
 func Test_should_return_usage_errors_when_nested_command_arguments_are_invalid(t *testing.T) {
 	for _, args := range [][]string{
 		{"project", "scan", "one", "two"},
-		{"project", "scan", "--facts", "stack,loc"},
+		{"project", "scan", "--facts", "architecture"},
+		{"project", "scan", "--facts", "stack,loc", "--static"},
 		{"project", "analyze", "--before", "HEAD"},
 		{"workspace", "import"},
 		{"engine", "list", "extra"},
@@ -211,5 +213,74 @@ func Test_should_preserve_analysis_options_when_project_analyze_uses_default_or_
 				t.Fatal("unexpected analysis diagnostic")
 			}
 		}
+	}
+}
+
+func Test_should_collect_stack_and_loc_when_no_engine_is_installed(t *testing.T) {
+	project := t.TempDir()
+	t.Setenv("SCRYER_HOME", filepath.Join(t.TempDir(), "missing-engine-home"))
+	git := exec.Command("git", "init", "-q", project)
+	if output, err := git.CombinedOutput(); err != nil {
+		t.Fatalf("git init: %v: %s", err, output)
+	}
+	files := map[string]string{
+		"main.go":    "package main\n\n// greeting\nfunc main() {}\n",
+		"main.rs":    "// greeting\nfn main() {}\n",
+		"main.ts":    "// greeting\nconst message = 'hello';\n",
+		"Cargo.toml": "[package]\nname = 'fixture'\n",
+		".gitignore": "ignored.go\n",
+		"ignored.go": "package ignored\n",
+	}
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(project, name), []byte(content), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, selection := range []string{"default", "stack,loc", "stack", "loc"} {
+		t.Run(selection, func(t *testing.T) {
+			var out, diagnostics bytes.Buffer
+			root := NewRoot(&application.Service{}, &out, &diagnostics)
+			args := []string{"project", "scan", project, "--json"}
+			if selection != "default" {
+				args = append(args, "--facts", selection)
+			}
+			root.SetArgs(args)
+			if err := root.Execute(); err != nil {
+				t.Fatal(err)
+			}
+			var facts contract.ProjectFacts
+			if err := json.Unmarshal(out.Bytes(), &facts); err != nil {
+				t.Fatal(err)
+			}
+			if (facts.Stack != nil) != (selection == "default" || strings.Contains(selection, "stack")) || (facts.LOC != nil) != (selection == "default" || strings.Contains(selection, "loc")) {
+				t.Fatalf("unexpected facts for %s: %s", selection, out.String())
+			}
+			if facts.Stack != nil {
+				languages := map[string]int64{}
+				for _, entry := range facts.Stack.Languages {
+					languages[entry.Language] = entry.Files
+				}
+				if languages["Go"] != 1 || languages["Rust"] != 1 || languages["TypeScript"] != 1 {
+					t.Fatalf("unexpected language inventory: %+v", languages)
+				}
+				if len(facts.Stack.BuildTools) != 1 || facts.Stack.BuildTools[0].Tool != "Cargo" {
+					t.Fatalf("missing Cargo evidence: %+v", facts.Stack.BuildTools)
+				}
+			}
+			if facts.LOC != nil {
+				var goCounts contract.LineCounts
+				for _, entry := range facts.LOC.Languages {
+					if entry.Language == "Go" {
+						goCounts = entry.LineCounts
+					}
+				}
+				if goCounts != (contract.LineCounts{Files: 1, Lines: 4, Code: 2, Comments: 1, Blank: 1}) {
+					t.Fatalf("unexpected Go counts: %+v", goCounts)
+				}
+				if facts.LOC.Total.Lines != facts.LOC.Total.Code+facts.LOC.Total.Comments+facts.LOC.Total.Blank {
+					t.Fatalf("inconsistent totals: %+v", facts.LOC.Total)
+				}
+			}
+		})
 	}
 }
