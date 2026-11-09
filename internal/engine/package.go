@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+
+	"github.com/edwardnoaland/scryer/internal/engineabi"
 )
 
 var engineID = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
@@ -18,6 +20,7 @@ var engineID = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 type Manifest struct {
 	SchemaVersion int      `json:"schemaVersion"`
 	Engine        Identity `json:"engine"`
+	Library       string   `json:"library,omitempty"`
 	Executable    string   `json:"executable"`
 	OS            string   `json:"os"`
 	Arch          string   `json:"arch"`
@@ -52,28 +55,46 @@ func ReadPackage(directory string) (Manifest, string, error) {
 	if manifest.OS != runtime.GOOS || manifest.Arch != runtime.GOARCH {
 		return manifest, "", fmt.Errorf("engine package targets %s/%s; host is %s/%s", manifest.OS, manifest.Arch, runtime.GOOS, runtime.GOARCH)
 	}
-	if manifest.Executable == "" || filepath.IsAbs(manifest.Executable) || !filepath.IsLocal(filepath.FromSlash(manifest.Executable)) {
-		return manifest, "", fmt.Errorf("engine executable must be relative to its package")
+	if manifest.Library == "" && manifest.Executable == "" {
+		return manifest, "", fmt.Errorf("engine package requires an entrypoint")
 	}
-	executable := filepath.Join(root, filepath.FromSlash(manifest.Executable))
-	resolved, err := filepath.EvalSymlinks(executable)
-	if err != nil {
-		return manifest, "", err
+	for _, entry := range []string{manifest.Executable, manifest.Library} {
+		if entry == "" {
+			continue
+		}
+		if !filepath.IsLocal(filepath.FromSlash(entry)) {
+			return manifest, "", fmt.Errorf("engine entrypoint must be relative to its package")
+		}
+		resolved, err := filepath.EvalSymlinks(filepath.Join(root, filepath.FromSlash(entry)))
+		if err != nil {
+			return manifest, "", err
+		}
+		if !within(root, resolved) {
+			return manifest, "", fmt.Errorf("engine entrypoint escapes its package")
+		}
+		info, err := os.Stat(resolved)
+		if err != nil {
+			return manifest, "", err
+		}
+		if !info.Mode().IsRegular() {
+			return manifest, "", fmt.Errorf("engine entrypoint is not a regular file")
+		}
 	}
-	if !within(root, resolved) {
-		return manifest, "", fmt.Errorf("engine executable escapes its package")
-	}
-	info, err := os.Stat(resolved)
-	if err != nil {
-		return manifest, "", err
-	}
-	if !info.Mode().IsRegular() {
-		return manifest, "", fmt.Errorf("engine executable is not a regular file")
+	if manifest.Library != "" && !engineabi.IsLibrary(manifest.Library) {
+		return manifest, "", fmt.Errorf("engine library must be a .dylib or .so")
 	}
 	return manifest, root, nil
 }
 
 func verifyPackage(ctx context.Context, root string, manifest Manifest, diagnostics io.Writer) error {
+	if manifest.Library != "" {
+		if err := engineabi.Check(filepath.Join(root, filepath.FromSlash(manifest.Library))); err != nil {
+			return err
+		}
+	}
+	if manifest.Executable == "" {
+		return nil
+	}
 	identity, _, err := Describe(ctx, filepath.Join(root, filepath.FromSlash(manifest.Executable)), diagnostics)
 	if err != nil {
 		return err

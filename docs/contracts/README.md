@@ -6,10 +6,12 @@ struct linkage. `internal/contract.Analyzer` is Core's internal use-case interfa
 Only Java is composed today; capability/config negotiation remains separate work. Local package installation
 is persistent and separate from fact transport.
 
-## Process transport
+## Engine transport
 
-Core resolves `SCRYER_ENGINE_JAVA`, its installed inventory, or `scryer-java-engine` on PATH and invokes
-`execute`. The engine's Go wrapper starts its JVM worker and forwards stdin,
+Core resolves an explicit override, its installed inventory or a launcher on PATH.
+For a package declaring a library, Core uses the [C ABI v1 contract](ENGINE-ABI.md).
+For an executable entrypoint, Core invokes `execute`. The Go wrapper starts the
+JVM worker and forwards stdin,
 stdout and stderr without rendering or rewriting JSON. Each invocation accepts
 one request and returns one response. Diagnostics use stderr; framing is EOF,
 not JSON Lines. Requests are limited to 1 MiB by the JVM worker. Paths are absolute
@@ -69,7 +71,7 @@ Response envelope:
 }
 ```
 
-The abbreviated `report` above is not a valid complete report. An error response has `report: null` and `error: {"code": "JAVA_ANALYZER_ERROR", "message": "..."}`. Go rejects mismatched version/request/operation/stack, malformed reports, duplicate symbol IDs, graph edges referencing missing nodes and extra stdout documents. Analyze report refs must match the requested SHAs. Go cancellation terminates the shared wrapper/JVM process group and ordinary child build processes on POSIX, then removes isolated checkouts.
+The abbreviated `report` above is not a valid complete report. An error response has `report: null` and `error: {"code": "JAVA_ANALYZER_ERROR", "message": "..."}`. Go rejects mismatched version/request/operation/stack, malformed reports, duplicate symbol IDs, graph edges referencing missing nodes and extra stdout documents. Analyze report refs must match the requested SHAs. Cancellation terminates the JVM process group and ordinary child build processes on POSIX, then Core removes isolated checkouts.
 
 ## Report fields
 

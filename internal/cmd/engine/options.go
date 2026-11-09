@@ -31,7 +31,11 @@ func present(command *cobra.Command, jsonOutput bool, response result) error {
 		return err
 	}
 	for _, installed := range response.Engines {
-		if _, err := fmt.Fprintf(command.OutOrStdout(), "%s: %s %s (%s)\n", response.Status, installed.Engine.ID, installed.Engine.Version, installed.Executable); err != nil {
+		entrypoint := installed.Library
+		if entrypoint == "" {
+			entrypoint = installed.Executable
+		}
+		if _, err := fmt.Fprintf(command.OutOrStdout(), "%s: %s %s (%s)\n", response.Status, installed.Engine.ID, installed.Engine.Version, entrypoint); err != nil {
 			return err
 		}
 	}

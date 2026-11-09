@@ -71,7 +71,7 @@ installation automatically. Do not add an implicit sibling-repository fallback t
 
 Keep each repository's plan aligned with its CI workflow when build ownership
 changes. Packaging checks are local acceptance; uploading artifacts is CI-only.
-The shared-library/C ABI idea is a future pair experiment, not this extraction.
+The installed Java package declares a C ABI v1 library. The workspace cancellation check verifies Core owns the JVM child and that cancelling the ABI request terminates its process group.
 
 Global installation/config storage defaults to ~/.config/scryer on macOS as well,
 matching Orrery/nvim; do not use os.UserConfigDir() or Library/Application Support.

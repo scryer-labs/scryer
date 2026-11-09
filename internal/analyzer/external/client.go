@@ -17,6 +17,7 @@ import (
 
 	"github.com/edwardnoaland/scryer/internal/contract"
 	"github.com/edwardnoaland/scryer/internal/engine"
+	"github.com/edwardnoaland/scryer/internal/engineabi"
 	"github.com/edwardnoaland/scryer/internal/process"
 )
 
@@ -52,12 +53,19 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 	if err != nil {
 		return contract.Document{}, err
 	}
-	cmd := process.Command(ctx, "", executable, "execute")
-	cmd.Stdin = bytes.NewReader(data)
-	cmd.Stderr = c.Progress
 	var output bytes.Buffer
-	cmd.Stdout = &output
-	err = cmd.Run()
+	if engineabi.IsLibrary(executable) {
+		var response []byte
+		response, err = engineabi.Execute(ctx, executable, request.RequestID, data)
+		output.Write(response)
+	} else {
+		cmd := process.Command(ctx, "", executable, "execute")
+		cmd.Stdin = bytes.NewReader(data)
+		cmd.Stderr = c.Progress
+		cmd.Stdout = &output
+		err = cmd.Run()
+	}
+
 	if ctx.Err() != nil {
 		return contract.Document{}, ctx.Err()
 	}
@@ -114,12 +122,18 @@ func (c *Client) executable(ctx context.Context) (string, error) {
 		}
 		installed, err := store.Find(ctx, c.EngineID)
 		if err == nil {
+			if installed.Library != "" {
+				return installed.Library, nil
+			}
 			return installed.Executable, nil
 		}
 		if !errors.Is(err, engine.ErrNotInstalled) {
 			return "", fmt.Errorf("installed engine %q: %w", c.EngineID, err)
 		}
 		executable = "scryer-" + c.EngineID + "-engine"
+	}
+	if engineabi.IsLibrary(executable) {
+		return filepath.Abs(executable)
 	}
 	resolved, err := exec.LookPath(executable)
 	if err != nil {

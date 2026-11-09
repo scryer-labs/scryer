@@ -17,6 +17,7 @@ const installRecord = ".scryer-install.json"
 
 type Installation struct {
 	Engine      Identity `json:"engine"`
+	Library     string   `json:"library,omitempty"`
 	Executable  string   `json:"executable"`
 	PackageRoot string   `json:"packageRoot"`
 	SourcePath  string   `json:"sourcePath"`
@@ -119,7 +120,14 @@ func (s Store) load(id string) (Installation, error) {
 	if metadata.SchemaVersion != 1 || metadata.Manifest != manifest || manifest.Engine.ID != id {
 		return Installation{}, fmt.Errorf("installation metadata does not match package")
 	}
-	return Installation{Engine: manifest.Engine, Executable: filepath.Join(root, filepath.FromSlash(manifest.Executable)), PackageRoot: root, SourcePath: metadata.SourcePath, InstalledAt: metadata.InstalledAt}, nil
+	installation := Installation{Engine: manifest.Engine, PackageRoot: root, SourcePath: metadata.SourcePath, InstalledAt: metadata.InstalledAt}
+	if manifest.Executable != "" {
+		installation.Executable = filepath.Join(root, filepath.FromSlash(manifest.Executable))
+	}
+	if manifest.Library != "" {
+		installation.Library = filepath.Join(root, filepath.FromSlash(manifest.Library))
+	}
+	return installation, nil
 }
 
 func (s Store) Install(ctx context.Context, id, source string, diagnostics io.Writer) (Installation, error) {
