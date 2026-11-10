@@ -98,6 +98,23 @@ Remove both flags once the unified scan can explicitly opt into build-tool
 resolution and expose the resolved graph in its reports. Keep static collection
 as the default and verify the replacement against a Java fixture before removal.
 
+### Unified dependency scan options
+
+- Keep `dependencies` as the fact name. Scan statically by default and use an
+  explicit option such as `--resolve` to opt into build-tool execution. Return
+  declarations and resolution status, plus graph nodes and edges when available.
+  Core can render those edges as a tree. When an engine only supports static
+  collection, keep its static facts and report that resolution is unsupported.
+- Retire the legacy `project scan --static` flag once the unified scan replaces
+  that path. The static mode is the default and resolution is opt-in.
+- Retire the legacy `project scan --stack` selector after automatic stack
+  detection and engine dispatch cover its uses. It currently selects the Java
+  scan path. `--facts stack` reports detected technologies and `--facts loc`
+  reports line counts. This item does not change `project analyze --stack`.
+- Keep `--remote-list` as an opt-in for remote version metadata. Treat it
+  separately from local dependency graph resolution and move it onto the
+  unified scan as engines gain support.
+
 ### Build-tool selection
 
 Keep build-tool selection separate from language detection and engine dispatch.
