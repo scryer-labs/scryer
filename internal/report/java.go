@@ -20,7 +20,7 @@ var javaView = engineView{
 }
 
 // The Java scan view reads the existing Java v1 fact shape.
-func javaScanTerminal(data Object, out io.Writer, tree, color bool) {
+func javaScanTerminal(data Object, out io.Writer, color bool) {
 	style := terminalStyle{color}
 	header := func(title string) { fmt.Fprintln(out, style.heading(title)) }
 	row := func(key string, value any) {
@@ -182,9 +182,6 @@ func javaScanTerminal(data Object, out io.Writer, tree, color bool) {
 		}
 	}
 
-	if tree {
-		dependencyTreeStyled(data, out, color)
-	}
 }
 
 // Java v1 dependency facts use declarations where the full Java scan uses dependencies.
@@ -222,10 +219,13 @@ func javaDependencyTable(b *strings.Builder, data Object, declarations []Object)
 	table(b, []string{"Module", "Configuration", "Dependency", "Declared version", "Selected version", "Source"}, dependencyRows)
 }
 
-func dependencyTree(data Object, out io.Writer) { dependencyTreeStyled(data, out, false) }
+func hasJavaDependencyGraphs(data Object) bool {
+	return len(objects(field(data, "resolution")["configurations"])) > 0
+}
+
 func dependencyTreeStyled(data Object, out io.Writer, color bool) {
 	style := terminalStyle{color}
-	fmt.Fprintln(out, style.heading("\nResolved dependency tree (selected graph; shared/cyclic nodes expanded once)"))
+	fmt.Fprintln(out, style.heading("Resolved dependency tree (selected graph; shared/cyclic nodes expanded once)"))
 	for _, graph := range objects(field(data, "resolution")["configurations"]) {
 		fmt.Fprintf(out, "  %s / %s [%s]\n", str(graph, "module"), str(graph, "configuration"), style.status(str(graph, "status")))
 		if graph["error"] != nil {
@@ -239,20 +239,11 @@ func dependencyTreeStyled(data Object, out io.Writer, color bool) {
 		for _, edge := range objects(graph["edges"]) {
 			edges[str(edge, "from")] = append(edges[str(edge, "from")], edge)
 		}
-		type item struct {
-			id    string
-			depth int
-		}
-		queue := []item{{str(graph, "root"), 0}}
 		visited := map[string]bool{}
-		for len(queue) > 0 {
-			current := queue[0]
-			queue = queue[1:]
-			if visited[current.id] {
-				continue
-			}
-			visited[current.id] = true
-			for _, edge := range edges[current.id] {
+		var expand func(string, int)
+		expand = func(parent string, depth int) {
+			visited[parent] = true
+			for _, edge := range edges[parent] {
 				id := str(edge, "to")
 				n := nodes[id]
 				label := str(edge, "requested")
@@ -265,16 +256,17 @@ func dependencyTreeStyled(data Object, out io.Writer, color bool) {
 				if visited[id] {
 					label += " (shared/cycle)"
 				}
-				fmt.Fprintln(out, "    "+strings.Repeat("  ", current.depth)+"→ "+label)
+				fmt.Fprintln(out, "    "+strings.Repeat("  ", depth)+"→ "+label)
 				if !visited[id] {
-					queue = append(queue, item{id, current.depth + 1})
+					expand(id, depth+1)
 				}
 			}
 		}
+		expand(str(graph, "root"), 0)
 	}
 }
 
-func javaScanMarkdown(data Object, tree bool) string {
+func javaScanMarkdown(data Object) string {
 	var b strings.Builder
 	section(&b, 1, "Scryer repository scan")
 	b.WriteString("Repository facts and collection limitations; not build/test execution evidence.\n\n")
@@ -358,12 +350,6 @@ func javaScanMarkdown(data Object, tree bool) string {
 		if graph["error"] != nil {
 			fmt.Fprintln(&b, "- "+escape(str(graph, "module")+" / "+str(graph, "configuration")+": "+str(graph, "error")))
 		}
-	}
-	if tree {
-		section(&b, 2, "Resolved dependency tree")
-		var output strings.Builder
-		dependencyTree(data, &output)
-		block(&b, "text", output.String())
 	}
 	return b.String()
 }

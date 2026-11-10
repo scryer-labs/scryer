@@ -32,7 +32,7 @@ func TestHTMLRemainsOfflineAndScriptSafe(t *testing.T) {
 	}
 }
 func TestMarkdownKeepsUnknownFullIdentitiesAndCycleEdges(t *testing.T) {
-	data, err := Markdown(fixtureDocument(), false)
+	data, err := Markdown(fixtureDocument())
 	if err != nil {
 		t.Fatal(err)
 	}

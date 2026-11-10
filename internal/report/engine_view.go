@@ -7,8 +7,8 @@ import (
 
 // engineView contains presentation choices. Engines supply JSON, not rendering code.
 type engineView struct {
-	scanTerminal func(Object, io.Writer, bool, bool)
-	scanMarkdown func(Object, bool) string
+	scanTerminal func(Object, io.Writer, bool)
+	scanMarkdown func(Object) string
 	analysis     analyzeView
 }
 
@@ -27,10 +27,10 @@ func viewFor(stack string) engineView {
 		return javaView
 	default:
 		return engineView{
-			scanTerminal: func(data Object, out io.Writer, _, _ bool) {
+			scanTerminal: func(data Object, out io.Writer, _ bool) {
 				fmt.Fprintln(out, jsonText(data))
 			},
-			scanMarkdown: func(data Object, _ bool) string {
+			scanMarkdown: func(data Object) string {
 				return "\x60\x60\x60json\n" + jsonText(data) + "\n\x60\x60\x60\n"
 			},
 			analysis: analyzeView{changedSymbols: "Changed symbols"},

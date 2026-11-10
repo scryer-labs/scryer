@@ -66,7 +66,7 @@ func JSON(document contract.Document) ([]byte, error) {
 	output.WriteByte('\n')
 	return output.Bytes(), nil
 }
-func Terminal(document contract.Document, out io.Writer, tree, verbose, color bool) error {
+func Terminal(document contract.Document, out io.Writer, verbose, color bool) error {
 	data, err := decode(document)
 	if err != nil {
 		return err
@@ -75,13 +75,13 @@ func Terminal(document contract.Document, out io.Writer, tree, verbose, color bo
 		return writeProjectFacts(out, data, color)
 	}
 	if document.Operation == "scan" {
-		viewFor(document.Stack).scanTerminal(data, out, tree, color)
+		viewFor(document.Stack).scanTerminal(data, out, color)
 	} else {
 		analyzeTerminal(data, out, verbose, color, viewFor(document.Stack).analysis)
 	}
 	return nil
 }
-func Markdown(document contract.Document, tree bool) ([]byte, error) {
+func Markdown(document contract.Document) ([]byte, error) {
 	data, err := decode(document)
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func Markdown(document contract.Document, tree bool) ([]byte, error) {
 		return []byte(projectFactsMarkdown(data)), nil
 	}
 	if document.Operation == "scan" {
-		return []byte(viewFor(document.Stack).scanMarkdown(data, tree)), nil
+		return []byte(viewFor(document.Stack).scanMarkdown(data)), nil
 	}
 	return []byte(analyzeMarkdown(data, viewFor(document.Stack).analysis)), nil
 }

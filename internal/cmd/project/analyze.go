@@ -96,7 +96,7 @@ func runAnalysis(cmd *cobra.Command, args []string, service *application.Service
 			return err
 		}
 	} else {
-		if err = report.Terminal(document, cmd.OutOrStdout(), false, verbose, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
+		if err = report.Terminal(document, cmd.OutOrStdout(), verbose, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
 			return err
 		}
 	}
@@ -106,7 +106,7 @@ func runAnalysis(cmd *cobra.Command, args []string, service *application.Service
 		case ".json":
 			data, err = report.JSON(document)
 		case ".md":
-			data, err = report.Markdown(document, false)
+			data, err = report.Markdown(document)
 		case ".html":
 			data, err = report.HTML(document)
 		}

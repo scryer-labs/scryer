@@ -15,10 +15,10 @@ func TestTerminalColorPreservesFactsAndExportFormats(t *testing.T) {
 	strip := regexp.MustCompile(`\x1b\[[0-9;]*m`)
 	for _, document := range []contract.Document{scan, fixtureDocument()} {
 		var plain, colored bytes.Buffer
-		if err := Terminal(document, &plain, true, true, false); err != nil {
+		if err := Terminal(document, &plain, true, false); err != nil {
 			t.Fatal(err)
 		}
-		if err := Terminal(document, &colored, true, true, true); err != nil {
+		if err := Terminal(document, &colored, true, true); err != nil {
 			t.Fatal(err)
 		}
 		if !strings.Contains(colored.String(), "\x1b[1;36m") {
@@ -30,7 +30,7 @@ func TestTerminalColorPreservesFactsAndExportFormats(t *testing.T) {
 		if strip.ReplaceAllString(colored.String(), "") != plain.String() {
 			t.Fatal("color changed report content or alignment")
 		}
-		md, err := Markdown(document, true)
+		md, err := Markdown(document)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -43,7 +43,7 @@ func TestTerminalColorPreservesFactsAndExportFormats(t *testing.T) {
 		}
 	}
 	var colored bytes.Buffer
-	if err := Terminal(fixtureDocument(), &colored, false, true, true); err != nil {
+	if err := Terminal(fixtureDocument(), &colored, true, true); err != nil {
 		t.Fatal(err)
 	}
 	for _, needle := range []string{"\x1b[33mUNKNOWN", "\x1b[1;31m", "\x1b[35m"} {
@@ -69,10 +69,10 @@ func TestTerminalStatusesAndZeroCounts(t *testing.T) {
 func TestToolUpdatesAppearInScanTerminalAndMarkdownOnlyWhenEnriched(t *testing.T) {
 	document := contract.Document{Operation: "scan", Data: json.RawMessage(`{"schemaVersion":1,"root":"/repo","builds":[],"dependencies":[],"modules":[],"language":{},"resolution":{},"testing":{},"verification":{},"toolUpdates":{"checkedAt":"now","tools":[{"tool":"Gradle","channel":"latest stable","current":"6.5.1","currentSource":"Wrapper","latest":"9.1.0","status":"UPDATE_AVAILABLE","metadataUrl":"https://example.test/versions","note":null},{"tool":"Java","channel":"same series patch","current":"11","currentSource":"source level","latest":"11.0.29","status":"UNKNOWN_CURRENT","note":"Patch unknown"}],"notes":["Separately validate versions and dependency conflicts."]}}`)}
 	var terminal bytes.Buffer
-	if err := Terminal(document, &terminal, false, false, true); err != nil {
+	if err := Terminal(document, &terminal, false, true); err != nil {
 		t.Fatal(err)
 	}
-	markdown, err := Markdown(document, false)
+	markdown, err := Markdown(document)
 	if err != nil {
 		t.Fatal(err)
 	}

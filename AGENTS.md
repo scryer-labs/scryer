@@ -53,7 +53,7 @@ After the 2026-11-02 Java extraction, acceptance is ordered:
    snapshots/cancellation, then installing the current bundled engine for normal use).
 4. Modernization: `modernization--scryer-orrery-integration`, rooted at
    `/Users/edwardnoaland/Desktop/ThoughtWorksProjects/modernization/test_workspace`.
-   Its seven project plans run in parallel through the formal scryer@v1.4 provider.
+   Its seven project plans run in parallel through the formal scryer@v1.5 provider.
    Keep seven-project scans here, not duplicated in scryer-lab.
 
 The first three definitions live under scryer-lab. Integration installs a known

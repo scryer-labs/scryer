@@ -86,8 +86,7 @@ the corresponding migration is ready; CSV input is not a permanent requirement.
 
 ## TD-007: Retire Java-only project dependency flags
 
-- [ ] Status: data migration verified. Human-readable views and consumer
-  migration remain open.
+- [x] Status: both legacy Java dependency view flags removed.
 
 `project scan --facts dependencies` returns Java's direct dependency
 declarations. It scans statically by default. `--resolve` opts into build-tool
@@ -100,11 +99,12 @@ Orrery's **Scryer + Java Engine Integration** run
 fixture. It used a deterministic Maven Wrapper fixture to verify execution
 and graph transport while preserving C++ include facts.
 
-`project scan --dependencies` has been removed. The unified terminal and
-Markdown reports group Java dependency declarations by module and configuration.
-The tree view still uses `--dependency-tree` pending its report migration.
+Both `project scan --dependencies` and `project scan --dependency-tree` have
+been removed. The unified terminal and Markdown reports group Java dependency
+declarations by module and configuration and render a text tree when the graph
+is available. JSON consumers can use the full graph from the same scan.
 
-### Unified dependency scan options
+### Remaining scan option migration
 
 - Retire the legacy `project scan --static` flag once the unified scan replaces
   that path. The static mode is the default and resolution is opt-in.

@@ -16,7 +16,7 @@ import (
 func newScanCommand(service *application.Service) *cobra.Command {
 	var request contract.ScanRequest
 	var output, color string
-	var jsonOutput, tree, resolve bool
+	var jsonOutput, resolve bool
 	var facts string
 	var useCore, collectStack, collectLOC bool
 	var engineFacts []string
@@ -24,7 +24,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		Long: "Collect stack and line counts by default. Select facts with --facts. Explicit Java scan options select the Java engine. Path defaults to the current directory.", Args: cobra.MaximumNArgs(1)}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
 		javaFlag := ""
-		for _, flag := range []string{"static", "remote-list", "build-tool", "dependency-tree"} {
+		for _, flag := range []string{"static", "remote-list", "build-tool"} {
 			if cmd.Flags().Changed(flag) {
 				javaFlag = flag
 				break
@@ -90,12 +90,12 @@ func newScanCommand(service *application.Service) *cobra.Command {
 				return err
 			}
 		} else {
-			if err = report.Terminal(document, cmd.OutOrStdout(), tree, false, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
+			if err = report.Terminal(document, cmd.OutOrStdout(), false, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
 				return err
 			}
 		}
 		if output != "" {
-			data, err := report.Markdown(document, tree)
+			data, err := report.Markdown(document)
 			if err != nil {
 				return err
 			}
@@ -116,7 +116,6 @@ func newScanCommand(service *application.Service) *cobra.Command {
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle")
 	flags.BoolVar(&request.Static, "static", false, "Skip build-model execution")
 	flags.BoolVar(&request.RemoteList, "remote-list", false, "Compare dependency and Java/build-tool releases with remote metadata")
-	flags.BoolVar(&tree, "dependency-tree", false, "Show resolved dependency graph (deprecated, Java only)")
 	flags.BoolVar(&jsonOutput, "json", false, "Print report JSON")
 	flags.StringVar(&color, "color", "auto", "auto, always or never")
 	flags.StringVarP(&output, "output", "o", "", "Save Markdown report")

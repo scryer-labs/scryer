@@ -36,6 +36,10 @@ func writeProjectFacts(out io.Writer, data Object, color bool) error {
 			fmt.Fprintln(&b)
 			if dependencies := javaDependencyFacts(outcome); dependencies != nil {
 				writeJavaDirectDependencies(&b, dependencies, color)
+				if hasJavaDependencyGraphs(dependencies) {
+					fmt.Fprintln(&b)
+					dependencyTreeStyled(dependencies, &b, color)
+				}
 			}
 			if value := outcome["data"]; value != nil {
 				fmt.Fprintln(&b, jsonText(value))
@@ -96,6 +100,12 @@ func projectFactsMarkdown(data Object) string {
 				for _, key := range order {
 					section(&b, 5, key)
 					javaDependencyTable(&b, dependencies, groups[key])
+				}
+				if hasJavaDependencyGraphs(dependencies) {
+					section(&b, 4, "Resolved dependency tree")
+					var tree strings.Builder
+					dependencyTreeStyled(dependencies, &tree, false)
+					block(&b, "text", tree.String())
 				}
 			}
 			if value := outcome["data"]; value != nil {

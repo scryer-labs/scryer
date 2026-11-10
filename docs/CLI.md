@@ -66,7 +66,7 @@ legacy operations and an empty scan fact list.
 
 Project scans select engines automatically based on the detected languages
 and requested facts. The legacy Java report is still available through
-`--static`, `--build-tool`, `--remote-list` and `--dependency-tree`. These options conflict with `--facts`.
+`--static`, `--build-tool` and `--remote-list`. These options conflict with `--facts`.
 
 ## Persistent local engine management
 
@@ -156,7 +156,7 @@ The legacy Java report shows a concise summary and, unless requested with `--sta
 
 ```sh
 scryer project scan . --facts dependencies  # direct declarations grouped by module/configuration
-scryer project scan . --dependency-tree     # deprecated, Java only, resolved graph as a tree
+scryer project scan . --facts dependencies --resolve # show the Java dependency tree when available
 scryer project scan . --facts dependencies --resolve --json # unified dependency facts and graph
 scryer project scan . --static              # local facts only; resolution is not_requested
 scryer project scan . --static --color always          # force styled Java output
@@ -167,13 +167,13 @@ scryer project scan . --facts dependencies --json -o scan.md
 Use `--facts dependencies` for grouped Java dependency declarations or add
 `--json` for structured facts. Add `--resolve` to explicitly allow the engine to execute the target build
 configuration and return graph nodes and edges. Engines that only support
-static collection return their static facts with a message. The deprecated
-`--dependency-tree` flag still provides the Java-specific tree view.
+static collection return their static facts with a message. The terminal and
+Markdown reports render the available Java graph as a text tree.
 See [TD-007](TECH-DEBT.md#td-007-retire-java-only-project-dependency-flags).
 
-`-o <OUTPUT_FILE>` (alias `--output`) writes UTF-8 Markdown, creates missing parent directories and replaces an existing report. The terminal/JSON output is retained; the file confirmation goes to stderr. Markdown includes modules, all observed direct dependencies with declared/selected versions, source/test facts, suggested commands and all collection notes/failures. `--dependency-tree` additionally includes a plain-text tree in the file. Reports have no terminal color codes. Collection status and unknown facts remain explicit; exporting a report does not verify the target build or tests.
+`-o <OUTPUT_FILE>` (alias `--output`) writes UTF-8 Markdown, creates missing parent directories and replaces an existing report. The terminal/JSON output is retained; the file confirmation goes to stderr. The legacy Java report includes modules, direct dependencies, source and test facts, suggested commands and collection notes. The unified report renders a tree when resolved Java dependency facts are available. Reports have no terminal color codes. Collection status and unknown facts remain explicit; exporting a report does not verify the target build or tests.
 
-Flags may be combined. JSON always remains plain machine-readable JSON even with `--color always`; dependency/tree view flags do not trim JSON. `--color auto|always|never` defaults to auto, which enables color only for an interactive stdout and honors `NO_COLOR`. Explicit always overrides automatic detection. The Go reporting layer supplies terminal styling, with cyan/bold headings, dim metadata, green complete/configured values, yellow signals/conflicts/partial collection and red unknown/unresolved values. Shared graph nodes use `[already shown]` references; JSON retains every edge.
+Flags may be combined. JSON always remains plain machine-readable JSON even with `--color always`; human-readable report views do not trim JSON. `--color auto|always|never` defaults to auto, which enables color only for an interactive stdout and honors `NO_COLOR`. Explicit always overrides automatic detection. The Go reporting layer supplies terminal styling, with cyan/bold headings, dim metadata, green complete/configured values, yellow signals/conflicts/partial collection and red unknown/unresolved values. Shared graph nodes use `[already shown]` references; JSON retains every edge.
 
 Quote paths with spaces. The selected path (current directory by default) must contain a recognized build/settings definition; scan does not search arbitrary ancestor repositories. Exit codes: 0 facts collected (possibly partial); 1 invalid/unreadable input; 2 invalid CLI arguments. Check `resolution.status`/notes rather than treating exit 0 as full resolution or a passing target build.
 
