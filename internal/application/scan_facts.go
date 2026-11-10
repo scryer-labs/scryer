@@ -117,6 +117,14 @@ func (s *Service) scanInstalled(ctx context.Context, installed engine.Installati
 		} else if len(outcome.Data) == 0 || string(outcome.Data) == "null" {
 			outcome.Status, outcome.Message, outcome.Data = "failed", "engine omitted the requested fact", nil
 		}
+		if outcome.Status == "collected" && fact == "dependencies" && installed.Engine.ID == "cpp" {
+			enriched, err := identifyCMakeRepositories(outcome.Data)
+			if err != nil {
+				outcome.Status, outcome.Message, outcome.Data = "failed", err.Error(), nil
+			} else {
+				outcome.Data = enriched
+			}
+		}
 		if outcome.Status == "collected" && fact == "dependencies" && resolve && !resolveDependencies {
 			outcome.Message = "engine does not declare support for dependency resolution; returned static facts"
 		}

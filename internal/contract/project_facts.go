@@ -22,13 +22,23 @@ func IsEngineScanFact(fact string) bool {
 	}
 }
 
+type RepositoryIdentity struct {
+	Host      string `json:"host"`
+	Namespace string `json:"namespace"`
+	Name      string `json:"name"`
+	ID        string `json:"id,omitempty"`
+	Remote    string `json:"remote,omitempty"`
+}
+
 type ProjectFacts struct {
-	EngineFacts   []FactOutcome `json:"engineFacts,omitempty"`
-	SchemaVersion int           `json:"schemaVersion"`
-	Root          string        `json:"root"`
-	Stack         *ProjectStack `json:"stack,omitempty"`
-	LOC           *ProjectLOC   `json:"loc,omitempty"`
-	Skipped       SkippedFiles  `json:"skipped"`
+	EngineFacts   []FactOutcome      `json:"engineFacts,omitempty"`
+	SchemaVersion int                `json:"schemaVersion"`
+	Root          string             `json:"root"`
+	Name          string             `json:"name"`
+	Repository    RepositoryIdentity `json:"repository"`
+	Stack         *ProjectStack      `json:"stack,omitempty"`
+	LOC           *ProjectLOC        `json:"loc,omitempty"`
+	Skipped       SkippedFiles       `json:"skipped"`
 }
 
 type ProjectStack struct {

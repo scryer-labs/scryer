@@ -48,7 +48,24 @@ func (s *Service) Scan(ctx context.Context, stack string, request contract.ScanR
 		return contract.Document{}, fmt.Errorf("not a directory: %s", absolute)
 	}
 	request.Repository = absolute
-	return s.Analyzer.Scan(ctx, request)
+	document, err := s.Analyzer.Scan(ctx, request)
+	if err != nil {
+		return document, err
+	}
+	var data map[string]json.RawMessage
+	if err := json.Unmarshal(document.Data, &data); err != nil {
+		return document, err
+	}
+	data["name"], err = json.Marshal(filepath.Base(absolute))
+	if err != nil {
+		return document, err
+	}
+	data["repository"], err = json.Marshal(repository.Identity(ctx, absolute))
+	if err != nil {
+		return document, err
+	}
+	document.Data, err = json.Marshal(data)
+	return document, err
 }
 func (s *Service) Analyze(ctx context.Context, stack, directory string, request contract.AnalyzeRequest) (document contract.Document, err error) {
 	if err := s.selectStack(stack); err != nil {

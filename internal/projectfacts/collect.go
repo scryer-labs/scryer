@@ -15,6 +15,7 @@ import (
 
 	"github.com/boyter/scc/v3/processor"
 	"github.com/edwardnoaland/scryer/internal/contract"
+	"github.com/edwardnoaland/scryer/internal/repository"
 )
 
 const maxFileSize = 8 * 1024 * 1024
@@ -52,6 +53,8 @@ func Collect(ctx context.Context, directory string, stack, loc bool) (contract.P
 	defer root.Close()
 
 	result.Root, result.SchemaVersion = absolute, contract.ReportVersion
+	result.Name = filepath.Base(absolute)
+	result.Repository = repository.Identity(ctx, absolute)
 	if stack {
 		result.Stack = &contract.ProjectStack{Languages: []contract.LanguagePresence{}, BuildTools: []contract.BuildToolEvidence{}}
 	}

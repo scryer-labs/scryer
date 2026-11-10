@@ -27,7 +27,9 @@ func javaScanTerminal(data Object, out io.Writer, color bool) {
 		fmt.Fprintf(out, "  %s%s\n", style.muted(fmt.Sprintf("%-26s", key)), style.fact(text(value)))
 	}
 	header("Project")
-	row("Repository", data["root"])
+	row("Name", projectName(data))
+	row("Root", data["root"])
+	row("Repository", projectRepository(data))
 	language := field(data, "language")
 	row("Java source / target", join(language["sourceVersions"])+" / "+join(language["targetVersions"]))
 	row("Toolchain", join(language["toolchainVersions"]))
@@ -276,7 +278,7 @@ func javaScanMarkdown(data Object) string {
 	for _, build := range objects(data["builds"]) {
 		builds = append(builds, str(build, "tool")+" "+str(build, "version"))
 	}
-	table(&b, []string{"Fact", "Value"}, rows([]string{"Repository", str(data, "root")}, []string{"Build", strings.Join(builds, ", ")}, []string{"Selected build tool", selectedBuildTool(data)}, []string{"Java source", join(language["sourceVersions"])}, []string{"Java target", join(language["targetVersions"])}, []string{"Toolchain", join(language["toolchainVersions"])}, []string{"Frameworks", join(data["frameworks"])}, []string{"Resolution", str(field(data, "resolution"), "status")}))
+	table(&b, []string{"Fact", "Value"}, rows([]string{"Name", projectName(data)}, []string{"Root", str(data, "root")}, []string{"Repository", projectRepository(data)}, []string{"Build", strings.Join(builds, ", ")}, []string{"Selected build tool", selectedBuildTool(data)}, []string{"Java source", join(language["sourceVersions"])}, []string{"Java target", join(language["targetVersions"])}, []string{"Toolchain", join(language["toolchainVersions"])}, []string{"Frameworks", join(data["frameworks"])}, []string{"Resolution", str(field(data, "resolution"), "status")}))
 	section(&b, 2, "Modules")
 	moduleRows := [][]string{}
 	for _, m := range objects(data["modules"]) {

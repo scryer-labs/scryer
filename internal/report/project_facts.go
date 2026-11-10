@@ -3,12 +3,15 @@ package report
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 )
 
 func writeProjectFacts(out io.Writer, data Object, color bool) error {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Project: %s\n", str(data, "root"))
+	fmt.Fprintf(&b, "Project: %s\n", projectName(data))
+	fmt.Fprintf(&b, "Root: %s\n", str(data, "root"))
+	fmt.Fprintf(&b, "Repository: %s\n", projectRepository(data))
 	if stack := field(data, "stack"); stack != nil {
 		fmt.Fprintln(&b, "\nStack")
 		for _, language := range objects(stack["languages"]) {
@@ -55,7 +58,11 @@ func writeProjectFacts(out io.Writer, data Object, color bool) error {
 func projectFactsMarkdown(data Object) string {
 	var b strings.Builder
 	section(&b, 1, "Project facts")
-	fmt.Fprintf(&b, "%s\n\n", escape(str(data, "root")))
+	table(&b, []string{"Fact", "Value"}, rows(
+		[]string{"Project", projectName(data)},
+		[]string{"Root", str(data, "root")},
+		[]string{"Repository", projectRepository(data)},
+	))
 	if stack := field(data, "stack"); stack != nil {
 		section(&b, 2, "Stack")
 		rows := [][]string{}
@@ -124,4 +131,22 @@ func factEngine(outcome Object) string {
 		return engine
 	}
 	return "project"
+}
+
+func projectName(data Object) string {
+	if name, ok := data["name"].(string); ok {
+		return name
+	}
+	return filepath.Base(str(data, "root"))
+}
+
+func projectRepository(data Object) string {
+	repository := field(data, "repository")
+	if id, ok := repository["id"].(string); ok {
+		return id
+	}
+	if str(repository, "host") == "local" {
+		return "local / " + str(repository, "namespace") + " / " + str(repository, "name")
+	}
+	return "unknown"
 }

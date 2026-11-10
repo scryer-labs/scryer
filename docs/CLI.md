@@ -68,6 +68,17 @@ Project scans select engines automatically based on the detected languages
 and requested facts. The legacy Java report is still available through
 `--static`, `--build-tool` and `--remote-list`. These options conflict with `--facts`.
 
+Every project scan includes the project name, local root and repository identity,
+regardless of `--facts`. The project name defaults to the checkout directory
+name. A hosted identity contains `host`, `namespace`, `name` and `id`.
+Core reads `origin`, or the sole configured remote when there is no origin.
+Local directories and projects without a supported hosted remote report
+`host: local` and `namespace: local`, without a hosted ID.
+
+Core also adds a repository identity to recognized CMake `GIT_REPOSITORY`
+declarations. The original arguments and source location remain available.
+SSH and HTTPS URLs for the same hosted repository can share the same ID.
+
 ## Persistent local engine management
 
 ```sh
