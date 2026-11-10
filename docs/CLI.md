@@ -64,9 +64,10 @@ unsupported, failed and no-matching-engine outcomes. An outcome without an engin
 ID summarizes coverage for the project. For older Java packages whose manifests lack capabilities, Core lists their
 legacy operations and an empty scan fact list.
 
-Use `--stack java` for the existing Java report. Explicit `--static`,
-`--build-tool`, `--remote-list`, `--dependencies` and `--dependency-tree`
-also select the Java path. These options conflict with `--facts`.
+Project scans select engines automatically based on the detected languages
+and requested facts. The legacy Java report is still available through
+`--static`, `--build-tool`, `--remote-list`, `--dependencies` and
+`--dependency-tree`. These options conflict with `--facts`.
 
 ## Persistent local engine management
 
@@ -149,19 +150,19 @@ The collector currently includes Java files outside `.git`, `.tooling`, `.gradle
 export JAVA_HOME="$(mise where java)"
 ./scripts/build
 export PATH="$PWD/build/install/scryer/bin:$PATH"
-scryer project scan ../legacy-java-fixture --stack java
+scryer project scan ../legacy-java-fixture --facts dependencies --resolve
 ```
 
-Default scan shows a concise summary, attempts dependency resolution with the target repository's Wrapper, and retains the full model internally. This evaluates target build configuration and may download dependency metadata/plugins; it does **not** compile, test or package the target. Arbitrary build configuration code can have its own side effects. Use `--static` to inspect local declarations/source signals without executing target configuration or downloading anything.
+The legacy Java report shows a concise summary and, unless requested with `--static`, attempts dependency resolution with the target repository's Wrapper. This evaluates target build configuration and may download dependency metadata/plugins; it does **not** compile, test or package the target. Arbitrary build configuration code can have its own side effects. Use `--static` to inspect local declarations/source signals without executing target configuration or downloading anything.
 
 ```sh
 scryer project scan . --dependencies        # deprecated, Java only, direct declarations by module/configuration
 scryer project scan . --dependency-tree     # deprecated, Java only, resolved graph as a tree
-scryer project scan . --stack java --json   # complete versioned facts model, no presentation truncation
+scryer project scan . --facts dependencies --resolve --json # unified dependency facts and graph
 scryer project scan . --static              # local facts only; resolution is not_requested
-scryer project scan . --stack java --color always        # force styled output
-scryer project scan . --stack java -o reports/scan.md    # also write a Markdown report
-scryer project scan . --stack java --json -o scan.md     # JSON stdout plus a Markdown file
+scryer project scan . --static --color always          # force styled Java output
+scryer project scan . --facts dependencies -o reports/scan.md
+scryer project scan . --facts dependencies --json -o scan.md
 ```
 
 Both Java dependency view flags are deprecated. Use `--facts dependencies --json`
@@ -217,7 +218,7 @@ Gradle dependencies can be computed by arbitrary code, so static DSL parsing rem
 Scryer runs on Java 21. For an older target Wrapper, set a compatible JVM for the child process:
 
 ```sh
-SCRYER_JAVA_HOME=/path/to/jdk8 scryer project scan /path/to/legacy-project --stack java
+SCRYER_JAVA_HOME=/path/to/jdk8 scryer project scan /path/to/legacy-project --facts dependencies --resolve
 ```
 
 For the existing fixture, a project-local Java 8 under `.tooling/mise/data/installs/java` is auto-detected. A toolchain declaration is distinct from the JVM used to evaluate the build. Missing/incompatible target JVM, timeout or resolution failure produces unavailable/partial facts with notes. Global Java settings are not changed.

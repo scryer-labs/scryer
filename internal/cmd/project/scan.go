@@ -15,7 +15,7 @@ import (
 
 func newScanCommand(service *application.Service) *cobra.Command {
 	var request contract.ScanRequest
-	var stack, output, color string
+	var output, color string
 	var jsonOutput, dependencies, tree, resolve bool
 	var facts string
 	var useCore, collectStack, collectLOC bool
@@ -24,7 +24,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		Long: "Collect stack and line counts by default. Select facts with --facts. Explicit Java scan options select the Java engine. Path defaults to the current directory.", Args: cobra.MaximumNArgs(1)}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
 		javaFlag := ""
-		for _, flag := range []string{"stack", "static", "remote-list", "build-tool", "dependencies", "dependency-tree"} {
+		for _, flag := range []string{"static", "remote-list", "build-tool", "dependencies", "dependency-tree"} {
 			if cmd.Flags().Changed(flag) {
 				javaFlag = flag
 				break
@@ -76,7 +76,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		if useCore {
 			document, err = service.ScanFacts(cmd.Context(), request.Repository, collectStack, collectLOC, engineFacts, resolve)
 		} else {
-			document, err = service.Scan(cmd.Context(), stack, request)
+			document, err = service.Scan(cmd.Context(), "java", request)
 		}
 		if err != nil {
 			return err
@@ -113,7 +113,6 @@ func newScanCommand(service *application.Service) *cobra.Command {
 	flags := command.Flags()
 	flags.StringVar(&facts, "facts", "", "Collect selected facts (for example stack,loc,dependencies)")
 	flags.BoolVar(&resolve, "resolve", false, "Allow build-tool execution to resolve dependency graphs")
-	flags.StringVar(&stack, "stack", "java", "Technology stack (currently java)")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle")
 	flags.BoolVar(&request.Static, "static", false, "Skip build-model execution")
 	flags.BoolVar(&request.RemoteList, "remote-list", false, "Compare dependency and Java/build-tool releases with remote metadata")

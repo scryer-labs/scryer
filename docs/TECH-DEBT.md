@@ -107,10 +107,10 @@ a Java fixture before removal.
   collection, keep its static facts and report that resolution is unsupported.
 - Retire the legacy `project scan --static` flag once the unified scan replaces
   that path. The static mode is the default and resolution is opt-in.
-- Retire the legacy `project scan --stack` selector after automatic stack
-  detection and engine dispatch cover its uses. It currently selects the Java
-  scan path. `--facts stack` reports detected technologies and `--facts loc`
-  reports line counts. This item does not change `project analyze --stack`.
+- The legacy `project scan --stack` selector has been removed. Unified scans
+  use automatic language detection and engine dispatch. `--facts stack` reports
+  detected technologies and `--facts loc` reports line counts.
+  `project analyze --stack` remains available.
 - Keep `--remote-list` as an opt-in for remote version metadata. Treat it
   separately from local dependency graph resolution and move it onto the
   unified scan as engines gain support.
