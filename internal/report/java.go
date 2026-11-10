@@ -20,7 +20,7 @@ var javaView = engineView{
 }
 
 // The Java scan view reads the existing Java v1 fact shape.
-func javaScanTerminal(data Object, out io.Writer, dependencies, tree, color bool) {
+func javaScanTerminal(data Object, out io.Writer, tree, color bool) {
 	style := terminalStyle{color}
 	header := func(title string) { fmt.Fprintln(out, style.heading(title)) }
 	row := func(key string, value any) {
@@ -182,19 +182,44 @@ func javaScanTerminal(data Object, out io.Writer, dependencies, tree, color bool
 		}
 	}
 
-	if dependencies {
-		header("\nDirect dependencies")
-		order, groups := group(declared)
-		for _, key := range order {
-			fmt.Fprintln(out, style.heading("  "+key))
-			for _, d := range groups[key] {
-				fmt.Fprintf(out, "    %s:%s; selected %s; %s\n", str(d, "notation"), str(d, "version"), selectedVersions(data, d), str(d, "source"))
-			}
-		}
-	}
 	if tree {
 		dependencyTreeStyled(data, out, color)
 	}
+}
+
+// Java v1 dependency facts use declarations where the full Java scan uses dependencies.
+func javaDependencyFacts(outcome Object) Object {
+	if str(outcome, "engine") != "java" || str(outcome, "fact") != "dependencies" {
+		return nil
+	}
+	data := field(outcome, "data")
+	if data == nil {
+		return nil
+	}
+	return Object{"dependencies": data["declarations"], "resolution": data["resolution"]}
+}
+
+func writeJavaDirectDependencies(out io.Writer, data Object, color bool) {
+	style := terminalStyle{color}
+	fmt.Fprintln(out, style.heading("Direct dependencies"))
+	order, groups := group(directDeclarations(data))
+	if len(order) == 0 {
+		fmt.Fprintln(out, "  No direct dependencies observed.")
+	}
+	for _, key := range order {
+		fmt.Fprintln(out, style.heading("  "+key))
+		for _, d := range groups[key] {
+			fmt.Fprintf(out, "    %s:%s; selected %s; %s\n", str(d, "notation"), str(d, "version"), selectedVersions(data, d), str(d, "source"))
+		}
+	}
+}
+
+func javaDependencyTable(b *strings.Builder, data Object, declarations []Object) {
+	dependencyRows := [][]string{}
+	for _, d := range declarations {
+		dependencyRows = append(dependencyRows, []string{str(d, "module"), str(d, "configuration"), str(d, "notation"), str(d, "declaredVersion"), selectedVersions(data, d), str(d, "source")})
+	}
+	table(b, []string{"Module", "Configuration", "Dependency", "Declared version", "Selected version", "Source"}, dependencyRows)
 }
 
 func dependencyTree(data Object, out io.Writer) { dependencyTreeStyled(data, out, false) }
@@ -279,11 +304,7 @@ func javaScanMarkdown(data Object, tree bool) string {
 		[]string{"Conflict selections", str(resolution, "conflictCount")},
 		[]string{"Forced overrides", str(resolution, "overrideCount")},
 	))
-	dependencyRows := [][]string{}
-	for _, d := range directDeclarations(data) {
-		dependencyRows = append(dependencyRows, []string{str(d, "module"), str(d, "configuration"), str(d, "notation"), str(d, "declaredVersion"), selectedVersions(data, d), str(d, "source")})
-	}
-	table(&b, []string{"Module", "Configuration", "Dependency", "Declared version", "Selected version", "Source"}, dependencyRows)
+	javaDependencyTable(&b, data, declarations)
 	b.WriteString("Declared and selected versions are distinct observations. Missing values remain unknown.\n\n")
 	if remote := field(data, "remoteVersions"); remote != nil {
 		section(&b, 2, "Remote dependency releases")

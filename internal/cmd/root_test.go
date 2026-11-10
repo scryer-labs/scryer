@@ -37,7 +37,7 @@ func (f *fakeAnalyzer) Analyze(_ context.Context, request contract.AnalyzeReques
 	return contract.Document{Stack: "java", Operation: "analyze", Data: data}, err
 }
 func TestCommandsValidateBeforeInvokingAnalyzers(t *testing.T) {
-	for _, args := range [][]string{{"scan", ".", "--build-tool", "unknown"}, {"scan", ".", "--color", "bad"}, {"analyze", "--before", "HEAD", "--after", ".", "--color", "bad"}, {"analyze", "--before", "HEAD"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "--json", "--verbose"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "--skip-tests", "--test-command", "echo test"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "-o", "bad.txt"}, {"scan", ".", "--stack", "java"}, {"scan", ".", "--facts", "loc", "--resolve"}, {"scan", ".", "--resolve"}} {
+	for _, args := range [][]string{{"scan", ".", "--build-tool", "unknown"}, {"scan", ".", "--color", "bad"}, {"analyze", "--before", "HEAD", "--after", ".", "--color", "bad"}, {"analyze", "--before", "HEAD"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "--json", "--verbose"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "--skip-tests", "--test-command", "echo test"}, {"analyze", "--before", "HEAD", "--after", "HEAD", "-o", "bad.txt"}, {"scan", ".", "--stack", "java"}, {"scan", ".", "--dependencies"}, {"scan", ".", "--facts", "loc", "--resolve"}, {"scan", ".", "--resolve"}} {
 		fake := &fakeAnalyzer{}
 		out, errOut := &bytes.Buffer{}, &bytes.Buffer{}
 		root := NewRoot(&application.Service{Analyzer: fake}, out, errOut)

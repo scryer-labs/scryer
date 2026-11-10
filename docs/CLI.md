@@ -66,8 +66,7 @@ legacy operations and an empty scan fact list.
 
 Project scans select engines automatically based on the detected languages
 and requested facts. The legacy Java report is still available through
-`--static`, `--build-tool`, `--remote-list`, `--dependencies` and
-`--dependency-tree`. These options conflict with `--facts`.
+`--static`, `--build-tool`, `--remote-list` and `--dependency-tree`. These options conflict with `--facts`.
 
 ## Persistent local engine management
 
@@ -156,7 +155,7 @@ scryer project scan ../legacy-java-fixture --facts dependencies --resolve
 The legacy Java report shows a concise summary and, unless requested with `--static`, attempts dependency resolution with the target repository's Wrapper. This evaluates target build configuration and may download dependency metadata/plugins; it does **not** compile, test or package the target. Arbitrary build configuration code can have its own side effects. Use `--static` to inspect local declarations/source signals without executing target configuration or downloading anything.
 
 ```sh
-scryer project scan . --dependencies        # deprecated, Java only, direct declarations by module/configuration
+scryer project scan . --facts dependencies  # direct declarations grouped by module/configuration
 scryer project scan . --dependency-tree     # deprecated, Java only, resolved graph as a tree
 scryer project scan . --facts dependencies --resolve --json # unified dependency facts and graph
 scryer project scan . --static              # local facts only; resolution is not_requested
@@ -165,8 +164,8 @@ scryer project scan . --facts dependencies -o reports/scan.md
 scryer project scan . --facts dependencies --json -o scan.md
 ```
 
-Both Java dependency view flags are deprecated. Use `--facts dependencies --json`
-for direct dependency declarations. Add `--resolve` to explicitly allow the engine to execute the target build
+Use `--facts dependencies` for grouped Java dependency declarations or add
+`--json` for structured facts. Add `--resolve` to explicitly allow the engine to execute the target build
 configuration and return graph nodes and edges. Engines that only support
 static collection return their static facts with a message. The deprecated
 `--dependency-tree` flag still provides the Java-specific tree view.
@@ -341,7 +340,7 @@ Choose a lifecycle that actually reruns the intended tests and produces JUnit XM
 When both Maven and Gradle are present, choose explicitly:
 
 ```sh
-scryer project scan ../external/spring-petclinic-migration --build-tool maven --dependencies
+scryer project scan ../external/spring-petclinic-migration --build-tool maven --json
 scryer project analyze --before <ref> --after <ref> --build-tool maven
 ```
 

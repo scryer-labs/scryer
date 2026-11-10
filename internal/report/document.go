@@ -66,16 +66,16 @@ func JSON(document contract.Document) ([]byte, error) {
 	output.WriteByte('\n')
 	return output.Bytes(), nil
 }
-func Terminal(document contract.Document, out io.Writer, dependencies, tree, verbose, color bool) error {
+func Terminal(document contract.Document, out io.Writer, tree, verbose, color bool) error {
 	data, err := decode(document)
 	if err != nil {
 		return err
 	}
 	if document.Operation == contract.ProjectFactsOperation {
-		return writeProjectFacts(out, data)
+		return writeProjectFacts(out, data, color)
 	}
 	if document.Operation == "scan" {
-		viewFor(document.Stack).scanTerminal(data, out, dependencies, tree, color)
+		viewFor(document.Stack).scanTerminal(data, out, tree, color)
 	} else {
 		analyzeTerminal(data, out, verbose, color, viewFor(document.Stack).analysis)
 	}

@@ -96,7 +96,7 @@ func runAnalysis(cmd *cobra.Command, args []string, service *application.Service
 			return err
 		}
 	} else {
-		if err = report.Terminal(document, cmd.OutOrStdout(), false, false, verbose, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
+		if err = report.Terminal(document, cmd.OutOrStdout(), false, verbose, terminal.UseColor(color, cmd.OutOrStdout())); err != nil {
 			return err
 		}
 	}

@@ -86,25 +86,26 @@ the corresponding migration is ready; CSV input is not a permanent requirement.
 
 ## TD-007: Retire Java-only project dependency flags
 
-- [ ] Status: deprecated, pending migration to the unified dependency report.
+- [ ] Status: data migration verified. Human-readable views and consumer
+  migration remain open.
 
-`project scan --dependencies` and `project scan --dependency-tree` are Java-only
-views. The unified `project scan --facts dependencies` already returns Java's
-direct dependency declarations. Core requests static collection by default. With
-`--resolve`, a Java engine package that declares dependency resolution can
-return the graph produced by Maven or Gradle.
+`project scan --facts dependencies` returns Java's direct dependency
+declarations. It scans statically by default. `--resolve` opts into build-tool
+execution for engines that declare dependency resolution support. The Java
+engine returns resolution status and graph nodes and edges when available.
+Engines that only support static collection return those facts with a message.
 
-Remove both flags once consumers have migrated and the unified report can
-replace their direct dependency and tree views. Verify the replacement against
-a Java fixture before removal.
+Orrery's **Scryer + Java Engine Integration** run
+`20261110T123633569Z-e4313f87` verified both modes in a mixed Java and C++
+fixture. It used a deterministic Maven Wrapper fixture to verify execution
+and graph transport while preserving C++ include facts.
+
+`project scan --dependencies` has been removed. The unified terminal and
+Markdown reports group Java dependency declarations by module and configuration.
+The tree view still uses `--dependency-tree` pending its report migration.
 
 ### Unified dependency scan options
 
-- Keep `dependencies` as the fact name. Scan statically by default and use an
-  explicit option such as `--resolve` to opt into build-tool execution. Return
-  declarations and resolution status, plus graph nodes and edges when available.
-  Core can render those edges as a tree. When an engine only supports static
-  collection, keep its static facts and report that resolution is unsupported.
 - Retire the legacy `project scan --static` flag once the unified scan replaces
   that path. The static mode is the default and resolution is opt-in.
 - The legacy `project scan --stack` selector has been removed. Unified scans
@@ -119,9 +120,8 @@ a Java fixture before removal.
 
 Keep build-tool selection separate from language detection and engine dispatch.
 A project can use Gradle to build C++, for example. Today Core treats
-`--build-tool` as a Java option and only accepts Maven or Gradle. When the
-unified scan gains opt-in resolution, remove this Java-specific routing and
-validation from Core. Each language engine can then select or validate a build
+`--build-tool` as a Java option and only accepts Maven or Gradle. Move build-tool selection onto the unified scan and remove this
+Java-specific routing and validation from Core. Each language engine can then select or validate a build
 tool based on project configuration or detection and its supported adapters.
 
 Dedicated build-tool engines such as `cmake-engine`, `gradle-engine`, and

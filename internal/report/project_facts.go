@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func writeProjectFacts(out io.Writer, data Object) error {
+func writeProjectFacts(out io.Writer, data Object, color bool) error {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Project: %s\n", str(data, "root"))
 	if stack := field(data, "stack"); stack != nil {
@@ -34,6 +34,9 @@ func writeProjectFacts(out io.Writer, data Object) error {
 				fmt.Fprintf(&b, " — %s", text(message))
 			}
 			fmt.Fprintln(&b)
+			if dependencies := javaDependencyFacts(outcome); dependencies != nil {
+				writeJavaDirectDependencies(&b, dependencies, color)
+			}
 			if value := outcome["data"]; value != nil {
 				fmt.Fprintln(&b, jsonText(value))
 			}
@@ -83,6 +86,17 @@ func projectFactsMarkdown(data Object) string {
 			fmt.Fprintf(&b, "%s\n\n", escape(str(outcome, "status")))
 			if message := outcome["message"]; message != nil {
 				fmt.Fprintf(&b, "%s\n\n", escape(text(message)))
+			}
+			if dependencies := javaDependencyFacts(outcome); dependencies != nil {
+				section(&b, 4, "Direct dependencies")
+				order, groups := group(directDeclarations(dependencies))
+				if len(order) == 0 {
+					fmt.Fprintln(&b, "No direct dependencies observed.")
+				}
+				for _, key := range order {
+					section(&b, 5, key)
+					javaDependencyTable(&b, dependencies, groups[key])
+				}
 			}
 			if value := outcome["data"]; value != nil {
 				block(&b, "json", jsonText(value))
