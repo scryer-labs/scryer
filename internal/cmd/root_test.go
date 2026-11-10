@@ -147,7 +147,7 @@ func Test_should_show_scope_commands_when_root_help_is_requested(t *testing.T) {
 func Test_should_return_usage_errors_when_nested_command_arguments_are_invalid(t *testing.T) {
 	for _, args := range [][]string{
 		{"project", "scan", "one", "two"},
-		{"project", "scan", "--facts", "architecture"},
+		{"project", "scan", "--facts", "unknown-fact"},
 		{"project", "scan", "--facts", "stack,loc", "--static"},
 		{"project", "analyze", "--before", "HEAD"},
 		{"workspace", "import"},

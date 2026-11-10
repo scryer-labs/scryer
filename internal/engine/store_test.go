@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"testing"
 	"time"
@@ -76,7 +77,7 @@ func Test_should_persist_complete_package_when_installing_and_keep_source_when_u
 	// A second Store represents a fresh CLI invocation reading persisted state.
 	fresh := Store{Home: store.Home}
 	entries, err := fresh.List(ctx)
-	if err != nil || len(entries) != 1 || entries[0] != installed {
+	if err != nil || len(entries) != 1 || !reflect.DeepEqual(entries[0], installed) {
 		t.Fatal(entries, err)
 	}
 	hidden := source + "-hidden"
@@ -115,7 +116,7 @@ func Test_should_preserve_existing_install_when_reinstallation_is_requested(t *t
 		t.Fatal("existing engine overwritten")
 	}
 	current, err := store.Find(ctx, "java")
-	if err != nil || current != installed {
+	if err != nil || !reflect.DeepEqual(current, installed) {
 		t.Fatal("existing installation changed", err)
 	}
 }

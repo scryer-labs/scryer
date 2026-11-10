@@ -100,12 +100,12 @@ func Test_should_use_explicit_engine_when_discovery_is_configured(t *testing.T) 
 	}
 	t.Setenv("SCRYER_ENGINE_JAVA", executable)
 	client := New("java", io.Discard)
-	resolved, err := client.executable(context.Background())
+	resolved, err := client.entrypoint(context.Background(), "")
 	if err != nil || resolved != executable {
 		t.Fatalf("unexpected executable %q: %v", resolved, err)
 	}
 	client.Executable = filepath.Join(t.TempDir(), "missing-engine")
-	if _, err := client.executable(context.Background()); err == nil {
+	if _, err := client.entrypoint(context.Background(), ""); err == nil {
 		t.Fatal("invalid explicit engine silently fell back")
 	}
 }

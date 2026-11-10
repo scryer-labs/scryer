@@ -128,3 +128,17 @@ The Java report shown here preserves current behavior rather than prescribing th
 schema or scan priorities for C++, Rust, Go or TypeScript. Those engines must follow
 the source/architecture/symbol/relation fact goals in decision 004 instead of copying
 the Java dependency/version-oriented scan implementation.
+
+## Installed capabilities and selected scan facts
+
+A package can declare `capabilities` in its manifest with `languages`,
+`operations` and `scanFacts` arrays. `engine list --json` exposes the effective
+capabilities and their source. Older Java packages expose the legacy scan and
+analyze operations without opt-in filtered facts.
+
+A scan request can include `scan.facts`, a list of fact IDs. A filtered report
+has `schemaVersion`, `root` and a `facts` object keyed by the requested IDs.
+Core uses the installed capabilities to split a project request across engines.
+Core keeps results from other facts and engines when one fact is unsupported.
+Java supports filtered `dependencies` and returns `UNSUPPORTED_FACT` or
+`UNSUPPORTED_OPERATION` for requests outside its capabilities.

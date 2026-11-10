@@ -26,6 +26,19 @@ func writeProjectFacts(out io.Writer, data Object) error {
 		total := field(loc, "total")
 		fmt.Fprintf(&b, "  Total: %s files, %s lines (%s code, %s comments, %s blank)\n", str(total, "files"), str(total, "lines"), str(total, "code"), str(total, "comments"), str(total, "blank"))
 	}
+	if outcomes := objects(data["engineFacts"]); len(outcomes) != 0 {
+		fmt.Fprintln(&b, "\nEngine facts")
+		for _, outcome := range outcomes {
+			fmt.Fprintf(&b, "  %s [%s]: %s", str(outcome, "fact"), factEngine(outcome), str(outcome, "status"))
+			if message := outcome["message"]; message != nil {
+				fmt.Fprintf(&b, " — %s", text(message))
+			}
+			fmt.Fprintln(&b)
+			if value := outcome["data"]; value != nil {
+				fmt.Fprintln(&b, jsonText(value))
+			}
+		}
+	}
 	skipped := field(data, "skipped")
 	fmt.Fprintf(&b, "\nSkipped: %s unknown language, %s binary, %s oversized\n", str(skipped, "unknownLanguage"), str(skipped, "binary"), str(skipped, "oversized"))
 	_, err := io.WriteString(out, b.String())
@@ -63,8 +76,28 @@ func projectFactsMarkdown(data Object) string {
 		rows = append(rows, countRow("Total", field(loc, "total")))
 		table(&b, []string{"Language", "Files", "Lines", "Code", "Comments", "Blank"}, rows)
 	}
+	if outcomes := objects(data["engineFacts"]); len(outcomes) != 0 {
+		section(&b, 2, "Engine facts")
+		for _, outcome := range outcomes {
+			section(&b, 3, str(outcome, "fact")+" ["+factEngine(outcome)+"]")
+			fmt.Fprintf(&b, "%s\n\n", escape(str(outcome, "status")))
+			if message := outcome["message"]; message != nil {
+				fmt.Fprintf(&b, "%s\n\n", escape(text(message)))
+			}
+			if value := outcome["data"]; value != nil {
+				block(&b, "json", jsonText(value))
+			}
+		}
+	}
 	section(&b, 2, "Skipped files")
 	skipped := field(data, "skipped")
 	table(&b, []string{"Unknown language", "Binary", "Oversized"}, [][]string{{str(skipped, "unknownLanguage"), str(skipped, "binary"), str(skipped, "oversized")}})
 	return b.String()
+}
+
+func factEngine(outcome Object) string {
+	if engine, ok := outcome["engine"].(string); ok {
+		return engine
+	}
+	return "project"
 }

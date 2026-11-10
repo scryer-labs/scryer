@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"time"
 )
@@ -16,12 +17,14 @@ var ErrNotInstalled = errors.New("engine is not installed")
 const installRecord = ".scryer-install.json"
 
 type Installation struct {
-	Engine      Identity `json:"engine"`
-	Library     string   `json:"library,omitempty"`
-	Executable  string   `json:"executable"`
-	PackageRoot string   `json:"packageRoot"`
-	SourcePath  string   `json:"sourcePath"`
-	InstalledAt string   `json:"installedAt"`
+	Capabilities     *Capabilities `json:"capabilities,omitempty"`
+	CapabilitySource string        `json:"capabilitySource,omitempty"`
+	Engine           Identity      `json:"engine"`
+	Library          string        `json:"library,omitempty"`
+	Executable       string        `json:"executable"`
+	PackageRoot      string        `json:"packageRoot"`
+	SourcePath       string        `json:"sourcePath"`
+	InstalledAt      string        `json:"installedAt"`
 }
 
 type record struct {
@@ -117,10 +120,16 @@ func (s Store) load(id string) (Installation, error) {
 	if err != nil {
 		return Installation{}, err
 	}
-	if metadata.SchemaVersion != 1 || metadata.Manifest != manifest || manifest.Engine.ID != id {
+	if metadata.SchemaVersion != 1 || !reflect.DeepEqual(metadata.Manifest, manifest) || manifest.Engine.ID != id {
 		return Installation{}, fmt.Errorf("installation metadata does not match package")
 	}
 	installation := Installation{Engine: manifest.Engine, PackageRoot: root, SourcePath: metadata.SourcePath, InstalledAt: metadata.InstalledAt}
+	if manifest.Capabilities != nil {
+		installation.Capabilities, installation.CapabilitySource = manifest.Capabilities, "manifest"
+	} else if manifest.Engine.ID == "java" {
+		installation.Capabilities = &Capabilities{Languages: []string{"Java"}, Operations: []string{"scan", "analyze"}, ScanFacts: []string{}}
+		installation.CapabilitySource = "legacy"
+	}
 	if manifest.Executable != "" {
 		installation.Executable = filepath.Join(root, filepath.FromSlash(manifest.Executable))
 	}

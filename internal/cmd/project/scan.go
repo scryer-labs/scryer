@@ -3,6 +3,7 @@ package project
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/application"
@@ -18,8 +19,9 @@ func newScanCommand(service *application.Service) *cobra.Command {
 	var jsonOutput, dependencies, tree bool
 	var facts string
 	var useCore, collectStack, collectLOC bool
+	var engineFacts []string
 	command := &cobra.Command{Use: "scan [path]", Short: "Collect project facts",
-		Long: "Collect stack and line counts by default. Select either with --facts. Explicit Java scan options select the Java engine. Path defaults to the current directory.", Args: cobra.MaximumNArgs(1)}
+		Long: "Collect stack and line counts by default. Select facts with --facts. Explicit Java scan options select the Java engine. Path defaults to the current directory.", Args: cobra.MaximumNArgs(1)}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
 		javaFlag := ""
 		for _, flag := range []string{"stack", "static", "remote-list", "build-tool", "dependencies", "dependency-tree"} {
@@ -30,19 +32,26 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		}
 		useCore = javaFlag == ""
 		collectStack, collectLOC = true, true
+		engineFacts = nil
 		if cmd.Flags().Changed("facts") {
 			if javaFlag != "" {
 				return fmt.Errorf("--%s cannot be combined with --facts", javaFlag)
 			}
 			collectStack, collectLOC = false, false
 			for _, fact := range strings.Split(facts, ",") {
-				switch strings.TrimSpace(fact) {
+				fact = strings.TrimSpace(fact)
+				switch fact {
 				case "stack":
 					collectStack = true
 				case "loc":
 					collectLOC = true
 				default:
-					return fmt.Errorf("unsupported fact %q; choose stack or loc", fact)
+					if !contract.IsEngineScanFact(fact) {
+						return fmt.Errorf("unknown scan fact %q", fact)
+					}
+					if !slices.Contains(engineFacts, fact) {
+						engineFacts = append(engineFacts, fact)
+					}
 				}
 			}
 		}
@@ -62,7 +71,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		var document contract.Document
 		var err error
 		if useCore {
-			document, err = service.ScanFacts(cmd.Context(), request.Repository, collectStack, collectLOC)
+			document, err = service.ScanFacts(cmd.Context(), request.Repository, collectStack, collectLOC, engineFacts)
 		} else {
 			document, err = service.Scan(cmd.Context(), stack, request)
 		}
@@ -99,7 +108,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		return nil
 	}
 	flags := command.Flags()
-	flags.StringVar(&facts, "facts", "", "Collect stack, loc, or both without an engine")
+	flags.StringVar(&facts, "facts", "", "Collect selected facts (for example stack,loc,dependencies)")
 	flags.StringVar(&stack, "stack", "java", "Technology stack (currently java)")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle")
 	flags.BoolVar(&request.Static, "static", false, "Skip build-model execution")

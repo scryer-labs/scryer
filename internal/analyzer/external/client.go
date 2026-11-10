@@ -49,7 +49,7 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 	if err != nil {
 		return contract.Document{}, err
 	}
-	executable, err := c.executable(ctx)
+	executable, err := c.entrypoint(ctx, request.Operation)
 	if err != nil {
 		return contract.Document{}, err
 	}
@@ -87,7 +87,11 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 	if response.Error != nil {
 		return contract.Document{}, fmt.Errorf("%s: %s", response.Error.Code, response.Error.Message)
 	}
-	document := contract.Document{Stack: c.Stack(), Operation: request.Operation, Data: response.Report}
+	operation := request.Operation
+	if request.Scan != nil && len(request.Scan.Facts) != 0 {
+		operation = contract.EngineFactsOperation
+	}
+	document := contract.Document{Stack: c.Stack(), Operation: operation, Data: response.Report}
 	if err := document.Validate(); err != nil {
 		return contract.Document{}, err
 	}
@@ -109,7 +113,7 @@ func (c *Client) call(ctx context.Context, request contract.Request) (contract.D
 var _ contract.Analyzer = (*Client)(nil)
 
 // Explicit overrides win, followed by the installed package and development PATH discovery.
-func (c *Client) executable(ctx context.Context) (string, error) {
+func (c *Client) entrypoint(ctx context.Context, operation string) (string, error) {
 	executable := c.Executable
 	if executable == "" {
 		key := "SCRYER_ENGINE_" + strings.ToUpper(strings.ReplaceAll(c.EngineID, "-", "_"))
@@ -122,6 +126,9 @@ func (c *Client) executable(ctx context.Context) (string, error) {
 		}
 		installed, err := store.Find(ctx, c.EngineID)
 		if err == nil {
+			if operation != "" && installed.Capabilities != nil && !installed.Capabilities.Supports(operation) {
+				return "", fmt.Errorf("UNSUPPORTED_OPERATION: engine %q does not support %q", c.EngineID, operation)
+			}
 			if installed.Library != "" {
 				return installed.Library, nil
 			}

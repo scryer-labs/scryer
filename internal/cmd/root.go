@@ -16,6 +16,8 @@ import (
 	enginecmd "github.com/edwardnoaland/scryer/internal/cmd/engine"
 	projectcmd "github.com/edwardnoaland/scryer/internal/cmd/project"
 	workspacecmd "github.com/edwardnoaland/scryer/internal/cmd/workspace"
+	"github.com/edwardnoaland/scryer/internal/contract"
+	"github.com/edwardnoaland/scryer/internal/engine"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +60,17 @@ func wrapCommandValidation(command *cobra.Command) {
 func Execute() int {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	root := NewRoot(&application.Service{Analyzer: external.New("java", os.Stderr)}, os.Stdout, os.Stderr)
+	root := NewRoot(&application.Service{
+		Analyzer: external.New("java", os.Stderr),
+		NewInstalledAnalyzer: func(installed engine.Installation) contract.Analyzer {
+			client := external.New(installed.Engine.ID, os.Stderr)
+			client.Executable = installed.Library
+			if client.Executable == "" {
+				client.Executable = installed.Executable
+			}
+			return client
+		},
+	}, os.Stdout, os.Stderr)
 	if err := root.ExecuteContext(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, "scryer:", err)
 		return exitCode(err)

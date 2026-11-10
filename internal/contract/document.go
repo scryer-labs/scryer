@@ -17,6 +17,8 @@ func (d Document) Validate() error {
 	}
 	required := map[string]string{}
 	switch d.Operation {
+	case EngineFactsOperation:
+		required = map[string]string{"root": "string", "facts": "object"}
 	case ProjectFactsOperation:
 		required = map[string]string{"root": "string", "skipped": "object"}
 		for _, name := range []string{"stack", "loc"} {
@@ -24,8 +26,11 @@ func (d Document) Validate() error {
 				required[name] = "object"
 			}
 		}
+		if _, ok := report["engineFacts"]; ok {
+			required["engineFacts"] = "array"
+		}
 		if len(required) == 2 {
-			return fmt.Errorf("project facts require stack or loc")
+			return fmt.Errorf("project facts require at least one result section")
 		}
 
 	case "scan":

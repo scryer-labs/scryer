@@ -35,7 +35,7 @@ scryer project scan /path/to/project --facts loc --json
 scryer project scan --facts stack -o stack.md
 ```
 
-Select `stack`, `loc`, or both. Stack lists observed file languages and paths
+Select `stack`, `loc`, and engine facts such as `dependencies` or `ownership`. Stack lists observed file languages and paths
 to recognized build manifests. LOC groups physical lines by detected file
 language and counts code, comments and blanks using the embedded scc processor.
 The JSON includes the selected sections and skipped-file counters. Terminal
@@ -49,6 +49,21 @@ skipped. Files over 8 MiB and files containing a NUL byte are excluded from coun
 The language classifier uses filenames, shebangs and content heuristics.
 
 Default and explicitly selected stack/LOC facts run without installed engines.
+For an engine fact, Core matches the detected languages to installed package
+capabilities. `scryer engine list --json` exposes operations and scan facts for
+each installed package. Java declares `scan`, `analyze` and the selectable
+`dependencies` fact. Fact selection uses Java static dependency declarations.
+
+```sh
+scryer project scan --facts loc,dependencies,ownership --json
+```
+
+The result includes LOC and per-engine fact outcomes. An unsupported fact does
+not discard successful results. JSON uses `engineFacts` for collected,
+unsupported, failed and no-matching-engine outcomes. An outcome without an engine
+ID summarizes coverage for the project. For older Java packages whose manifests lack capabilities, Core lists their
+legacy operations and an empty scan fact list.
+
 Use `--stack java` for the existing Java report. Explicit `--static`,
 `--build-tool`, `--remote-list`, `--dependencies` and `--dependency-tree`
 also select the Java path. These options conflict with `--facts`.

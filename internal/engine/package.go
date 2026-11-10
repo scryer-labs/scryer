@@ -18,12 +18,13 @@ var engineID = regexp.MustCompile(`^[a-z][a-z0-9-]*$`)
 
 // Manifest describes a relocatable local package, independently of scan report data.
 type Manifest struct {
-	SchemaVersion int      `json:"schemaVersion"`
-	Engine        Identity `json:"engine"`
-	Library       string   `json:"library,omitempty"`
-	Executable    string   `json:"executable"`
-	OS            string   `json:"os"`
-	Arch          string   `json:"arch"`
+	SchemaVersion int           `json:"schemaVersion"`
+	Capabilities  *Capabilities `json:"capabilities,omitempty"`
+	Engine        Identity      `json:"engine"`
+	Library       string        `json:"library,omitempty"`
+	Executable    string        `json:"executable"`
+	OS            string        `json:"os"`
+	Arch          string        `json:"arch"`
 }
 
 func validateID(id string) error {

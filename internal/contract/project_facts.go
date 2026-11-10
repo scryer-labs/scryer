@@ -1,8 +1,29 @@
 package contract
 
+import "encoding/json"
+
 const ProjectFactsOperation = "project-facts"
+const EngineFactsOperation = "engine-facts"
+
+type FactOutcome struct {
+	Fact    string          `json:"fact"`
+	Engine  string          `json:"engine,omitempty"`
+	Status  string          `json:"status"`
+	Data    json.RawMessage `json:"data,omitempty"`
+	Message string          `json:"message,omitempty"`
+}
+
+func IsEngineScanFact(fact string) bool {
+	switch fact {
+	case "architecture", "dependencies", "call-graph", "ownership", "test-coverage":
+		return true
+	default:
+		return false
+	}
+}
 
 type ProjectFacts struct {
+	EngineFacts   []FactOutcome `json:"engineFacts,omitempty"`
 	SchemaVersion int           `json:"schemaVersion"`
 	Root          string        `json:"root"`
 	Stack         *ProjectStack `json:"stack,omitempty"`

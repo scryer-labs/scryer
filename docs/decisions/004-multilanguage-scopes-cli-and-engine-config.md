@@ -124,6 +124,20 @@ selected projects/files, and output filtering. Missing collection, unsupported f
 partial resolution and filtered-out data must not be confused. Exact project/file/
 relationship filters and traversal limits are not finalized.
 
+For a mixed-language project, Core matches each requested fact to every relevant
+installed engine that declares support for it. Each engine receives only the
+intersection of its capabilities and the requested facts. Core merges successful
+results with language and engine provenance and reports unsupported facts for
+each relevant engine that lacks them. A fact unsupported by all relevant engines
+is reported as unsupported for the current stack. Other requested facts still
+return their results, including Core facts such as stack and LOC. Keep a fact
+that was never collected distinct from a collected fact with no findings.
+
+The installed package manifest declares its operations and scan fact capabilities.
+Core dispatches scan and analyze through the existing C ABI execute entrypoint.
+Engine availability, unsupported capabilities and gaps in an executed scan remain
+separate outcomes. A Core upgrade uses the capabilities of the installed package.
+
 ## Analyze and language-specific execution
 
 Analyze is a separate operation, not `scan --analyze`. It compares explicit before/
