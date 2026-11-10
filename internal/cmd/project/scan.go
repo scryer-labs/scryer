@@ -37,23 +37,11 @@ func newScanCommand(service *application.Service) *cobra.Command {
 			if javaFlag != "" {
 				return fmt.Errorf("--%s cannot be combined with --facts", javaFlag)
 			}
-			collectStack, collectLOC = false, false
-			for _, fact := range strings.Split(facts, ",") {
-				fact = strings.TrimSpace(fact)
-				switch fact {
-				case "stack":
-					collectStack = true
-				case "loc":
-					collectLOC = true
-				default:
-					if !contract.IsEngineScanFact(fact) {
-						return fmt.Errorf("unknown scan fact %q", fact)
-					}
-					if !slices.Contains(engineFacts, fact) {
-						engineFacts = append(engineFacts, fact)
-					}
-				}
+			selection, err := contract.SelectScanFacts(facts)
+			if err != nil {
+				return err
 			}
+			collectStack, collectLOC, engineFacts = selection.Stack, selection.LOC, selection.EngineFacts
 		}
 		if resolve && !slices.Contains(engineFacts, "dependencies") {
 			return fmt.Errorf("--resolve requires --facts dependencies")

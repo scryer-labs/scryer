@@ -25,7 +25,7 @@ func NewRoot(service *application.Service, out, errOut io.Writer) *cobra.Command
 	root := &cobra.Command{Use: "scryer", Short: "Repository facts and change/test evidence", SilenceUsage: true, SilenceErrors: true}
 	root.SetOut(out)
 	root.SetErr(errOut)
-	root.AddCommand(projectcmd.New(service), workspacecmd.New(), enginecmd.New())
+	root.AddCommand(projectcmd.New(service), workspacecmd.New(service), enginecmd.New())
 
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error { return usageError{err} })
 	wrapCommandValidation(root)

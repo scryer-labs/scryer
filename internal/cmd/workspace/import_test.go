@@ -17,7 +17,7 @@ func TestWorkspaceDoesNotRequireProjectRefsOrAnalyzer(t *testing.T) {
 	if err := os.WriteFile(d, []byte("source,target\nb,a\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	command := New()
+	command := New(nil)
 	var out bytes.Buffer
 	command.SetOut(&out)
 	command.SetArgs([]string{"import", "--projects", p, "--dependencies", d})
@@ -37,7 +37,7 @@ func TestWorkspaceJSONFileAndStdout(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	command := New()
+	command := New(nil)
 	var out, progress bytes.Buffer
 	command.SetOut(&out)
 	command.SetErr(&progress)

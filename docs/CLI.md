@@ -10,6 +10,7 @@ registered today; workspace CSV processing is Go-only. Future features belong in
 ```text
 scryer project scan [path]
 scryer project analyze [path] --before <ref> --after <ref|.>
+scryer workspace scan [path]
 scryer workspace import --projects <projects.csv> --dependencies <dependencies.csv>
 scryer engine list
 scryer engine install <engine> [engines...]
@@ -18,14 +19,35 @@ scryer engine uninstall <engine>
 
 Project paths default to the current directory. Project scan collects stack and LOC
 by default. Explicit Java scan options select the existing Java engine. On that
-path, `--static` skips build-model resolution. Native workspace scan/configuration
-management and release/source engine installation are pending.
+path, `--static` skips build-model resolution. Workspace configuration commands
+and release/source engine installation are pending.
 
 `workspace import` is a temporary external-CSV adapter: it normalizes and reports
 facts without scanning code, registering projects or writing workspace config.
 Old top-level `scan`, `analyze` and `analyze workspace` have been removed, not hidden
 or aliased. Consumers must use the scope-first commands. Orrery's new Scryer provider
 version adapts the commands now rather than waiting for Java-engine extraction.
+
+## Workspace scan
+
+List member paths relative to the workspace root in `.scryer/workspace.yaml`:
+
+```yaml
+projects:
+  - scriptorium-brush
+  - scriptorium-inkstone
+  - scriptorium-felt
+```
+
+Run `scryer workspace scan --facts dependencies --json` at the workspace root,
+or pass the root as the optional path. The scan forwards selected facts to each
+member and defaults to `stack,loc`. Only configured members participate.
+
+Cross-project dependency matching currently uses declared CMake Git library
+references. IPC and REST APIs are outside this scan's scope. The report keeps
+the original declaration and classifies its normalized repository identity as
+`local`, `external` or `ambiguous`. A local match names the workspace member
+path. Ambiguous matches list candidates and do not select one.
 
 ## Engine-free project facts
 
