@@ -92,6 +92,7 @@ func projectFactsMarkdown(data Object) string {
 	}
 	if outcomes := objects(data["engineFacts"]); len(outcomes) != 0 {
 		section(&b, 2, "Engine facts")
+		componentNames := cppComponentNames(outcomes)
 		for _, outcome := range outcomes {
 			section(&b, 3, str(outcome, "fact")+" ["+factEngine(outcome)+"]")
 			fmt.Fprintf(&b, "%s\n\n", escape(str(outcome, "status")))
@@ -116,7 +117,14 @@ func projectFactsMarkdown(data Object) string {
 				}
 			}
 			if value := outcome["data"]; value != nil {
+				structured := factEngine(outcome) == "cpp" && cppMarkdown(&b, str(outcome, "fact"), object(value), componentNames)
+				if structured {
+					b.WriteString("<details><summary>Complete JSON facts</summary>\n\n")
+				}
 				block(&b, "json", jsonText(value))
+				if structured {
+					b.WriteString("</details>\n\n")
+				}
 			}
 		}
 	}

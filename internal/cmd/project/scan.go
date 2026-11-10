@@ -49,6 +49,13 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		if request.BuildTool != "" && request.BuildTool != "maven" && request.BuildTool != "gradle" {
 			return fmt.Errorf("--build-tool must be maven or gradle")
 		}
+		if output != "" {
+			switch strings.ToLower(filepath.Ext(output)) {
+			case "", ".md", ".html":
+			default:
+				return fmt.Errorf("-o must use .md or .html")
+			}
+		}
 		if color != "auto" && color != "always" && color != "never" {
 			return fmt.Errorf("--color must be auto, always or never")
 		}
@@ -83,7 +90,14 @@ func newScanCommand(service *application.Service) *cobra.Command {
 			}
 		}
 		if output != "" {
-			data, err := report.Markdown(document)
+			var data []byte
+			format := "Markdown"
+			if strings.EqualFold(filepath.Ext(output), ".html") {
+				format = "HTML"
+				data, err = report.ProjectScanHTML(document)
+			} else {
+				data, err = report.Markdown(document)
+			}
 			if err != nil {
 				return err
 			}
@@ -94,7 +108,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 			if err = report.WriteFile(absolute, data); err != nil {
 				return err
 			}
-			fmt.Fprintln(cmd.ErrOrStderr(), "scryer: Markdown report written to "+absolute)
+			fmt.Fprintln(cmd.ErrOrStderr(), "scryer: "+format+" report written to "+absolute)
 		}
 		return nil
 	}
@@ -106,6 +120,6 @@ func newScanCommand(service *application.Service) *cobra.Command {
 	flags.BoolVar(&request.RemoteList, "remote-list", false, "Compare dependency and Java/build-tool releases with remote metadata")
 	flags.BoolVar(&jsonOutput, "json", false, "Print report JSON")
 	flags.StringVar(&color, "color", "auto", "auto, always or never")
-	flags.StringVarP(&output, "output", "o", "", "Save Markdown report")
+	flags.StringVarP(&output, "output", "o", "", "Save a Markdown or HTML report")
 	return command
 }

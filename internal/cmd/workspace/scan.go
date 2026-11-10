@@ -3,6 +3,7 @@ package workspace
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/application"
@@ -12,7 +13,7 @@ import (
 )
 
 func newScanCommand(service *application.Service) *cobra.Command {
-	var facts string
+	var facts, output string
 	var jsonOutput bool
 	var selection contract.ScanSelection
 	command := &cobra.Command{
@@ -20,6 +21,13 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		Short: "Scan projects listed in .scryer/workspace.yaml",
 		Args:  cobra.MaximumNArgs(1),
 		PreRunE: func(_ *cobra.Command, _ []string) error {
+			if output != "" {
+				switch strings.ToLower(filepath.Ext(output)) {
+				case "", ".md", ".html":
+				default:
+					return fmt.Errorf("-o must use .md or .html")
+				}
+			}
 			var err error
 			selection, err = contract.SelectScanFacts(facts)
 			return err
@@ -32,6 +40,21 @@ func newScanCommand(service *application.Service) *cobra.Command {
 			result, err := service.ScanWorkspace(cmd.Context(), root, selection)
 			if err != nil {
 				return err
+			}
+			if output != "" {
+				var data []byte
+				if strings.EqualFold(filepath.Ext(output), ".html") {
+					data, err = report.ScanHTML(result)
+				} else {
+					data, err = report.WorkspaceScanMarkdown(result)
+				}
+				if err != nil {
+					return err
+				}
+				if err := report.WriteFile(output, data); err != nil {
+					return err
+				}
+				fmt.Fprintln(cmd.ErrOrStderr(), "scryer: report written to "+output)
 			}
 			if jsonOutput {
 				encoder := json.NewEncoder(cmd.OutOrStdout())
@@ -69,5 +92,6 @@ func newScanCommand(service *application.Service) *cobra.Command {
 	}
 	command.Flags().StringVar(&facts, "facts", "stack,loc", "Collect selected facts")
 	command.Flags().BoolVar(&jsonOutput, "json", false, "Print report JSON")
+	command.Flags().StringVarP(&output, "output", "o", "", "Save a Markdown or HTML report")
 	return command
 }

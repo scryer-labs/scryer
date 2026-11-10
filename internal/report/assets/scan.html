@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scryer · Dependency explorer</title>
+<style>__SCAN_CSS__</style>
+</head>
+<body>
+<header class="masthead">
+  <div class="identity"><span class="mark" aria-hidden="true">S</span><span>Scryer<span class="subbrand"> / Dependency explorer</span></span></div>
+  <span class="badge">OFFLINE REPORT</span>
+</header>
+<main>
+  <section class="intro">
+    <p class="eyebrow">STRUCTURAL FACTS</p>
+    <h1>Dependency explorer</h1>
+    <p id="scope">Follow declared components down to source files and call sites.</p>
+  </section>
+  <div class="toolbar">
+    <label>Project <select id="project"></select></label>
+    <p id="repository"></p>
+  </div>
+  <nav id="workspace" aria-label="Workspace references" hidden></nav>
+  <div class="canvas" id="canvas">
+    <svg class="connections" id="connections" aria-hidden="true"></svg>
+    <section class="lane" id="architecture"><header><span>01</span><h2>Architecture</h2></header><div class="cards"></div></section>
+    <section class="lane" id="files"><header><span>02</span><h2>Files</h2></header><div class="cards"></div></section>
+    <section class="lane" id="calls"><header><span>03</span><h2>Call graph</h2></header><div class="cards"></div></section>
+  </div>
+  <aside id="detail" class="detail" aria-live="polite"></aside>
+  <details class="raw"><summary>Complete project facts</summary><pre id="facts"></pre></details>
+</main>
+<script type="application/json" id="scan-data">__SCAN_DATA__</script>
+<script>__SCAN_JS__</script>
+</body>
+</html>
