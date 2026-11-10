@@ -97,3 +97,16 @@ the resolved graph there.
 Remove both flags once the unified scan can explicitly opt into build-tool
 resolution and expose the resolved graph in its reports. Keep static collection
 as the default and verify the replacement against a Java fixture before removal.
+
+### Build-tool selection
+
+Keep build-tool selection separate from language detection and engine dispatch.
+A project can use Gradle to build C++, for example. Today Core treats
+`--build-tool` as a Java option and only accepts Maven or Gradle. When the
+unified scan gains opt-in resolution, remove this Java-specific routing and
+validation from Core. Each language engine can then select or validate a build
+tool based on project configuration or detection and its supported adapters.
+
+Dedicated build-tool engines such as `cmake-engine`, `gradle-engine`, and
+`maven-engine` are a possible future direction if build facts need to be shared
+across language engines. There are currently no plans to introduce them.
