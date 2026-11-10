@@ -12,13 +12,13 @@ import (
 	"github.com/edwardnoaland/scryer/internal/projectfacts"
 )
 
-func (s *Service) ScanFacts(ctx context.Context, directory string, stack, loc bool, requested []string) (contract.Document, error) {
+func (s *Service) ScanFacts(ctx context.Context, directory string, stack, loc bool, requested []string, resolve bool) (contract.Document, error) {
 	facts, err := projectfacts.Collect(ctx, directory, stack || len(requested) != 0, loc)
 	if err != nil {
 		return contract.Document{}, err
 	}
 	if len(requested) != 0 {
-		facts.EngineFacts, err = s.collectEngineFacts(ctx, facts, requested)
+		facts.EngineFacts, err = s.collectEngineFacts(ctx, facts, requested, resolve)
 		if err != nil {
 			return contract.Document{}, err
 		}
@@ -29,7 +29,7 @@ func (s *Service) ScanFacts(ctx context.Context, directory string, stack, loc bo
 	return contract.NewDocument("", contract.ProjectFactsOperation, facts)
 }
 
-func (s *Service) collectEngineFacts(ctx context.Context, project contract.ProjectFacts, requested []string) ([]contract.FactOutcome, error) {
+func (s *Service) collectEngineFacts(ctx context.Context, project contract.ProjectFacts, requested []string, resolve bool) ([]contract.FactOutcome, error) {
 	store, err := engine.DefaultStore()
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func (s *Service) collectEngineFacts(ctx context.Context, project contract.Proje
 		if len(selected) == 0 {
 			continue
 		}
-		results := s.scanInstalled(ctx, item, project.Root, selected)
+		results := s.scanInstalled(ctx, item, project.Root, selected, resolve)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
@@ -86,7 +86,8 @@ func matchesProject(capabilities *engine.Capabilities, stack *contract.ProjectSt
 	return false
 }
 
-func (s *Service) scanInstalled(ctx context.Context, installed engine.Installation, root string, selected []string) []contract.FactOutcome {
+func (s *Service) scanInstalled(ctx context.Context, installed engine.Installation, root string, selected []string, resolve bool) []contract.FactOutcome {
+	resolveDependencies := resolve && installed.Capabilities.ResolveDependencies && slices.Contains(selected, "dependencies")
 	var analyzer contract.Analyzer
 	if s.NewInstalledAnalyzer != nil {
 		analyzer = s.NewInstalledAnalyzer(installed)
@@ -100,7 +101,7 @@ func (s *Service) scanInstalled(ctx context.Context, installed engine.Installati
 		err = fmt.Errorf("engine execution is unavailable")
 	} else {
 		var document contract.Document
-		document, err = analyzer.Scan(ctx, contract.ScanRequest{Repository: root, Static: true, Facts: selected})
+		document, err = analyzer.Scan(ctx, contract.ScanRequest{Repository: root, Static: !resolveDependencies, Facts: selected})
 		if err == nil {
 			err = json.Unmarshal(document.Data, &data)
 		}
@@ -115,6 +116,9 @@ func (s *Service) scanInstalled(ctx context.Context, installed engine.Installati
 			outcome.Status, outcome.Message, outcome.Data = "failed", err.Error(), nil
 		} else if len(outcome.Data) == 0 || string(outcome.Data) == "null" {
 			outcome.Status, outcome.Message, outcome.Data = "failed", "engine omitted the requested fact", nil
+		}
+		if outcome.Status == "collected" && fact == "dependencies" && resolve && !resolveDependencies {
+			outcome.Message = "engine does not declare support for dependency resolution; returned static facts"
 		}
 		outcomes = append(outcomes, outcome)
 	}

@@ -86,17 +86,17 @@ the corresponding migration is ready; CSV input is not a permanent requirement.
 
 ## TD-007: Retire Java-only project dependency flags
 
-- [ ] Status: deprecated, pending resolved dependency support in the unified fact scan.
+- [ ] Status: deprecated, pending migration to the unified dependency report.
 
 `project scan --dependencies` and `project scan --dependency-tree` are Java-only
 views. The unified `project scan --facts dependencies` already returns Java's
-direct dependency declarations. Core currently requests static collection on
-that path, so the Java engine skips Maven or Gradle resolution and cannot return
-the resolved graph there.
+direct dependency declarations. Core requests static collection by default. With
+`--resolve`, a Java engine package that declares dependency resolution can
+return the graph produced by Maven or Gradle.
 
-Remove both flags once the unified scan can explicitly opt into build-tool
-resolution and expose the resolved graph in its reports. Keep static collection
-as the default and verify the replacement against a Java fixture before removal.
+Remove both flags once consumers have migrated and the unified report can
+replace their direct dependency and tree views. Verify the replacement against
+a Java fixture before removal.
 
 ### Unified dependency scan options
 

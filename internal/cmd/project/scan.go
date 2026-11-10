@@ -16,7 +16,7 @@ import (
 func newScanCommand(service *application.Service) *cobra.Command {
 	var request contract.ScanRequest
 	var stack, output, color string
-	var jsonOutput, dependencies, tree bool
+	var jsonOutput, dependencies, tree, resolve bool
 	var facts string
 	var useCore, collectStack, collectLOC bool
 	var engineFacts []string
@@ -55,6 +55,9 @@ func newScanCommand(service *application.Service) *cobra.Command {
 				}
 			}
 		}
+		if resolve && !slices.Contains(engineFacts, "dependencies") {
+			return fmt.Errorf("--resolve requires --facts dependencies")
+		}
 		if request.BuildTool != "" && request.BuildTool != "maven" && request.BuildTool != "gradle" {
 			return fmt.Errorf("--build-tool must be maven or gradle")
 		}
@@ -71,7 +74,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		var document contract.Document
 		var err error
 		if useCore {
-			document, err = service.ScanFacts(cmd.Context(), request.Repository, collectStack, collectLOC, engineFacts)
+			document, err = service.ScanFacts(cmd.Context(), request.Repository, collectStack, collectLOC, engineFacts, resolve)
 		} else {
 			document, err = service.Scan(cmd.Context(), stack, request)
 		}
@@ -109,6 +112,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 	}
 	flags := command.Flags()
 	flags.StringVar(&facts, "facts", "", "Collect selected facts (for example stack,loc,dependencies)")
+	flags.BoolVar(&resolve, "resolve", false, "Allow build-tool execution to resolve dependency graphs")
 	flags.StringVar(&stack, "stack", "java", "Technology stack (currently java)")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle")
 	flags.BoolVar(&request.Static, "static", false, "Skip build-model execution")

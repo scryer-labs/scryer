@@ -4,9 +4,10 @@ import "slices"
 
 // Capabilities belong to an installed package version.
 type Capabilities struct {
-	Languages  []string `json:"languages"`
-	Operations []string `json:"operations"`
-	ScanFacts  []string `json:"scanFacts"`
+	ResolveDependencies bool     `json:"resolveDependencies,omitempty"`
+	Languages           []string `json:"languages"`
+	Operations          []string `json:"operations"`
+	ScanFacts           []string `json:"scanFacts"`
 }
 
 func (c *Capabilities) Supports(operation string) bool {

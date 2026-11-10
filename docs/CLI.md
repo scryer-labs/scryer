@@ -165,8 +165,10 @@ scryer project scan . --stack java --json -o scan.md     # JSON stdout plus a Ma
 ```
 
 Both Java dependency view flags are deprecated. Use `--facts dependencies --json`
-for direct dependency declarations. The unified fact scan is currently static;
-keep using `--dependency-tree` when you need a resolved Java dependency graph.
+for direct dependency declarations. Add `--resolve` to explicitly allow the engine to execute the target build
+configuration and return graph nodes and edges. Engines that only support
+static collection return their static facts with a message. The deprecated
+`--dependency-tree` flag still provides the Java-specific tree view.
 See [TD-007](TECH-DEBT.md#td-007-retire-java-only-project-dependency-flags).
 
 `-o <OUTPUT_FILE>` (alias `--output`) writes UTF-8 Markdown, creates missing parent directories and replaces an existing report. The terminal/JSON output is retained; the file confirmation goes to stderr. Markdown includes modules, all observed direct dependencies with declared/selected versions, source/test facts, suggested commands and all collection notes/failures. `--dependency-tree` additionally includes a plain-text tree in the file. Reports have no terminal color codes. Collection status and unknown facts remain explicit; exporting a report does not verify the target build or tests.
