@@ -43,17 +43,20 @@ func newScanCommand(service *application.Service) *cobra.Command {
 			}
 			collectStack, collectLOC, engineFacts = selection.Stack, selection.LOC, selection.EngineFacts
 		}
-		if resolve && !slices.Contains(engineFacts, "dependencies") {
-			return fmt.Errorf("--resolve requires --facts dependencies")
+		if resolve && !slices.ContainsFunc(engineFacts, contract.IsResolvableScanFact) {
+			return fmt.Errorf("--resolve requires dependencies, files or call-graph in --facts")
+		}
+		if request.CompileCommands != "" && (!resolve || !slices.ContainsFunc(engineFacts, func(fact string) bool { return fact == "files" || fact == "call-graph" })) {
+			return fmt.Errorf("--compile-commands requires --resolve and files or call-graph in --facts")
 		}
 		if request.BuildTool != "" && request.BuildTool != "maven" && request.BuildTool != "gradle" {
 			return fmt.Errorf("--build-tool must be maven or gradle")
 		}
 		if output != "" {
 			switch strings.ToLower(filepath.Ext(output)) {
-			case "", ".md", ".html":
+			case "", ".md":
 			default:
-				return fmt.Errorf("-o must use .md or .html")
+				return fmt.Errorf("-o must use .md")
 			}
 		}
 		if color != "auto" && color != "always" && color != "never" {
@@ -69,7 +72,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		var document contract.Document
 		var err error
 		if useCore {
-			document, err = service.ScanFacts(cmd.Context(), request.Repository, collectStack, collectLOC, engineFacts, resolve)
+			document, err = service.ScanFacts(cmd.Context(), request.Repository, collectStack, collectLOC, engineFacts, resolve, request.CompileCommands)
 		} else {
 			document, err = service.Scan(cmd.Context(), "java", request)
 		}
@@ -90,14 +93,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 			}
 		}
 		if output != "" {
-			var data []byte
-			format := "Markdown"
-			if strings.EqualFold(filepath.Ext(output), ".html") {
-				format = "HTML"
-				data, err = report.ProjectScanHTML(document)
-			} else {
-				data, err = report.Markdown(document)
-			}
+			data, err := report.Markdown(document)
 			if err != nil {
 				return err
 			}
@@ -108,18 +104,19 @@ func newScanCommand(service *application.Service) *cobra.Command {
 			if err = report.WriteFile(absolute, data); err != nil {
 				return err
 			}
-			fmt.Fprintln(cmd.ErrOrStderr(), "scryer: "+format+" report written to "+absolute)
+			fmt.Fprintln(cmd.ErrOrStderr(), "scryer: Markdown report written to "+absolute)
 		}
 		return nil
 	}
 	flags := command.Flags()
 	flags.StringVar(&facts, "facts", "", "Collect selected facts (for example stack,loc,dependencies)")
-	flags.BoolVar(&resolve, "resolve", false, "Allow build-tool execution to resolve dependency graphs")
+	flags.BoolVar(&resolve, "resolve", false, "Allow build configuration and semantic resolution")
+	flags.StringVar(&request.CompileCommands, "compile-commands", "", "Select a C++ compilation database for --resolve")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle")
 	flags.BoolVar(&request.Static, "static", false, "Skip build-model execution")
 	flags.BoolVar(&request.RemoteList, "remote-list", false, "Compare dependency and Java/build-tool releases with remote metadata")
 	flags.BoolVar(&jsonOutput, "json", false, "Print report JSON")
 	flags.StringVar(&color, "color", "auto", "auto, always or never")
-	flags.StringVarP(&output, "output", "o", "", "Save a Markdown or HTML report")
+	flags.StringVarP(&output, "output", "o", "", "Save a Markdown report")
 	return command
 }

@@ -32,3 +32,7 @@ func SelectScanFacts(facts string) (ScanSelection, error) {
 	}
 	return selection, nil
 }
+
+func IsResolvableScanFact(fact string) bool {
+	return fact == "dependencies" || fact == "files" || fact == "call-graph"
+}

@@ -10,11 +10,12 @@ const ProtocolVersion = 1
 const ReportVersion = 1
 
 type ScanRequest struct {
-	Facts      []string `json:"facts,omitempty"`
-	Repository string   `json:"repository"`
-	Static     bool     `json:"static"`
-	RemoteList bool     `json:"remoteList"`
-	BuildTool  string   `json:"buildTool,omitempty"`
+	CompileCommands string   `json:"compileCommands,omitempty"`
+	Facts           []string `json:"facts,omitempty"`
+	Repository      string   `json:"repository"`
+	Static          bool     `json:"static"`
+	RemoteList      bool     `json:"remoteList"`
+	BuildTool       string   `json:"buildTool,omitempty"`
 }
 type AnalyzeRequest struct {
 	Repository           string `json:"repository"`

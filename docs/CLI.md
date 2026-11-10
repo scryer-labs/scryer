@@ -51,18 +51,30 @@ path. Ambiguous matches list candidates and do not select one.
 
 ## Scan report files
 
-Use `-o report.md` for a standalone Markdown report or `-o report.html` for the
-offline browser report. C++ Markdown groups files by declared component, shows
-include and call locations, and preserves engine facts in expandable JSON
-details. The HTML explorer shows selected components, files and functions.
-Workspace reports let you choose a member project and follow local dependency
-references to other members. Use `--json` for the same structured stdout that
-Orrery consumes.
+Use `-o report.md` for a standalone Markdown report. C++ Markdown groups
+files by declared component, shows include and call locations, and preserves
+engine facts in expandable JSON details. Use `--json` for structured stdout
+that Orrery can render interactively.
 
 ```sh
 scryer project scan --facts architecture,files,call-graph -o project.md
-scryer workspace scan --facts dependencies,architecture,files,call-graph -o workspace.html
+scryer workspace scan --facts dependencies,architecture,files,call-graph -o workspace.md
 ```
+
+### Optional C++ semantic resolution
+
+```sh
+scryer project scan --facts files,call-graph --resolve --json
+scryer project scan --facts files,call-graph --resolve --compile-commands build/compile_commands.json --json
+```
+
+The C++ engine uses libclang when available. It looks for an existing
+`compile_commands.json` and tries CMake configuration in a temporary directory
+if none exists. Configuration may run project scripts or fetch dependencies.
+The scan preserves static facts alongside semantic edges and per-translation-unit
+diagnostics. A missing library, unavailable compiler context or failed CMake
+configuration leaves a skip reason in the report. Workspace scans accept
+`--resolve` and discover a database independently for each member.
 
 ## Engine-free project facts
 
@@ -219,7 +231,7 @@ static collection return their static facts with a message. The terminal and
 Markdown reports render the available Java graph as a text tree.
 See [TD-007](TECH-DEBT.md#td-007-retire-java-only-project-dependency-flags).
 
-`-o <OUTPUT_FILE>` (alias `--output`) selects Markdown or HTML by file extension, creates missing parent directories and replaces an existing report. The terminal/JSON output is retained; the file confirmation goes to stderr. The legacy Java report includes modules, direct dependencies, source and test facts, suggested commands and collection notes. The unified report renders a tree when resolved Java dependency facts are available. Reports have no terminal color codes. Collection status and unknown facts remain explicit; exporting a report does not verify the target build or tests.
+`-o <OUTPUT_FILE>` (alias `--output`) writes UTF-8 Markdown, creates missing parent directories and replaces an existing report. The terminal/JSON output is retained; the file confirmation goes to stderr. The legacy Java report includes modules, direct dependencies, source and test facts, suggested commands and collection notes. The unified report renders a tree when resolved Java dependency facts are available. Reports have no terminal color codes. Collection status and unknown facts remain explicit; exporting a report does not verify the target build or tests.
 
 Flags may be combined. JSON always remains plain machine-readable JSON even with `--color always`; human-readable report views do not trim JSON. `--color auto|always|never` defaults to auto, which enables color only for an interactive stdout and honors `NO_COLOR`. Explicit always overrides automatic detection. The Go reporting layer supplies terminal styling, with cyan/bold headings, dim metadata, green complete/configured values, yellow signals/conflicts/partial collection and red unknown/unresolved values. Shared graph nodes use `[already shown]` references; JSON retains every edge.
 

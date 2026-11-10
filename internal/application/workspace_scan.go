@@ -41,7 +41,7 @@ type WorkspaceReference struct {
 	Declaration json.RawMessage             `json:"declaration"`
 }
 
-func (s *Service) ScanWorkspace(ctx context.Context, directory string, selection contract.ScanSelection) (WorkspaceScan, error) {
+func (s *Service) ScanWorkspace(ctx context.Context, directory string, selection contract.ScanSelection, resolve bool) (WorkspaceScan, error) {
 	root, err := filepath.Abs(directory)
 	if err != nil {
 		return WorkspaceScan{}, err
@@ -57,7 +57,7 @@ func (s *Service) ScanWorkspace(ctx context.Context, directory string, selection
 	result := WorkspaceScan{SchemaVersion: contract.ReportVersion, Root: root, Projects: make([]WorkspaceProject, 0, len(members))}
 	for _, path := range members {
 		project := WorkspaceProject{Path: filepath.ToSlash(path)}
-		document, err := s.ScanFacts(ctx, filepath.Join(root, path), selection.Stack, selection.LOC, selection.EngineFacts, false)
+		document, err := s.ScanFacts(ctx, filepath.Join(root, path), selection.Stack, selection.LOC, selection.EngineFacts, resolve, "")
 		if ctx.Err() != nil {
 			return WorkspaceScan{}, ctx.Err()
 		}

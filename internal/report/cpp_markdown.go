@@ -23,8 +23,10 @@ func cppMarkdown(b *strings.Builder, fact string, data Object, names map[string]
 	case "architecture":
 		cppArchitectureMarkdown(b, data)
 	case "files":
+		cppSemanticMarkdown(b, field(data, "semantic"))
 		cppFilesMarkdown(b, data, names)
 	case "call-graph":
+		cppSemanticMarkdown(b, field(data, "semantic"))
 		cppCallsMarkdown(b, data)
 	case "dependencies":
 		cppArchitectureMarkdown(b, field(data, "cmake"))
@@ -33,6 +35,19 @@ func cppMarkdown(b *strings.Builder, fact string, data Object, names map[string]
 		return false
 	}
 	return true
+}
+
+func cppSemanticMarkdown(b *strings.Builder, semantic Object) {
+	if semantic == nil {
+		return
+	}
+	resolution := field(semantic, "resolution")
+	fmt.Fprintf(b, "Semantic resolution (%s): %s · %d translation units · %d edges\n\n",
+		escape(str(resolution, "backend")), escape(str(resolution, "status")),
+		len(objects(resolution["units"])), len(objects(semantic["edges"])))
+	if message := optional(resolution, "message"); message != "" {
+		block(b, "text", message)
+	}
 }
 
 func cppArchitectureMarkdown(b *strings.Builder, data Object) {
@@ -46,9 +61,9 @@ func cppArchitectureMarkdown(b *strings.Builder, data Object) {
 	section(b, 4, "CMake components")
 	var entries [][]string
 	for _, item := range targets {
-		entries = append(entries, []string{str(item, "name"), str(item, "kind"), optional(item, "type"), optional(item, "aliasOf"), cppLocation(item)})
+		entries = append(entries, []string{str(item, "name"), str(item, "kind"), optional(item, "type"), optional(item, "aliasOf"), cppAliases(item), cppLocation(item)})
 	}
-	table(b, []string{"Component", "Kind", "Type", "Alias of", "Declaration"}, entries)
+	table(b, []string{"Component", "Kind", "Type", "Alias of", "Aliases", "Declaration"}, entries)
 	section(b, 4, "Link declarations")
 	entries = nil
 	for _, item := range objects(data["links"]) {
@@ -171,4 +186,11 @@ func optional(data Object, key string) string {
 		return text(value)
 	}
 	return ""
+}
+
+func cppAliases(item Object) string {
+	if len(array(item["aliases"])) == 0 {
+		return ""
+	}
+	return join(item["aliases"])
 }

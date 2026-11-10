@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/application"
@@ -14,7 +15,7 @@ import (
 
 func newScanCommand(service *application.Service) *cobra.Command {
 	var facts, output string
-	var jsonOutput bool
+	var jsonOutput, resolve bool
 	var selection contract.ScanSelection
 	command := &cobra.Command{
 		Use:   "scan [path]",
@@ -23,31 +24,32 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			if output != "" {
 				switch strings.ToLower(filepath.Ext(output)) {
-				case "", ".md", ".html":
+				case "", ".md":
 				default:
-					return fmt.Errorf("-o must use .md or .html")
+					return fmt.Errorf("-o must use .md")
 				}
 			}
 			var err error
 			selection, err = contract.SelectScanFacts(facts)
-			return err
+			if err != nil {
+				return err
+			}
+			if resolve && !slices.ContainsFunc(selection.EngineFacts, contract.IsResolvableScanFact) {
+				return fmt.Errorf("--resolve requires dependencies, files or call-graph in --facts")
+			}
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			root := "."
 			if len(args) == 1 {
 				root = args[0]
 			}
-			result, err := service.ScanWorkspace(cmd.Context(), root, selection)
+			result, err := service.ScanWorkspace(cmd.Context(), root, selection, resolve)
 			if err != nil {
 				return err
 			}
 			if output != "" {
-				var data []byte
-				if strings.EqualFold(filepath.Ext(output), ".html") {
-					data, err = report.ScanHTML(result)
-				} else {
-					data, err = report.WorkspaceScanMarkdown(result)
-				}
+				data, err := report.WorkspaceScanMarkdown(result)
 				if err != nil {
 					return err
 				}
@@ -91,7 +93,8 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		},
 	}
 	command.Flags().StringVar(&facts, "facts", "stack,loc", "Collect selected facts")
+	command.Flags().BoolVar(&resolve, "resolve", false, "Allow build configuration and semantic resolution in workspace projects")
 	command.Flags().BoolVar(&jsonOutput, "json", false, "Print report JSON")
-	command.Flags().StringVarP(&output, "output", "o", "", "Save a Markdown or HTML report")
+	command.Flags().StringVarP(&output, "output", "o", "", "Save a Markdown report")
 	return command
 }

@@ -4,40 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	"github.com/edwardnoaland/scryer/internal/contract"
 )
-
-func ProjectScanHTML(document contract.Document) ([]byte, error) {
-	if err := document.Validate(); err != nil {
-		return nil, err
-	}
-	return ScanHTML(struct {
-		Projects []map[string]json.RawMessage `json:"projects"`
-	}{Projects: []map[string]json.RawMessage{{"facts": document.Data}}})
-}
-
-// ScanHTML renders the same embedded canvas for one project or workspace members.
-func ScanHTML(scan any) ([]byte, error) {
-	data, err := json.Marshal(scan)
-	if err != nil {
-		return nil, err
-	}
-	page, err := assets.ReadFile("assets/scan.html")
-	if err != nil {
-		return nil, err
-	}
-	style, err := assets.ReadFile("assets/scan.css")
-	if err != nil {
-		return nil, err
-	}
-	script, err := assets.ReadFile("assets/scan.js")
-	if err != nil {
-		return nil, err
-	}
-	result := strings.NewReplacer("__SCAN_CSS__", string(style), "__SCAN_JS__", string(script), "__SCAN_DATA__", string(data))
-	return []byte(result.Replace(string(page))), nil
-}
 
 func WorkspaceScanMarkdown(scan any) ([]byte, error) {
 	raw, err := json.Marshal(scan)
