@@ -1,6 +1,6 @@
 # Technical debt and existing analysis limitations
 
-Updated 2026-11-02. Item IDs are not priority ranks. New analyzer installation,
+Updated 2026-11-10. Item IDs are not priority ranks. New analyzer installation,
 language support and architecture/test fact capabilities belong in
 [milestones](MILESTONES.md), not duplicated implementation tasks here. The CLI/configuration and
 engine-extraction sequence takes precedence unless a real regression requires a fix.
@@ -83,3 +83,17 @@ Orrery provider/scan plans have migrated and been verified, completely remove th
 temporary adapter and its exclusive code/tests/docs. Shared fact/report code still
 needed by native scanning may remain. Do not break the Mod-based consumer before
 the corresponding migration is ready; CSV input is not a permanent requirement.
+
+## TD-007: Retire Java-only project dependency flags
+
+- [ ] Status: deprecated, pending resolved dependency support in the unified fact scan.
+
+`project scan --dependencies` and `project scan --dependency-tree` are Java-only
+views. The unified `project scan --facts dependencies` already returns Java's
+direct dependency declarations. Core currently requests static collection on
+that path, so the Java engine skips Maven or Gradle resolution and cannot return
+the resolved graph there.
+
+Remove both flags once the unified scan can explicitly opt into build-tool
+resolution and expose the resolved graph in its reports. Keep static collection
+as the default and verify the replacement against a Java fixture before removal.

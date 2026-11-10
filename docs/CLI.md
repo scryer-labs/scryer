@@ -155,14 +155,19 @@ scryer project scan ../legacy-java-fixture --stack java
 Default scan shows a concise summary, attempts dependency resolution with the target repository's Wrapper, and retains the full model internally. This evaluates target build configuration and may download dependency metadata/plugins; it does **not** compile, test or package the target. Arbitrary build configuration code can have its own side effects. Use `--static` to inspect local declarations/source signals without executing target configuration or downloading anything.
 
 ```sh
-scryer project scan . --dependencies        # all observed direct declarations, grouped by module/configuration
-scryer project scan . --dependency-tree     # resolved graph per module/configuration, rendered as a tree
+scryer project scan . --dependencies        # deprecated, Java only, direct declarations by module/configuration
+scryer project scan . --dependency-tree     # deprecated, Java only, resolved graph as a tree
 scryer project scan . --stack java --json   # complete versioned facts model, no presentation truncation
 scryer project scan . --static              # local facts only; resolution is not_requested
 scryer project scan . --stack java --color always        # force styled output
 scryer project scan . --stack java -o reports/scan.md    # also write a Markdown report
 scryer project scan . --stack java --json -o scan.md     # JSON stdout plus a Markdown file
 ```
+
+Both Java dependency view flags are deprecated. Use `--facts dependencies --json`
+for direct dependency declarations. The unified fact scan is currently static;
+keep using `--dependency-tree` when you need a resolved Java dependency graph.
+See [TD-007](TECH-DEBT.md#td-007-retire-java-only-project-dependency-flags).
 
 `-o <OUTPUT_FILE>` (alias `--output`) writes UTF-8 Markdown, creates missing parent directories and replaces an existing report. The terminal/JSON output is retained; the file confirmation goes to stderr. Markdown includes modules, all observed direct dependencies with declared/selected versions, source/test facts, suggested commands and all collection notes/failures. `--dependency-tree` additionally includes a plain-text tree in the file. Reports have no terminal color codes. Collection status and unknown facts remain explicit; exporting a report does not verify the target build or tests.
 
