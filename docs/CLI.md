@@ -50,7 +50,7 @@ the original declaration and classifies its normalized repository identity as
 path. Ambiguous matches list candidates and do not select one.
 
 Workspace IPC is a separate fact. Use `--facts dependencies,ipc` to see
-library references and IPC side by side. `ipc.windows.namedPipe` lists endpoint
+library references and IPC side by side. `communication.ipc.windows.namedPipe` lists endpoint
 evidence and client-to-server matches for local Windows pipe names. A wrapper
 call can become an endpoint when a referenced local library exposes matching
 parameter evidence. Direct endpoints use the same matcher. Test endpoints

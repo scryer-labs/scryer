@@ -32,7 +32,7 @@ func WorkspaceScanMarkdown(scan any) ([]byte, error) {
 		}
 		table(&b, []string{"From", "To", "Status", "Declaration"}, entries)
 	}
-	if ipc := field(data, "ipc"); ipc != nil {
+	if ipc := field(field(data, "communication"), "ipc"); ipc != nil {
 		section(&b, 2, "IPC (Windows named pipes)")
 		pipes := field(field(ipc, "windows"), "namedPipe")
 		var entries [][]string

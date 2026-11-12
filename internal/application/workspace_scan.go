@@ -14,11 +14,15 @@ import (
 )
 
 type WorkspaceScan struct {
-	SchemaVersion int                    `json:"schemaVersion"`
-	Root          string                 `json:"root"`
-	Projects      []WorkspaceProject     `json:"projects"`
-	Dependencies  *WorkspaceDependencies `json:"dependencies,omitempty"`
-	IPC           *WorkspaceIPC          `json:"ipc,omitempty"`
+	SchemaVersion int                     `json:"schemaVersion"`
+	Root          string                  `json:"root"`
+	Projects      []WorkspaceProject      `json:"projects"`
+	Dependencies  *WorkspaceDependencies  `json:"dependencies,omitempty"`
+	Communication *WorkspaceCommunication `json:"communication,omitempty"`
+}
+
+type WorkspaceCommunication struct {
+	IPC *WorkspaceIPC `json:"ipc,omitempty"`
 }
 
 type WorkspaceProject struct {
@@ -93,7 +97,7 @@ func (s *Service) ScanWorkspace(ctx context.Context, directory string, selection
 		}
 	}
 	if wantIPC {
-		result.IPC = aggregateWorkspaceIPC(result.Projects, libraries)
+		result.Communication = &WorkspaceCommunication{IPC: aggregateWorkspaceIPC(result.Projects, libraries)}
 		if !wantLibraries {
 			for _, project := range result.Projects {
 				if project.Facts != nil {

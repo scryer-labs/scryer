@@ -32,6 +32,14 @@ func TestWorkspaceIPCMatchesDirectAndWrappedEndpointsAcrossEngines(t *testing.T)
 		t.Fatalf("lost wrapper evidence: %+v", endpoint)
 	}
 
+	projects = append(projects, project("other-client", "cpp", `{"windows":{"namedPipe":{"endpoints":[{"name":"\\\\.\\pipe\\test","role":"client","sourceRole":"source"}]}}}`))
+	shared := aggregateWorkspaceIPC(projects, libraries).Windows.NamedPipe
+	if len(shared.Links) != 2 || shared.Links[0].ClientEndpointID == shared.Links[1].ClientEndpointID ||
+		len(shared.Links[0].ServerEndpointIDs) != 1 || len(shared.Links[1].ServerEndpointIDs) != 1 ||
+		shared.Links[0].ServerEndpointIDs[0] != shared.Links[1].ServerEndpointIDs[0] {
+		t.Fatalf("expected two clients to share one server endpoint: %+v", shared.Links)
+	}
+
 	projects = append(projects, project("other", "rust", `{"windows":{"namedPipe":{"endpoints":[{"name":"\\\\.\\pipe\\test","role":"server","sourceRole":"source"}]}}}`))
 	ambiguous := aggregateWorkspaceIPC(projects, libraries).Windows.NamedPipe
 	if edge := ambiguous.Links[0]; edge.Status != "ambiguous" || edge.To != "" || len(edge.Candidates) != 2 {
