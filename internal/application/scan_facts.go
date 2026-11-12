@@ -13,12 +13,20 @@ import (
 )
 
 func (s *Service) ScanFacts(ctx context.Context, directory string, stack, loc bool, requested []string, resolve bool, compileCommands string) (contract.Document, error) {
+	var resolveFacts []string
+	if resolve {
+		resolveFacts = requested
+	}
+	return s.scanFacts(ctx, directory, stack, loc, requested, resolveFacts, compileCommands)
+}
+
+func (s *Service) scanFacts(ctx context.Context, directory string, stack, loc bool, requested, resolveFacts []string, compileCommands string) (contract.Document, error) {
 	facts, err := projectfacts.Collect(ctx, directory, stack || len(requested) != 0, loc)
 	if err != nil {
 		return contract.Document{}, err
 	}
 	if len(requested) != 0 {
-		facts.EngineFacts, err = s.collectEngineFacts(ctx, facts, requested, resolve, compileCommands)
+		facts.EngineFacts, err = s.collectEngineFacts(ctx, facts, requested, resolveFacts, compileCommands)
 		if err != nil {
 			return contract.Document{}, err
 		}
@@ -29,7 +37,7 @@ func (s *Service) ScanFacts(ctx context.Context, directory string, stack, loc bo
 	return contract.NewDocument("", contract.ProjectFactsOperation, facts)
 }
 
-func (s *Service) collectEngineFacts(ctx context.Context, project contract.ProjectFacts, requested []string, resolve bool, compileCommands string) ([]contract.FactOutcome, error) {
+func (s *Service) collectEngineFacts(ctx context.Context, project contract.ProjectFacts, requested, resolveFacts []string, compileCommands string) ([]contract.FactOutcome, error) {
 	store, err := engine.DefaultStore()
 	if err != nil {
 		return nil, err
@@ -58,7 +66,7 @@ func (s *Service) collectEngineFacts(ctx context.Context, project contract.Proje
 		if len(selected) == 0 {
 			continue
 		}
-		results := s.scanInstalled(ctx, item, project.Root, selected, resolve, compileCommands)
+		results := s.scanInstalled(ctx, item, project.Root, selected, resolveFacts, compileCommands)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
@@ -86,8 +94,10 @@ func matchesProject(capabilities *engine.Capabilities, stack *contract.ProjectSt
 	return false
 }
 
-func (s *Service) scanInstalled(ctx context.Context, installed engine.Installation, root string, selected []string, resolve bool, compileCommands string) []contract.FactOutcome {
-	resolveSelected := resolve && slices.ContainsFunc(selected, installed.Capabilities.ResolvesFact)
+func (s *Service) scanInstalled(ctx context.Context, installed engine.Installation, root string, selected, resolveFacts []string, compileCommands string) []contract.FactOutcome {
+	resolveSelected := slices.ContainsFunc(selected, func(fact string) bool {
+		return slices.Contains(resolveFacts, fact) && installed.Capabilities.ResolvesFact(fact)
+	})
 	if !resolveSelected || !slices.ContainsFunc(selected, func(fact string) bool { return fact != "dependencies" && installed.Capabilities.ResolvesFact(fact) }) {
 		compileCommands = ""
 	}
@@ -128,7 +138,7 @@ func (s *Service) scanInstalled(ctx context.Context, installed engine.Installati
 				outcome.Data = enriched
 			}
 		}
-		if outcome.Status == "collected" && contract.IsResolvableScanFact(fact) && resolve && !installed.Capabilities.ResolvesFact(fact) {
+		if outcome.Status == "collected" && contract.IsResolvableScanFact(fact) && slices.Contains(resolveFacts, fact) && !installed.Capabilities.ResolvesFact(fact) {
 			outcome.Message = "engine does not declare support for " + fact + " resolution; returned static facts"
 		}
 		outcomes = append(outcomes, outcome)

@@ -75,6 +75,19 @@ func newScanCommand(service *application.Service) *cobra.Command {
 					fmt.Fprintf(out, "  %s → %s [%s]\n", ref.From, target, ref.Status)
 				}
 			}
+			if result.IPC != nil {
+				fmt.Fprintln(out, "\nIPC (Windows named pipes)")
+				for _, link := range result.IPC.Windows.NamedPipe.Links {
+					target := link.To
+					if target == "" {
+						target = strings.Join(link.Candidates, ", ")
+					}
+					if target == "" {
+						target = "unknown"
+					}
+					fmt.Fprintf(out, "  %s → %s [%s] %s\n", link.From, target, link.Status, link.Name)
+				}
+			}
 			for _, project := range result.Projects {
 				if project.Error != "" {
 					fmt.Fprintf(out, "\nProject %s: %s\n", project.Path, project.Error)

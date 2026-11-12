@@ -18,6 +18,7 @@ type WorkspaceScan struct {
 	Root          string                 `json:"root"`
 	Projects      []WorkspaceProject     `json:"projects"`
 	Dependencies  *WorkspaceDependencies `json:"dependencies,omitempty"`
+	IPC           *WorkspaceIPC          `json:"ipc,omitempty"`
 }
 
 type WorkspaceProject struct {
@@ -55,9 +56,20 @@ func (s *Service) ScanWorkspace(ctx context.Context, directory string, selection
 		return WorkspaceScan{}, err
 	}
 	result := WorkspaceScan{SchemaVersion: contract.ReportVersion, Root: root, Projects: make([]WorkspaceProject, 0, len(members))}
+	requested := selection.EngineFacts
+	wantIPC := slices.Contains(requested, "ipc")
+	wantLibraries := slices.Contains(requested, "dependencies")
+	var resolveFacts []string
+	if resolve {
+		resolveFacts = requested
+	}
+	if wantIPC && !wantLibraries {
+		requested = append(slices.Clone(requested), "dependencies")
+	}
+
 	for _, path := range members {
 		project := WorkspaceProject{Path: filepath.ToSlash(path)}
-		document, err := s.ScanFacts(ctx, filepath.Join(root, path), selection.Stack, selection.LOC, selection.EngineFacts, resolve, "")
+		document, err := s.scanFacts(ctx, filepath.Join(root, path), selection.Stack, selection.LOC, requested, resolveFacts, "")
 		if ctx.Err() != nil {
 			return WorkspaceScan{}, ctx.Err()
 		}
@@ -69,13 +81,30 @@ func (s *Service) ScanWorkspace(ctx context.Context, directory string, selection
 		}
 		result.Projects = append(result.Projects, project)
 	}
-	if slices.Contains(selection.EngineFacts, "dependencies") {
+	var libraries []WorkspaceReference
+	if wantLibraries || wantIPC {
+		libraries = matchWorkspaceReferences(result.Projects)
+	}
+	if wantLibraries {
 		result.Dependencies = &WorkspaceDependencies{
 			Scope:       "Only library references declared by build configuration are used for cross-project matching (currently CMake Git references).",
-			Unsupported: []string{"IPC", "REST APIs"},
-			References:  matchWorkspaceReferences(result.Projects),
+			Unsupported: []string{"REST APIs"},
+			References:  libraries,
 		}
 	}
+	if wantIPC {
+		result.IPC = aggregateWorkspaceIPC(result.Projects, libraries)
+		if !wantLibraries {
+			for _, project := range result.Projects {
+				if project.Facts != nil {
+					project.Facts.EngineFacts = slices.DeleteFunc(project.Facts.EngineFacts, func(fact contract.FactOutcome) bool {
+						return fact.Fact == "dependencies"
+					})
+				}
+			}
+		}
+	}
+
 	return result, nil
 }
 

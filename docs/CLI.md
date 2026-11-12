@@ -49,6 +49,14 @@ the original declaration and classifies its normalized repository identity as
 `local`, `external` or `ambiguous`. A local match names the workspace member
 path. Ambiguous matches list candidates and do not select one.
 
+Workspace IPC is a separate fact. Use `--facts dependencies,ipc` to see
+library references and IPC side by side. `ipc.windows.namedPipe` lists endpoint
+evidence and client-to-server matches for local Windows pipe names. A wrapper
+call can become an endpoint when a referenced local library exposes matching
+parameter evidence. Direct endpoints use the same matcher. Test endpoints
+remain visible in the JSON and are excluded from production matches. Multiple
+server projects with the same name are reported as ambiguous.
+
 ## Scan report files
 
 Use `-o report.md` for a standalone Markdown report. C++ Markdown groups
