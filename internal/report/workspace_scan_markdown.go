@@ -41,9 +41,9 @@ func WorkspaceScanMarkdown(scan any) ([]byte, error) {
 			if target == "" {
 				target = join(link["candidates"])
 			}
-			entries = append(entries, []string{str(link, "from"), target, str(link, "name"), str(link, "status")})
+			entries = append(entries, []string{str(link, "from"), target, str(link, "name"), str(link, "status"), str(link, "direction")})
 		}
-		table(&b, []string{"Client project", "Server project", "Pipe", "Status"}, entries)
+		table(&b, []string{"Client project", "Server project", "Pipe", "Status", "Data direction"}, entries)
 	}
 	for _, project := range objects(data["projects"]) {
 		if facts := field(project, "facts"); facts != nil {

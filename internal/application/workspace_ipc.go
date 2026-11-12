@@ -18,6 +18,8 @@ type WorkspaceNamedPipes struct {
 }
 
 type WorkspacePipeEndpoint struct {
+	AccessMode        string          `json:"accessMode,omitempty"`
+	AccessFlags       string          `json:"accessFlags,omitempty"`
 	ID                string          `json:"id"`
 	Project           string          `json:"project"`
 	Engine            string          `json:"engine"`
@@ -31,6 +33,7 @@ type WorkspacePipeEndpoint struct {
 }
 
 type WorkspacePipeLink struct {
+	Direction         string   `json:"direction"`
 	From              string   `json:"from"`
 	To                string   `json:"to,omitempty"`
 	Name              string   `json:"name"`
@@ -51,10 +54,12 @@ type pipeInput struct {
 }
 
 type pipeParameter struct {
-	Symbol     string `json:"symbol"`
-	Index      int    `json:"parameterIndex"`
-	Role       string `json:"role"`
-	SourceRole string `json:"sourceRole"`
+	AccessMode  string `json:"accessMode"`
+	AccessFlags string `json:"accessFlags"`
+	Symbol      string `json:"symbol"`
+	Index       int    `json:"parameterIndex"`
+	Role        string `json:"role"`
+	SourceRole  string `json:"sourceRole"`
 }
 
 type ipcInput struct {
@@ -169,6 +174,7 @@ func (p *WorkspaceNamedPipes) addWrappedEndpoints(input ipcInput, raw json.RawMe
 					p.add(WorkspacePipeEndpoint{
 						Project: input.project, Engine: input.engine, Role: parameter.Role, Name: arg.Value,
 						SourceRole: call.SourceRole, Call: raw, ParameterEvidence: record, LibraryProject: project,
+						AccessMode: parameter.AccessMode, AccessFlags: parameter.AccessFlags,
 					})
 				}
 			}
@@ -201,21 +207,56 @@ func (p *WorkspaceNamedPipes) match() {
 		if client.Role != "client" || client.SourceRole == "test" {
 			continue
 		}
-		link := WorkspacePipeLink{From: client.Project, Name: client.Name, ClientEndpointID: client.ID, Status: "unmatched"}
+		link := WorkspacePipeLink{From: client.Project, Name: client.Name, ClientEndpointID: client.ID, Status: "unmatched", Direction: "unknown"}
+		var matchedDirection string
 		for _, server := range servers[pipeKey(client.Name)] {
 			if server.Project == client.Project {
 				continue
 			}
 			link.Candidates = appendUnique(link.Candidates, server.Project)
 			link.ServerEndpointIDs = append(link.ServerEndpointIDs, server.ID)
+			direction := pipeDirection(client.AccessMode, server.AccessMode)
+			if matchedDirection == "" {
+				matchedDirection = direction
+			} else if matchedDirection != direction {
+				matchedDirection = "unknown"
+			}
 		}
 		switch len(link.Candidates) {
 		case 1:
 			link.To, link.Status, link.Candidates = link.Candidates[0], "matched", nil
+			link.Direction = matchedDirection
 		case 0:
 		default:
 			link.Status = "ambiguous"
 		}
 		p.Links = append(p.Links, link)
 	}
+}
+
+// pipeDirection uses endpoint-local access. The server must allow every
+// direction requested by the client for the two handles to be compatible.
+func pipeDirection(client, server string) string {
+	switch server {
+	case "read", "write", "read-write":
+	default:
+		return "unknown"
+	}
+	switch client {
+	case "write":
+		if server == "read" || server == "read-write" {
+			return "client-to-server"
+		}
+	case "read":
+		if server == "write" || server == "read-write" {
+			return "server-to-client"
+		}
+	case "read-write":
+		if server == "read-write" {
+			return "duplex"
+		}
+	default:
+		return "unknown"
+	}
+	return "incompatible"
 }

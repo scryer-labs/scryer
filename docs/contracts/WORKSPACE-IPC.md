@@ -35,10 +35,28 @@ A live IPC scan needs a workspace invocation that requests `ipc`.
   carry `observation`. Derived observations carry `call`,
   `parameterEvidence` and `libraryProject`. These objects retain source
   positions relative to the caller or library project that owns them.
+  Endpoints and parameter evidence may include `accessMode` (`read`,
+  `write`, `read-write` or `unknown`) and the source expression in
+  `accessFlags`. Access is relative to the endpoint. The C++ engine
+  derives it from the access argument to `CreateNamedPipe` or `CreateFile`
+  when it can read the flags directly.
 - A link uses `clientEndpointId` and `serverEndpointIds[]` to reference
-  endpoint records. `from` and `to` are member paths. A single server
-  endpoint can appear in several links. The link direction is client to
-  server, including when the pipe carries messages both ways.
+  endpoint records. `from` is the client member path and `to` is the
+  server member path. A single server endpoint can appear in several
+  links. `direction` describes data flow allowed by the observed access
+  modes. It does not assert that a message was sent.
+
+  | `direction` | Meaning |
+  | --- | --- |
+  | `client-to-server` | Client writes and server reads |
+  | `server-to-client` | Server writes and client reads |
+  | `duplex` | Both endpoints can read and write |
+  | `incompatible` | The server does not allow the access requested by the client |
+  | `unknown` | No unique server, missing access evidence or differing conclusions across server observations |
+
+  Consumers should treat a missing `direction` in older artifacts as
+  `unknown`. Pipe-name matching and its `status` are independent of
+  access compatibility.
 - `matched` identifies a server project and may retain several endpoint
   observations in that project. `ambiguous` lists candidate projects and
   endpoint observations. `unmatched` has no server project. A server with
@@ -51,8 +69,12 @@ A live IPC scan needs a workspace invocation that requests `ipc`.
 
 ## First Orrery view
 
-Display a typed IPC edge from **Brush → Inkstone** for
-`scriptorium_input_protocol_pipe`. Keep the two Felt library edges under
+Display a single duplex IPC edge **Brush ↔ Inkstone** for
+`scriptorium_input_protocol_pipe`. Brush is the client and Inkstone is
+the server. Render `client-to-server` with an arrowhead at the server,
+`server-to-client` at the client, and `duplex` at both ends. For
+`unknown` or `incompatible`, show the relationship and its status
+without a data-flow arrowhead. Keep the two Felt library edges under
 their own relation type. An IPC edge detail should show the client and
 server call locations and the corresponding Felt parameter evidence. Keep
 Inkstone's UI pipe available as a server-only endpoint. Keep Felt's test
@@ -64,9 +86,9 @@ existing Daily Dev Pipeline after changes to the UI or backend.
 
 ## Verified local artifacts
 
-Scryer + C++ Engine Integration run `20261112T114234335Z-a931ab99` passed in
+Scryer + C++ Engine Integration run `20261112T123241847Z-e0727f0e` passed in
 `scryer-lab`. Its `workspace-scan` step scanned the existing Scriptorium
-workspace and produced a [complete workspace JSON](/Users/edwardnoaland/Desktop/experiment/scryer-lab/.orrery/plans/runs/20261112T114234335Z-a931ab99/outputs/20261112T114234335Z-a931ab99/workspace-scan/2142595b-c016-499c-b84a-84d2f04304a9/workspace.json).
+workspace and verified the Brush–Inkstone duplex link in the [complete workspace JSON](/Users/edwardnoaland/Desktop/experiment/scryer-lab/.orrery/plans/runs/20261112T123241847Z-e0727f0e/outputs/20261112T123241847Z-e0727f0e/workspace-scan/8081b7b5-cd43-4a00-bbc3-340401315cff/workspace.json).
 
 Felt's project-level IPC Verify run `20261112T111656560Z-0818ae63` passed in
 `scriptorium-workspace`. Its [IPC evidence JSON](/Users/edwardnoaland/Desktop/experiment/input_method/scriptorium-workspace/.orrery/plans/runs/20261112T111656560Z-0818ae63/outputs/20261112T111656560Z-0818ae63/scan/b2e17994-1fa0-494c-a0eb-4f1104a21930/ipc.json)

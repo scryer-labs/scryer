@@ -85,7 +85,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 					if target == "" {
 						target = "unknown"
 					}
-					fmt.Fprintf(out, "  %s → %s [%s] %s\n", link.From, target, link.Status, link.Name)
+					fmt.Fprintf(out, "  %s / %s [%s, %s] %s\n", link.From, target, link.Status, link.Direction, link.Name)
 				}
 			}
 			for _, project := range result.Projects {
