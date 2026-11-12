@@ -15,7 +15,7 @@ type FactOutcome struct {
 
 func IsEngineScanFact(fact string) bool {
 	switch fact {
-	case "architecture", "files", "dependencies", "call-graph", "ownership", "test-coverage":
+	case "architecture", "files", "ipc", "dependencies", "call-graph", "ownership", "test-coverage":
 		return true
 	default:
 		return false

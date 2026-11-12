@@ -87,6 +87,14 @@ supply observations in the same shape. Core can then match compatible
 client and server observations from either source. Preserve the mechanism,
 endpoint identity, source locations and any unresolved or ambiguous matches.
 
+The Workspace IPC matching contract is language-independent. Engines emit the
+same endpoint observation shape for a given OS and mechanism. A Windows named
+pipe observed in Rust uses the same transport, endpoint identity, role and
+evidence fields as one observed in C++. Language and engine IDs are provenance.
+They do not participate in endpoint matching. Keep language-specific symbol
+lookup and argument tracing in the extraction and evidence-joining steps so
+the endpoint matcher consumes the same normalized observations from any engine.
+
 ## Command shape and path behavior
 
 The top-level entries are `project`, `workspace` and `engine`. The first two are
