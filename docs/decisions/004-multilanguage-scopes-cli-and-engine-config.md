@@ -67,6 +67,26 @@ fully succeed. Protocol/name equality alone does not prove communication. Engine
 facts should retain endpoints/types/protocol/evidence; the shared relationship layer
 matches them. Exact adapters/metadata are decided from these real cases later.
 
+## IPC facts
+
+Organize the IPC contract as **IPC → operating system → mechanism**, following
+Felt's structure. The first branch is Windows named pipes. Each mechanism keeps
+its own endpoint identity and evidence so the same IPC contract can grow to
+cover mechanisms such as Windows shared memory and macOS IPC.
+
+Start with a single-project scan of Felt. The C++ engine recognizes native API
+calls and traces endpoint parameters through constructors and library wrappers.
+Emit an endpoint observation when the name is known. When the name comes from a
+wrapper parameter, record the wrapper symbol, parameter position, endpoint role
+and source evidence for the flow into the native API. A caller scan can record
+the callee, argument position and any statically known argument value.
+
+At Workspace scope, Core joins those call facts with the wrapper parameter
+evidence to derive endpoint observations. Direct native calls can already
+supply observations in the same shape. Core can then match compatible
+client and server observations from either source. Preserve the mechanism,
+endpoint identity, source locations and any unresolved or ambiguous matches.
+
 ## Command shape and path behavior
 
 The top-level entries are `project`, `workspace` and `engine`. The first two are
