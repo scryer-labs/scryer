@@ -67,6 +67,23 @@ A live IPC scan needs a workspace invocation that requests `ipc`.
   pipe name. Workspace edges represent static evidence of intended
   communication. The current matcher covers local pipe names.
 
+## Project-level Windows shared memory
+
+The C++ engine emits this fact at
+`engineFacts[].data.windows.sharedMemory` for `fact: "ipc"`. Request
+`--facts architecture,ipc` to include CMake component IDs for declared
+entrypoint sources. `mappings[].operations[]` records named create/open
+operations and `views[]` records mapping calls. Entries preserve API and
+source locations, access flags, and available `entrypoints[].callChain`.
+Use `entrypoints[].componentIds` to join to project architecture.
+`handleSourceCandidateId`, when present, points to an observation within
+the same project report. Access modes describe permissions; consumers
+should avoid inferring message direction or actual writes from them.
+
+The `shared_memory_exp` project provides an example with an app and a
+tester mapping the same object. Workspace IPC aggregation currently applies to
+named pipes. Shared-memory observations remain project facts.
+
 ## First Orrery view
 
 Display a single duplex IPC edge **Brush ↔ Inkstone** for
