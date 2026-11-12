@@ -18,11 +18,7 @@ type WorkspaceScan struct {
 	Root          string                  `json:"root"`
 	Projects      []WorkspaceProject      `json:"projects"`
 	Dependencies  *WorkspaceDependencies  `json:"dependencies,omitempty"`
-	Communication *WorkspaceCommunication `json:"communication,omitempty"`
-}
-
-type WorkspaceCommunication struct {
-	IPC *WorkspaceIPC `json:"ipc,omitempty"`
+	Communication *contract.Communication `json:"communication,omitempty"`
 }
 
 type WorkspaceProject struct {
@@ -97,7 +93,7 @@ func (s *Service) ScanWorkspace(ctx context.Context, directory string, selection
 		}
 	}
 	if wantIPC {
-		result.Communication = &WorkspaceCommunication{IPC: aggregateWorkspaceIPC(result.Projects, libraries)}
+		result.Communication = &contract.Communication{IPC: aggregateWorkspaceIPC(result.Projects, libraries)}
 		if !wantLibraries {
 			for _, project := range result.Projects {
 				if project.Facts != nil {

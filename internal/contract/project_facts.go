@@ -31,6 +31,7 @@ type RepositoryIdentity struct {
 }
 
 type ProjectFacts struct {
+	Communication *Communication     `json:"communication,omitempty"`
 	EngineFacts   []FactOutcome      `json:"engineFacts,omitempty"`
 	SchemaVersion int                `json:"schemaVersion"`
 	Root          string             `json:"root"`

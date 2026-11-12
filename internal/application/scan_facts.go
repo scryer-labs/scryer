@@ -31,6 +31,9 @@ func (s *Service) scanFacts(ctx context.Context, directory string, stack, loc bo
 			return contract.Document{}, err
 		}
 	}
+	if ipc := aggregateProjectIPC(facts.EngineFacts); ipc != nil {
+		facts.Communication = &contract.Communication{IPC: ipc}
+	}
 	if !stack {
 		facts.Stack = nil
 	}

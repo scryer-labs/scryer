@@ -29,6 +29,7 @@ func writeProjectFacts(out io.Writer, data Object, color bool) error {
 		total := field(loc, "total")
 		fmt.Fprintf(&b, "  Total: %s files, %s lines (%s code, %s comments, %s blank)\n", str(total, "files"), str(total, "lines"), str(total, "code"), str(total, "comments"), str(total, "blank"))
 	}
+	writeCommunicationSummary(&b, data)
 	if outcomes := objects(data["engineFacts"]); len(outcomes) != 0 {
 		fmt.Fprintln(&b, "\nEngine facts")
 		for _, outcome := range outcomes {
@@ -90,6 +91,7 @@ func projectFactsMarkdown(data Object) string {
 		rows = append(rows, countRow("Total", field(loc, "total")))
 		table(&b, []string{"Language", "Files", "Lines", "Code", "Comments", "Blank"}, rows)
 	}
+	communicationMarkdown(&b, data, cppComponentNames(objects(data["engineFacts"])))
 	if outcomes := objects(data["engineFacts"]); len(outcomes) != 0 {
 		section(&b, 2, "Engine facts")
 		componentNames := cppComponentNames(outcomes)

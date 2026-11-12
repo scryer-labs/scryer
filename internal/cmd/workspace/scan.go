@@ -88,6 +88,18 @@ func newScanCommand(service *application.Service) *cobra.Command {
 					fmt.Fprintf(out, "  %s / %s [%s, %s] %s\n", link.From, target, link.Status, link.Direction, link.Name)
 				}
 			}
+			if result.Communication != nil && result.Communication.IPC != nil {
+				if memory := result.Communication.IPC.Windows.SharedMemory; memory != nil {
+					fmt.Fprintln(out, "\nIPC (Windows shared memory)")
+					for _, link := range memory.Links {
+						target := link.To
+						if target == "" {
+							target = strings.Join(link.Candidates, ", ")
+						}
+						fmt.Fprintf(out, "  %s / %s [%s] %s\n", link.From, target, link.Status, link.Name)
+					}
+				}
+			}
 			for _, project := range result.Projects {
 				if project.Error != "" {
 					fmt.Fprintf(out, "\nProject %s: %s\n", project.Path, project.Error)

@@ -32,19 +32,7 @@ func WorkspaceScanMarkdown(scan any) ([]byte, error) {
 		}
 		table(&b, []string{"From", "To", "Status", "Declaration"}, entries)
 	}
-	if ipc := field(field(data, "communication"), "ipc"); ipc != nil {
-		section(&b, 2, "IPC (Windows named pipes)")
-		pipes := field(field(ipc, "windows"), "namedPipe")
-		var entries [][]string
-		for _, link := range objects(pipes["links"]) {
-			target := optional(link, "to")
-			if target == "" {
-				target = join(link["candidates"])
-			}
-			entries = append(entries, []string{str(link, "from"), target, str(link, "name"), str(link, "status"), str(link, "direction")})
-		}
-		table(&b, []string{"Client project", "Server project", "Pipe", "Status", "Data direction"}, entries)
-	}
+	communicationMarkdown(&b, data, nil)
 	for _, project := range objects(data["projects"]) {
 		if facts := field(project, "facts"); facts != nil {
 			b.WriteString(projectFactsMarkdown(facts))
