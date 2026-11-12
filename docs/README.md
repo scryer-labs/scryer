@@ -11,6 +11,7 @@ milestones for next work. Planned features are not proof of implementation.
 | [Command reference](CLI.md) | Current commands, report formats and evidence boundaries. |
 | [Architecture](ARCHITECTURE.md) | Current Core/external-engine layers and package responsibilities. |
 | [Analyzer contracts](contracts/README.md) | Current Go interface, process transport and versioned reports. |
+| [Workspace IPC contract](contracts/WORKSPACE-IPC.md) | Named-pipe observations, Workspace matches and the Orrery handoff. |
 | [Contributor instructions](../AGENTS.md) | Coding/commit conventions and Orrery acceptance-plan rules. Kept at the repository root as the collaboration entry point. |
 
 ## Direction and maintenance
