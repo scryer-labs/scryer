@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/contract"
+	"github.com/edwardnoaland/scryer/internal/framework/tauri"
 )
 
 type ipcInput struct {
@@ -85,6 +86,7 @@ func aggregateProjectIPC(outcomes []contract.FactOutcome) *contract.IPC {
 		return nil
 	}
 	result := newIPC()
+	result.Tauri = tauri.Aggregate(outcomes)
 	pipes := &result.Windows.NamedPipe
 	localParameters := map[string]map[string][]json.RawMessage{"": collectPipeParameters(inputs)}
 	for _, input := range inputs {

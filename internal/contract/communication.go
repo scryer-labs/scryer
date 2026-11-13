@@ -7,6 +7,7 @@ type Communication struct {
 }
 
 type IPC struct {
+	Tauri   *TauriIPC `json:"tauri,omitempty"`
 	Windows struct {
 		NamedPipe    NamedPipes    `json:"namedPipe"`
 		SharedMemory *SharedMemory `json:"sharedMemory,omitempty"`
@@ -59,4 +60,33 @@ type SharedMemoryLink struct {
 	IPCLink
 	OpenerEndpointID   string   `json:"openerEndpointId"`
 	CreatorEndpointIDs []string `json:"creatorEndpointIds,omitempty"`
+}
+
+type TauriIPC struct {
+	Apps []TauriApp `json:"apps"`
+}
+
+type TauriApp struct {
+	Config    string          `json:"config"`
+	Endpoints []TauriEndpoint `json:"endpoints"`
+	Links     []TauriLink     `json:"links"`
+}
+
+type TauriEndpoint struct {
+	Engine string `json:"engine"`
+	Kind   string `json:"kind"`
+	Role   string `json:"role"`
+	Name   string `json:"name"`
+	File   string `json:"file"`
+	Line   uint   `json:"line"`
+	Column uint   `json:"column"`
+	Symbol string `json:"symbol,omitempty"`
+}
+
+type TauriLink struct {
+	Kind         string         `json:"kind"`
+	Name         string         `json:"name"`
+	From         TauriEndpoint  `json:"from"`
+	To           TauriEndpoint  `json:"to"`
+	Registration *TauriEndpoint `json:"registration,omitempty"`
 }
