@@ -7,7 +7,7 @@ Scryer Core is a Go module; Java facts come from the independent scryer-java-eng
 | `cmd/scryer/main.go` | Dispatch to the application entry point only |
 | `internal/cmd` | Cobra composition, public commands/flags, signal cancellation and presentation choices |
 | `internal/cmd/project` | Project scope composition in project.go; scan/analyze arguments and presentation in separate operation files |
-| `internal/cmd/workspace` | Workspace scope composition in workspace.go; temporary CSV input in import.go |
+| `internal/cmd/workspace` | Workspace scope composition in workspace.go and native scan in scan.go |
 | `internal/cmd/engine` | Scope composition in engine.go; persistent local-package list/install/uninstall operations in separate files |
 | `internal/cmd/terminal` | Shared terminal color policy across scopes |
 | `internal/application` | Stack/snapshot lifecycle coordination and use-case orchestration |
@@ -65,18 +65,12 @@ whole-tree cancellation remains outside current platform acceptance.
 
 ## Workspace facts
 
-`workspace import` is a Go-only temporary external-CSV use case. `internal/workspace` owns CSV adapters
-and cross-repository facts; the command owns flags and terminal presentation.
-No JVM analyzer is needed. Dependency arrows run from consumer to dependency.
-Declared edges are not runtime calls or inferred release-phase constraints.
-
-Workspace JSON and HTML render the same schema-versioned, sorted document.
-The former `refactor-plan generate` command, phase scheduling and platform-plan
-YAML exporter have been removed. Execution-plan generation belongs to consumers
-such as Orrery. The workspace CSV adapter is temporary compatibility code under
-[TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation),
-not the future native workspace scanner. Legacy entries are removed; consumers must use the scope-first commands. Renderers present the normalized facts
-without computing a schedule.
+`workspace scan` reads member paths from `.scryer/workspace.yaml`. The
+application layer scans each member, aggregates facts and matches supported
+cross-project relationships. Workspace JSON retains the project facts and
+relationship evidence. Markdown renders the same document. Library edges run
+from consumer to dependency. Execution-plan generation belongs to consumers
+such as Orrery.
 
 ## Documentation and future work
 

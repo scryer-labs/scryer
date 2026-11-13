@@ -30,7 +30,6 @@ jobs:
           node --test scripts/test-report-graph.cjs
           node --check internal/report/assets/report.js
           node --check internal/report/assets/graph.js
-          node --check internal/report/assets/workspace.js
       - name: "Build standalone Go CLI"
         run: "./scripts/build"
       - name: "Package Core without JVM"

@@ -15,7 +15,7 @@ configuration below are not current capabilities.
 - [x] **Done (Java)** — ~~Run default/custom target test lifecycles, retain fresh JUnit/JaCoCo evidence and match independent datasets to affected methods with explicit unknowns.~~ This does not prove assertion quality or complete behavioral coverage.
 - [x] **Done** — ~~Support isolated working-tree after snapshots, explicit build-tool selection and target/analyzer JVM separation.~~
 - [x] **Done** — ~~Render shared terminal/JSON/Markdown reports and standalone interactive HTML analysis reports.~~ Java scan file export currently writes Markdown; output support is command-specific.
-- [x] **Done** — ~~Normalize workspace dependency CSVs to JSON/HTML.~~ No Mod CLI or JVM is needed for CSV processing. This adapter is temporary under TD-006; former plan generation has been removed.
+- [x] **Done** — ~~Normalize workspace dependency CSVs to JSON/HTML.~~ No Mod CLI or JVM is needed for CSV processing. The adapter was later removed under TD-006.
 - [x] **Done** — ~~Split Core Go/browser checks from independent engine Go/JVM checks; verify Core-only and engine slim/Java-21-runtime packages.~~ Workflow artifacts are not published releases.
 
 ## Immediate cleanup and design checkpoint
@@ -29,10 +29,9 @@ configuration below are not current capabilities.
 - [x] **Done** — ~~Reorganize current command entries while preserving Java behavior.~~ Do not
   wait for future engine/workspace schemas. Define the external engine contract during
   extraction and native workspace aggregation contracts when that capability is built.
-- [ ] Retain the Mod-fed workspace CSV adapter temporarily under
-  [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation);
-  migrate its entry into the new workspace command shape, then remove the adapter
-  once native workspace dependency scanning and consumer migration work.
+- [x] **Done** — Remove the Mod-fed workspace CSV adapter under
+  [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation).
+  Native C++ workspace dependencies are available. Java matching remains planned.
 
 ## Priority 1 — Reorganize existing commands
 
@@ -167,8 +166,8 @@ preselect an implementation order or promise complete semantic engines together.
 
 Start from concrete library/REST/named-pipe cases rather than a universal matcher.
 The list below groups capabilities, not a strict REST-versus-IPC delivery order.
-Existing CSV adaptation is temporary
-under [TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation):
+Native workspace scans already match CMake Git library references and Windows
+named pipes. Java workspace dependency matching remains planned.
 
 1. [ ] Library/package dependencies: match consumers to providers within the explicit
    workspace, preserving identity/version/configuration and unresolved/candidate

@@ -11,7 +11,6 @@ registered today; workspace CSV processing is Go-only. Future features belong in
 scryer project scan [path]
 scryer project analyze [path] --before <ref> --after <ref|.>
 scryer workspace scan [path]
-scryer workspace import --projects <projects.csv> --dependencies <dependencies.csv>
 scryer engine list
 scryer engine install <engine> [engines...]
 scryer engine uninstall <engine>
@@ -21,12 +20,6 @@ Project paths default to the current directory. Project scan collects stack and 
 by default. Explicit Java scan options select the existing Java engine. On that
 path, `--static` skips build-model resolution. Workspace configuration commands
 and release/source engine installation are pending.
-
-`workspace import` is a temporary external-CSV adapter: it normalizes and reports
-facts without scanning code, registering projects or writing workspace config.
-Old top-level `scan`, `analyze` and `analyze workspace` have been removed, not hidden
-or aliased. Consumers must use the scope-first commands. Orrery's new Scryer provider
-version adapts the commands now rather than waiting for Java-engine extraction.
 
 ## Workspace scan
 
@@ -43,9 +36,8 @@ Run `scryer workspace scan --facts dependencies --json` at the workspace root,
 or pass the root as the optional path. The scan forwards selected facts to each
 member and defaults to `stack,loc`. Only configured members participate.
 
-Cross-project dependency matching currently uses declared CMake Git library
-references. IPC and REST APIs are outside this scan's scope. The report keeps
-the original declaration and classifies its normalized repository identity as
+The `dependencies` fact matches declared CMake Git library references. It
+keeps the original declaration and classifies its normalized repository identity as
 `local`, `external` or `ambiguous`. A local match names the workspace member
 path. Ambiguous matches list candidates and do not select one.
 
@@ -55,7 +47,13 @@ evidence and client-to-server matches for local Windows pipe names. A wrapper
 call can become an endpoint when a referenced local library exposes matching
 parameter evidence. Direct endpoints use the same matcher. Test endpoints
 remain visible in the JSON and are excluded from production matches. Multiple
-server projects with the same name are reported as ambiguous.
+server projects with the same name are reported as ambiguous. See the
+[IPC contract](contracts/WORKSPACE-IPC.md) for data-flow direction.
+
+The Mod CSV adapter `workspace import` has been removed. Use native workspace
+scans for supported relationships. See
+[TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation)
+for the planned Java workspace support.
 
 ## Scan report files
 
@@ -446,51 +444,6 @@ Section headings are bold cyan; successful commands/test records and execution h
 Available releases are version information, not upgrade recommendations. **Separately validate Java/build-tool versions, framework/plugin compatibility and dependency conflicts before upgrading.** Without `--remote-list`, these remote queries and the new section are omitted. `--static --remote-list` still queries remote metadata while skipping build-model execution.
 
 Changed Java files containing anonymous classes no longer abort method-change analysis. Enclosing named methods retain their syntax comparisons, while anonymous-class methods/initializers (including classes nested inside them) are not assigned speculative change identities. Reports name the before/after file and line as a partial change-impact limitation. This also applies to anonymous classes in field initializers, whose changes may have no identified method. Java parse errors remain explicit failures.
-
-## Workspace dependency facts (CSV)
-
-Read cross-repository facts without Java, build execution or network access:
-
-```bash
-scryer workspace import --projects projects.csv --dependencies dependencies.csv
-```
-
-Projects require `projectId`, `artifactId` or `projectName`. When both `groupId`
-and `artifactId` are present, their Maven coordinate is the identity. Dependencies
-accept `source,target` (consumer → dependency), or Moderne exports with
-`projectName` as consumer and `groupId,artifactId` as target. Additional columns
-and leading `#` metadata lines are ignored. Quoted CSV fields are supported.
-Duplicate project identities, ambiguous references and unknown consumers are
-errors; targets outside the project list are printed explicitly. Repeated edges
-are collapsed into one repository relationship, regardless of scope/version.
-These are declared relationships, not execution evidence or release constraints. A directory literally named
-`workspace` can still be analyzed using `scryer project analyze ./workspace --before … --after …`.
-
-
-## Workspace dependency reports
-
-```bash
-scryer workspace import --projects projects.csv --dependencies dependencies.csv -o dependencies.json
-scryer workspace import --projects projects.csv --dependencies dependencies.csv -o dependencies.html
-scryer workspace import --projects projects.csv --dependencies dependencies.csv --json
-```
-
-Workspace JSON schema version 1 contains `kind`, `edgeDirection`, `facts.projects`,
-`facts.dependencies` and `notes`. Projects and edges have deterministic ordering;
-IDs remain complete, while HTML shortens labels and shows full IDs on selection.
-Edges point from consumer to dependency. Repeated relationships retain their
-observed scopes (`""` means unspecified). JSON prints to stdout only with `--json`;
-file-save messages go to stderr. No CSV output is provided.
-
-HTML is a single offline file with embedded logo/data/scripts: pan, zoom, fit,
-node dragging, search, selection, dependency tables and keyboard selection.
-Workspace reports do not invoke Java, Mod CLI, a build tool or the network.
-
-`refactor-plan generate` has been removed. Dependency-based stage generation and
-execution-plan authoring belong to consuming platforms such as Orrery. The CSV
-workspace adapter above remains temporarily available until native workspace
-dependency scanning and the Orrery migration replace it; see
-[TD-006](TECH-DEBT.md#td-006-retire-csv-independencies-out-workspace-adaptation).
 
 ## Bundled Java runtime
 

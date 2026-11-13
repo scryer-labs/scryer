@@ -150,11 +150,9 @@ func Test_should_return_usage_errors_when_nested_command_arguments_are_invalid(t
 		{"project", "scan", "--facts", "unknown-fact"},
 		{"project", "scan", "--facts", "stack,loc", "--static"},
 		{"project", "analyze", "--before", "HEAD"},
-		{"workspace", "import"},
 		{"engine", "list", "extra"},
 		{"engine", "install"},
 		{"engine", "uninstall"},
-		{"workspace", "import", "--projects", "p.csv", "--dependencies", "d.csv", "-o", "bad.yaml"},
 	} {
 		t.Run(strings.Join(args, "_"), func(t *testing.T) {
 			fake := &fakeAnalyzer{}
@@ -170,7 +168,7 @@ func Test_should_return_usage_errors_when_nested_command_arguments_are_invalid(t
 }
 
 func Test_should_reject_legacy_entries_when_only_scope_commands_are_supported(t *testing.T) {
-	for _, args := range [][]string{{"scan", "--json"}, {"analyze", "--before", "HEAD", "--after", "HEAD"}, {"analyze", "workspace"}} {
+	for _, args := range [][]string{{"scan", "--json"}, {"analyze", "--before", "HEAD", "--after", "HEAD"}, {"analyze", "workspace"}, {"workspace", "import", "--projects", "p.csv", "--dependencies", "d.csv"}} {
 		fake := &fakeAnalyzer{}
 		var out, diagnostics bytes.Buffer
 		root := NewRoot(&application.Service{Analyzer: fake}, &out, &diagnostics)

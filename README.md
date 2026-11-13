@@ -72,8 +72,8 @@ specified in [AGENTS.md](AGENTS.md).
 - [Verification history](docs/archive/VERIFICATION.md): earlier observations, not current test totals.
 
 Current commands use project/workspace scopes; see [CLI](docs/CLI.md). Project scan defaults to Core stack and LOC facts.
-`workspace import` remains a Mod-fed CSV adapter, not
-native scanning. Release/source installation and `.scryer/` project configuration remain planned.
+`workspace scan` collects facts from configured members and matches supported cross-project relationships.
+Release/source installation and `.scryer/` project configuration remain planned.
 Use `scryer project scan --facts stack,loc` for explicit fact selection. See
 [decision 004](docs/decisions/004-multilanguage-scopes-cli-and-engine-config.md) and
 [milestones](docs/MILESTONES.md). Consumers own business/design judgments, plan

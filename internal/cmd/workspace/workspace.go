@@ -1,4 +1,4 @@
-// Package workspace owns workspace-scoped commands and external fact input.
+// Package workspace owns workspace-scoped commands.
 package workspace
 
 import (
@@ -8,6 +8,6 @@ import (
 
 func New(service *application.Service) *cobra.Command {
 	command := &cobra.Command{Use: "workspace", Short: "Work with workspace facts"}
-	command.AddCommand(newImportCommand(), newScanCommand(service))
+	command.AddCommand(newScanCommand(service))
 	return command
 }

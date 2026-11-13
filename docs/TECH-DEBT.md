@@ -67,22 +67,16 @@ Orrery. Future bounded shared checks do not justify keeping this plan generator.
 
 ## TD-006: Retire CSV-in/dependencies-out workspace adaptation
 
-- [ ] Status: temporary compatibility capability; blocked on workspace dependency scanning.
+- [x] Status: deprecated and removed. Scryer no longer supports the Mod-fed
+  `workspace import` operation or its CSV-based JSON/HTML reports. Orrery
+  `scryer@v1.9` omits the former `analyze-workspace` operation. Older plans
+  that call it require a Scryer binary that still supports the adapter.
 
-Retain the Mod-fed CSV capability for now: it normalizes externally collected facts
-and renders JSON/HTML; it does not scan repository dependencies itself. Orrery
-currently depends on Mod CLI collection followed by this adapter.
-
-The scope-first entry is now `workspace import --projects ... --dependencies ...`.
-The old `analyze workspace` entry is removed alongside immediate provider adaptation;
-there is no compatibility alias. The temporary adapter remains until native scanning
-replaces it. This supersedes the prior staged alias policy under decision 004.
-
-After native workspace scanning supports the needed dependency collection and the
-Orrery provider/scan plans have migrated and been verified, completely remove the
-temporary adapter and its exclusive code/tests/docs. Shared fact/report code still
-needed by native scanning may remain. Do not break the Mod-based consumer before
-the corresponding migration is ready; CSV input is not a permanent requirement.
+Future Java cross-project dependency scanning will use Java-engine facts and
+native `workspace scan` aggregation. C++ already follows this pattern for
+CMake library references: scanning Scriptorium matches Brush and Inkstone
+to Felt within the configured workspace. Java workspace dependency matching
+remains planned.
 
 ## TD-007: Retire Java-only project dependency flags
 

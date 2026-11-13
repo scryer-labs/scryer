@@ -25,8 +25,7 @@ suggestions. Business/design trade-offs and consultant-style advice remain human
 or consumer responsibilities. Existing Java impact/evidence
 matching remains; the CLI review must classify it before deliberately migrating
 behavior. Workspace phase/plan generation has been removed; Orrery owns that use
-case. The Mod-fed workspace CSV adapter remains temporarily under TD-006. Other
-current commands and Java evidence remain unchanged by this cleanup.
+case. The Mod-fed workspace CSV adapter has been removed under TD-006.
 
 Shared CLI/fact contracts and presentation stay in Core. Engine interfaces do not
 import Orrery types or have to match Orrery provider interfaces. Terminal, JSON and
@@ -43,8 +42,8 @@ The exact default stdout/file delivery policy remains to be designed.
 A project is a repository and may contain multiple languages and build modules.
 A workspace explicitly groups projects and their cross-repository relationships.
 A build-system workspace/module is a project-internal structure, not automatically
-Scryer's workspace scope. The CLI now exposes project/workspace scopes. Native workspace orchestration remains
-planned; its current import operation only adapts external CSV.
+Scryer's workspace scope. Native workspace scanning orchestrates scans of
+configured projects and matches supported cross-repository relationships.
 
 Workspace configuration retains explicit members, managed through init/add/remove.
 Workspace initially uses only `.scryer/workspace.yaml`; project configuration uses
