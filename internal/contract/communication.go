@@ -67,20 +67,35 @@ type TauriIPC struct {
 }
 
 type TauriApp struct {
-	Config    string          `json:"config"`
-	Endpoints []TauriEndpoint `json:"endpoints"`
-	Links     []TauriLink     `json:"links"`
+	Config    string           `json:"config"`
+	Endpoints []TauriEndpoint  `json:"endpoints"`
+	Links     []TauriLink      `json:"links"`
+	Unmatched []TauriUnmatched `json:"unmatched,omitempty"`
 }
 
 type TauriEndpoint struct {
-	Engine string `json:"engine"`
-	Kind   string `json:"kind"`
-	Role   string `json:"role"`
-	Name   string `json:"name"`
+	Engine           string       `json:"engine"`
+	Kind             string       `json:"kind"`
+	Role             string       `json:"role"`
+	Name             string       `json:"name"`
+	File             string       `json:"file"`
+	Line             uint         `json:"line"`
+	Column           uint         `json:"column"`
+	ResolutionReason string       `json:"resolutionReason,omitempty"`
+	ModuleID         string       `json:"moduleId,omitempty"`
+	Symbol           string       `json:"symbol,omitempty"`
+	Declaration      *TauriSource `json:"declaration,omitempty"`
+}
+
+type TauriSource struct {
 	File   string `json:"file"`
 	Line   uint   `json:"line"`
 	Column uint   `json:"column"`
-	Symbol string `json:"symbol,omitempty"`
+}
+
+type TauriUnmatched struct {
+	Endpoint TauriEndpoint `json:"endpoint"`
+	Reason   string        `json:"reason"`
 }
 
 type TauriLink struct {

@@ -41,7 +41,13 @@ func Aggregate(outcomes []contract.FactOutcome) *contract.TauriIPC {
 					continue
 				}
 				endpoint.Engine = outcome.Engine
-				if !slices.Contains(app.Endpoints, endpoint) {
+				if !slices.ContainsFunc(app.Endpoints, func(existing contract.TauriEndpoint) bool {
+					left, right := existing.Declaration, endpoint.Declaration
+					existing.Declaration = nil
+					candidate := endpoint
+					candidate.Declaration = nil
+					return existing == candidate && (left == right || left != nil && right != nil && *left == *right)
+				}) {
 					app.Endpoints = append(app.Endpoints, endpoint)
 				}
 			}
@@ -62,6 +68,11 @@ func validPath(file string) bool {
 }
 
 func validEndpoint(endpoint contract.TauriEndpoint) bool {
+	if source := endpoint.Declaration; source != nil &&
+		(endpoint.Kind != "command" || endpoint.Role != "registration" || source.File == "." ||
+			!validPath(source.File) || source.Line == 0 || source.Column == 0) {
+		return false
+	}
 	if endpoint.Name == "" || endpoint.File == "." || !validPath(endpoint.File) || endpoint.Line == 0 || endpoint.Column == 0 {
 		return false
 	}
@@ -89,22 +100,34 @@ func match(app *contract.TauriApp) {
 		case from.Kind == "command" && from.Role == "invoke":
 			declarations := index[endpointKey{"command", "declaration", from.Name}]
 			registrations := index[endpointKey{"command", "registration", from.Name}]
-			if len(declarations) != 1 || len(registrations) != 1 {
-				continue
+			var matches []contract.TauriLink
+			for _, registration := range registrations {
+				for _, to := range declarations {
+					sameDeclaration := registration.ResolutionReason == "" && to.Symbol != "" && to.Symbol == registration.Symbol && to.File == registration.File && to.ModuleID == registration.ModuleID
+					if evidence := registration.Declaration; evidence != nil {
+						sameDeclaration = to.File == evidence.File && to.Line == evidence.Line && to.Column == evidence.Column
+					}
+					if sameDeclaration && to.Engine == registration.Engine && from.Engine != to.Engine {
+						matches = append(matches, contract.TauriLink{
+							Kind: from.Kind, Name: from.Name, From: from, To: to, Registration: &registration,
+						})
+					}
+				}
 			}
-			to, registration := declarations[0], registrations[0]
-			// The initial declaration collector records a bare symbol. A qualified
-			// registration cannot be tied to it without module identity.
-			if to.Symbol != "" && to.Symbol == registration.Symbol && to.Engine == registration.Engine && from.Engine != to.Engine {
-				app.Links = append(app.Links, contract.TauriLink{
-					Kind: from.Kind, Name: from.Name, From: from, To: to, Registration: &registration,
-				})
+			if len(registrations) == 1 && len(matches) == 1 && (len(declarations) == 1 || matches[0].Registration.Declaration != nil) {
+				app.Links = append(app.Links, matches[0])
+			} else {
+				app.Unmatched = append(app.Unmatched, contract.TauriUnmatched{Endpoint: from, Reason: "command-target-not-unique-or-unproven"})
 			}
 		case from.Kind == "event" && from.Role == "emit":
+			before := len(app.Links)
 			for _, to := range index[endpointKey{"event", "listen", from.Name}] {
 				if from.Engine != to.Engine {
 					app.Links = append(app.Links, contract.TauriLink{Kind: from.Kind, Name: from.Name, From: from, To: to})
 				}
+			}
+			if len(app.Links) == before {
+				app.Unmatched = append(app.Unmatched, contract.TauriUnmatched{Endpoint: from, Reason: "no-cross-engine-listener-evidence"})
 			}
 		}
 	}

@@ -53,3 +53,26 @@ func TestAggregateMatchesOnlySameAppWithCompleteEvidence(t *testing.T) {
 		t.Fatalf("ambiguous declarations produced links: %+v", links)
 	}
 }
+
+func TestQualifiedRegistrationRequiresDeclarationEvidence(t *testing.T) {
+	registration := contract.TauriEndpoint{
+		Engine: "rust", Kind: "command", Role: "registration", Name: "save",
+		File: "src/lib.rs", Line: 10, Column: 1, Symbol: "commands::save",
+	}
+	invoke := contract.TauriEndpoint{Engine: "ts-js", Kind: "command", Role: "invoke", Name: "save"}
+	declaration := contract.TauriEndpoint{
+		Engine: "rust", Kind: "command", Role: "declaration", Name: "save",
+		File: "src/commands.rs", Line: 5, Column: 1, Symbol: "save",
+	}
+	unproven := contract.TauriApp{Endpoints: []contract.TauriEndpoint{invoke, registration, declaration}}
+	match(&unproven)
+	if len(unproven.Links) != 0 || len(unproven.Unmatched) != 1 {
+		t.Fatalf("expected one unmatched invocation: %+v", unproven)
+	}
+	registration.Declaration = &contract.TauriSource{File: declaration.File, Line: declaration.Line, Column: declaration.Column}
+	proven := contract.TauriApp{Endpoints: []contract.TauriEndpoint{invoke, registration, declaration}}
+	match(&proven)
+	if len(proven.Links) != 1 || len(proven.Unmatched) != 0 {
+		t.Fatalf("expected one linked invocation: %+v", proven)
+	}
+}
