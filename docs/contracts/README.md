@@ -3,8 +3,8 @@
 Go owns public commands, snapshots and rendering. The independent Java engine
 imports no Core internal packages: the interoperable boundary is JSON, not Go
 struct linkage. `internal/contract.Analyzer` is Core's internal use-case interface.
-Only Java is composed today; capability/config negotiation remains separate work. Local package installation
-is persistent and separate from fact transport.
+Core dispatches project facts through installed engine capabilities. Local
+package installation is persistent and separate from fact transport.
 
 ## Engine transport
 
@@ -142,3 +142,18 @@ Core uses the installed capabilities to split a project request across engines.
 Core keeps results from other facts and engines when one fact is unsupported.
 Java supports filtered `dependencies` and returns `UNSUPPORTED_FACT` or
 `UNSUPPORTED_OPERATION` for requests outside its capabilities.
+
+
+## Project scan consumer contracts
+
+- [Rust call graph](rust-call-graph.md)
+- [TS/JS call graph and Svelte facts](ts-js-call-graph.md)
+- [React architecture](react-architecture.md)
+- [Test classification](test-classification.md)
+- [Tauri IPC](tauri-ipc.md)
+- [Project and workspace Windows IPC](WORKSPACE-IPC.md)
+
+These contracts describe engine-specific data in collected project outcomes and
+Core's communication projection. Consumers can use scan-local IDs to join facts
+within the same report. The optional `resolutionReason` describes an observed
+item, and `limitations[]` describes coverage gaps for the enclosing fact.
