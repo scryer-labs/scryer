@@ -29,8 +29,8 @@ jobs:
         run: |
           set -eu
           export SCRYER_HOME="$(cygpath -w "$(mktemp -d)")"
-          mkdir -p build/fixture
-          printf 'int main() { return 0; }\n' > build/fixture/main.cpp
+          fixture="$(mktemp -d)"
+          printf 'int main() { return 0; }\n' > "$fixture/main.cpp"
           build/windows/scryer.exe engine install cpp --json > build/install.json
           build/windows/scryer.exe engine upgrade cpp --json > build/current.json
           python -c 'import json; assert json.load(open("build/current.json"))["status"]=="up-to-date"'
@@ -39,7 +39,7 @@ jobs:
           build/windows/scryer.exe engine install cpp --from build/old-engine
           build/windows/scryer.exe engine upgrade cpp --json > build/upgraded.json
           python -c 'import json; assert json.load(open("build/upgraded.json"))["status"]=="upgraded"'
-          build/windows/scryer.exe project scan build/fixture --facts files --json --compact > build/facts.json
+          build/windows/scryer.exe project scan "$(cygpath -w "$fixture")" --facts files --json --compact > build/facts.json
           python -c 'import json; facts=json.load(open("build/facts.json")); assert any(x.get("engine")=="cpp" and x["status"]=="collected" and x["data"]["files"][0]["path"]=="main.cpp" for x in facts["engineFacts"]),facts'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
