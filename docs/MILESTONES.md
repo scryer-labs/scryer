@@ -33,13 +33,11 @@ contents, supported targets and installation steps. Retain the source-build
 path and independent engine releases. Windows compiler-assisted project scans
 have a separate toolchain acceptance boundary.
 
-## M2 — C++ and taskmanager
+## M2 — C++ scan acceptance
 
-Use the local taskmanager repository as the main C++ and Orrery acceptance
-fixture after Core packaging. Check the product targets and the Catch2-based
-integration test framework across architecture, file membership and includes,
-call-graph and IPC. Use Scriptorium and shared_memory_exp to preserve the
-existing workspace and project communication cases.
+Verify product and test targets across architecture, file membership and
+includes, call graph, and IPC. Use Scriptorium for workspace communication
+regressions. Cover project-local shared-memory matching with focused fixtures.
 
 Compare static and `--resolve` outputs where the target toolchain and compile
 database are available. Fix concrete false links and missing facts, and retain
@@ -50,7 +48,7 @@ architecture and test evidence to Orrery for interactive rendering.
 ## M3 — Runtime coverage and change impact
 
 Design a shared execution-evidence contract, then implement the first C++
-collector using the taskmanager test setup where feasible:
+collector against a repeatable test setup:
 
 1. Bind test executions and coverage observations to a specific revision,
    build configuration and artifact. Keep test identity, observed file/line or

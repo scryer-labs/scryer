@@ -96,8 +96,6 @@ create/open observations by the exact mapping name. `openerEndpointId`
 and `creatorEndpointIds[]` reference the participating endpoints.
 `from` identifies the opener and `to` identifies the creator. Shared-memory
 links describe a named resource association without a data-flow direction.
-The `shared_memory_exp` project demonstrates this between its `app` and
-`tester` executables.
 
 ## Consumer rendering
 
@@ -107,8 +105,8 @@ access can be displayed without a data-flow arrowhead. Preserve source
 locations, wrapper parameter evidence, unmatched endpoints and ambiguous
 candidate sets. Library dependency edges remain independent of IPC.
 
-Acceptance examples include Scriptorium's Brush and Inkstone duplex link,
-Felt wrapper parameter evidence and the shared_memory_exp project association.
+Acceptance covers Scriptorium's Brush and Inkstone duplex link, Felt wrapper
+parameter evidence, and project-local shared-memory associations.
 
 See the [CLI reference](../CLI.md), [Workspace report type](../../internal/application/workspace_scan.go)
 and [IPC types and matcher](../../internal/application/workspace_ipc.go).

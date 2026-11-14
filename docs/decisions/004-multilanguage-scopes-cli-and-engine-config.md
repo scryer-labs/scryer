@@ -60,8 +60,6 @@ are permitted future capabilities; consultant-style business/design advice is no
 - Orrery project: Rust backend and TypeScript/React frontend in one repository;
   REST request/route facts are a representative relationship-matching case.
 - Scriptorium communication: C++/C++ and C++/Rust named-pipe relationships.
-- shared_memory_exp: Windows shared-memory relationships, deferred under the
-  macOS-first platform agreement.
 
 Multilanguage aggregation comes before complete cross-language linking. REST is
 first among network mechanisms; GraphQL/RPC wait. Cross-project computation uses
