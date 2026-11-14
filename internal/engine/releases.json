@@ -2,5 +2,21 @@
   "cpp": {
     "repository": "scryer-labs/scryer-cpp-engine",
     "asset": "scryer-cpp-engine-{version}-{os}-{arch}.zip"
+  },
+  "rust": {
+    "repository": "scryer-labs/scryer-rust-engine",
+    "asset": "scryer-rust-engine-{version}-{os}-{arch}.zip"
+  },
+  "ts-js": {
+    "repository": "scryer-labs/scryer-ts-js-engine",
+    "asset": "scryer-ts-js-engine-{version}-{os}-{arch}.zip"
+  },
+  "go": {
+    "repository": "scryer-labs/scryer-go-engine",
+    "asset": "scryer-go-engine-{version}-{os}-{arch}.zip"
+  },
+  "java": {
+    "repository": "scryer-labs/scryer-java-engine",
+    "asset": "scryer-java-engine-{version}-{os}-{arch}.zip"
   }
 }
