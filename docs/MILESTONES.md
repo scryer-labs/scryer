@@ -63,8 +63,8 @@ See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable sli
    complete packages through engine.json and owned user storage. No source checkout
    dependency remains after installation. Installation is platform/identity checked,
    staged and locked; existing installs require explicit uninstall before reinstall.
-   Release downloads, archive extraction, source compilation and version switching
-   remain future work. Seven real project scans return to modernization's provider
+   The original local-package implementation preceded release installs. Seven real
+   project scans return to modernization's provider
    integration, no longer duplicated inside the engine linkage plan.
 3. [x] **Done (behavior-preserving extraction)** — Move Kotlin production code,
    facts/JSON tests, Gradle and JVM/runtime packaging to scryer-java-engine. Core
@@ -76,9 +76,11 @@ See [decision 001](decisions/001-analyzer-distribution.md). Work in runnable sli
    `20261102T170558213Z-f877edf4` all succeeded. The first integration attempt
    incorrectly expected scan HTML; its assertion was corrected to existing scan
    JSON/Markdown behavior, with analyze HTML retained. No scan feature was added.
-4. [ ] Package/release the independent engine with bundled Java 21 runtime on GitHub.
-   Install compatible stable assets; also support source builds through an engine-owned
-   build entry producing the same package layout. Source builds require dev toolchains.
+4. [x] Publish official packages on GitHub with stable installation and upgrades.
+   C++, Rust, TS/JS and Go publish macOS arm64 and Windows amd64 packages. Java also
+   publishes Linux amd64 packages, and all Java releases bundle Java 21. Engine-owned
+   build scripts produce local packages for development. Selecting a pinned version
+   or invoking source compilation directly from Core remains future work.
 5. [ ] Provide automatic global config/data/cache defaults and optional SCRYER_HOME;
    users must not initialize a global home. The initial user home and persistent local
    inventory are implemented; cache separation and additional preferences remain future
