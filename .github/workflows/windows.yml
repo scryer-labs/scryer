@@ -28,19 +28,19 @@ jobs:
         shell: bash
         run: |
           set -eu
-          if ! gh api repos/scryer-labs/scryer-cpp-engine/releases/latest --jq '.tag_name' >/dev/null; then
-            echo "No C++ release yet; run this workflow again after publishing it."
-            exit 0
-          fi
-          export SCRYER_HOME="$(mktemp -d)"
+          export SCRYER_HOME="$(cygpath -w "$(mktemp -d)")"
           mkdir -p build/fixture
           printf 'int main() { return 0; }\n' > build/fixture/main.cpp
-          build/windows/scryer.exe engine install cpp
-          build/windows/scryer.exe engine upgrade cpp
+          build/windows/scryer.exe engine install cpp --json > build/install.json
+          build/windows/scryer.exe engine upgrade cpp --json > build/current.json
+          python -c 'import json; assert json.load(open("build/current.json"))["status"]=="up-to-date"'
+          python -c 'import json,shutil; from pathlib import Path; dest=Path("build/old-engine"); source=Path(json.load(open("build/install.json"))["engines"][0]["packageRoot"]); shutil.copytree(source,dest,ignore=shutil.ignore_patterns(".scryer-install.json")); manifest=dest/"engine.json"; data=json.loads(manifest.read_text()); data["engine"]["version"]="0.0.0-dev"; manifest.write_text(json.dumps(data))'
+          build/windows/scryer.exe engine uninstall cpp
+          build/windows/scryer.exe engine install cpp --from build/old-engine
+          build/windows/scryer.exe engine upgrade cpp --json > build/upgraded.json
+          python -c 'import json; assert json.load(open("build/upgraded.json"))["status"]=="upgraded"'
           build/windows/scryer.exe project scan build/fixture --facts files --json --compact > build/facts.json
           python -c 'import json; facts=json.load(open("build/facts.json")); assert any(x.get("engine")=="cpp" and x["status"]=="collected" and x["data"]["files"][0]["path"]=="main.cpp" for x in facts["engineFacts"]),facts'
-        env:
-          GH_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: scryer-windows-amd64
