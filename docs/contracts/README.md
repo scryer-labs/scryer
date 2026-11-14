@@ -157,3 +157,5 @@ These contracts describe engine-specific data in collected project outcomes and
 Core's communication projection. Consumers can use scan-local IDs to join facts
 within the same report. The optional `resolutionReason` describes an observed
 item, and `limitations[]` describes coverage gaps for the enclosing fact.
+
+See also [toolchain-assisted scan facts](RESOLVE.md).
