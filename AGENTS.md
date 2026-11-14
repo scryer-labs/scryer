@@ -14,13 +14,11 @@ Commit subjects use `<type>: <summary>`. Allowed types are:
 
 Choose the type for the primary purpose of the commit. Keep summaries concise and specific. Do not rewrite existing history unless the user requests it.
 
-## Refactoring design reference
+## Scope and milestones
 
-Read [decision 004](docs/decisions/004-multilanguage-scopes-cli-and-engine-config.md)
-for the agreed multilanguage domain, scope-first commands, minimal engine YAML
-(no pre-stability compatibility work), three JSON result layers and modular Core
-reporting before the next refactoring slice. It separates agreed behavior from
-remaining open schema/flag details; it is not a claim of implemented capability.
+Use the [current documentation](docs/README.md) and [milestones](docs/MILESTONES.md).
+[Decision 004](docs/decisions/004-multilanguage-scopes-cli-and-engine-config.md)
+records the rationale for scope-first commands, engine configuration and result layers.
 
 ## Development acceptance
 
@@ -42,37 +40,23 @@ commands/scope without agreement. Read-only inspection and documentation checks
 remain appropriate. Report exactly which checks ran and any missing acceptance
 evidence; documentation checks are not code-pipeline acceptance.
 
-After the 2026-11-02 Java extraction, acceptance is ordered:
-
-1. Scryer: `scryer-lab--daily-development` (Go/report tests, standalone build/install,
-   Core-only packages; no Java or Gradle setup).
-2. Engine: `scryer-java-engine--daily-development` (Go wrapper, Kotlin facts/JSON,
-   JVM worker and slim/bundled-Java-21 package checks).
-3. Workspace: `scryer-lab--scryer-java-engine-integration` (persistent local-package
-   lifecycle in an isolated home, source independence, analyze/test execution,
-   snapshots/cancellation, then installing the current bundled engine for normal use).
-4. Modernization: `modernization--scryer-orrery-integration`, rooted at
-   `/Users/edwardnoaland/Desktop/ThoughtWorksProjects/modernization/test_workspace`.
-   Its seven project plans run in parallel through the formal scryer@v1.5 provider.
-   Keep seven-project scans here, not duplicated in scryer-lab.
-
-The first three definitions live under scryer-lab. Integration installs a known
-complete artifact, then normal scans discover it without executable overrides.
-Its final step refreshes the owned default Java installation from the current
-bundled package so the modernization provider can consume it without a restart. Never add Core
-checkout/report-resource dependencies to engine tests. No Kotlin/Gradle files
-belong in this repository.
+Run the Core plan first for Core changes. Run the affected engine's own plan
+when changing its scanner or package, then the relevant workspace integration.
+For official release installation and upgrade, use
+`scryer-lab--all-release-installation` with an isolated Scryer home. For Java
+worker or analyze changes, use `scryer-java-engine--daily-development` and
+`scryer-lab--scryer-java-engine-integration`. The latter verifies Java snapshots,
+execution and cancellation, and refreshes the default Java installation.
 
 If Orrery/provider implementation changes, also run `orrery--daily-dev-pipeline`.
-Provider operations use their resolved project target, not an arbitrary directory
-override. The existing `modernization--scryer-orrery-integration` in test_workspace
-is the provider acceptance plan; provider processes discover the persisted
-installation automatically. Do not add an implicit sibling-repository fallback to Core.
+Provider operations use their resolved project target. Use
+`modernization--scryer-orrery-integration` under the existing `test_workspace`
+for changes to its active project scans. The retired CSV adapter remains
+recorded under TD-006.
 
-Keep each repository's plan aligned with its CI workflow when build ownership
-changes. Packaging checks are local acceptance; uploading artifacts is CI-only.
-The installed Java package declares a C ABI v1 library. The workspace cancellation check verifies Core owns the JVM child and that cancelling the ABI request terminates its process group.
-
+Keep engine tests independent of Core report resources and keep Kotlin/Gradle
+in the Java engine repository. Avoid an implicit sibling-repository fallback
+in Core. CI handles hosted artifact upload and release publication.
 Global installation/config storage defaults to ~/.config/scryer on macOS as well,
 matching Orrery/nvim; do not use os.UserConfigDir() or Library/Application Support.
 SCRYER_HOME remains an explicit override. Project engine YAML is a separate layer.

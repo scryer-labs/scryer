@@ -1,5 +1,8 @@
 # Work decision 002: Explicit scan scopes, configuration and fact ownership
 
+Historical decision record. See the [current documentation](../README.md)
+for delivered behavior and priorities.
+
 Date: 2026-10-31
 Status: Agreed direction; CLI/configuration/engine changes are not implemented.
 The blanket rule-judgment exclusion below is refined by

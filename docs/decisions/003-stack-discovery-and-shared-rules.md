@@ -1,5 +1,8 @@
 # Work decision 003: Stack discovery, engine auto-install and shared rules
 
+Historical decision record. See the [current documentation](../README.md)
+for delivered behavior and priorities.
+
 Date: 2026-10-31
 Status: Agreed direction; discovery, auto-install and shared rules are not implemented.
 

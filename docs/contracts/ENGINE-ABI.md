@@ -24,11 +24,11 @@ it needs after the call. Text is UTF-8 and sizes exclude a trailing NUL.
   the buffer back exactly once to the same library, including buffers from
   error results. Core caps responses at 256 MiB.
 
-Java runs its JVM in a separate process group and signals the group on
-cancellation. Its wrapper resolves jars and the bundled runtime relative to the
-library. Core keeps loaded libraries resident for its process lifetime. The
-dynamic loader supports macOS and Linux with cgo. Packages can also provide an
-executable for standalone use. Core selects the library when both are declared.
+Java resolves its worker jars and bundled runtime relative to the library.
+On POSIX it runs and cancels the JVM as a separate process group. Core keeps
+loaded libraries resident for its process lifetime. Supported ABI loaders
+cover macOS, Linux and Windows with cgo. Official releases use the library
+entrypoint. Core retains a legacy executable adapter.
 
 The ABI version governs the function layout and lifetime rules. The JSON
 `protocolVersion` continues to govern request and response content.

@@ -65,6 +65,19 @@ An explicit test registration call can carry `testEvidence` with `module`,
 `test-suite`, and `benchmark-registration`. This evidence applies to the
 call. A matching filename or package dependency does not mark the file.
 
+## Go wire format
+
+Go marks language-defined test files and their source observations with
+`testOnly`. A package can contain both implementation and test files.
+See the [Go facts contract](https://github.com/scryer-labs/scryer-go-engine/blob/main/docs/FACTS.md).
+
+## C++ boundary
+
+The C++ IPC collector currently provides a path-based `sourceRole` hint.
+The strict classification contract applies to future C++ test-purpose
+facts, which will require build or framework evidence. Consumers should
+treat the current hint as IPC-specific.
+
 ## Orrery behavior
 
 Orrery applies the supplied markers by default and preserves the original

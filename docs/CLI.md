@@ -1,9 +1,7 @@
 # Command reference
 
-Updated 2026-11-02. Current command behavior, analysis boundaries and report formats.
-Run build/test examples from the repository root. Only the Java analyzer is
-registered today; workspace CSV processing is Go-only. Future features belong in
-[milestones](MILESTONES.md), not in the current CLI contract.
+Use this reference for supported commands, reports and evidence boundaries.
+See [milestones](MILESTONES.md) for planned work.
 
 ## Current command layout
 
@@ -13,13 +11,15 @@ scryer project analyze [path] --before <ref> --after <ref|.>
 scryer workspace scan [path]
 scryer engine list
 scryer engine install <engine> [engines...]
+scryer engine upgrade <engine> [engines...]
 scryer engine uninstall <engine>
 ```
 
-Project paths default to the current directory. Project scan collects stack and LOC
-by default. Explicit Java scan options select the existing Java engine. On that
-path, `--static` skips build-model resolution. Workspace configuration commands
-and release/source engine installation are pending.
+Project and workspace paths default to the current directory. Both scan commands
+default to `stack,loc` and support `--facts`, `--json` and `--compact`.
+Use `--resolve` to request supported toolchain evidence. The legacy Java scan
+options select the Java engine, and `--static` on that path skips build-model
+resolution. Manage workspace membership in YAML.
 
 ## Workspace scan
 
@@ -42,7 +42,8 @@ keeps the original declaration and classifies its normalized repository identity
 path. Ambiguous matches list candidates and do not select one.
 
 Workspace IPC is a separate fact. Use `--facts dependencies,ipc` to see
-library references and IPC side by side. `communication.ipc.windows.namedPipe` lists endpoint
+library references and IPC side by side. Core aggregates Windows named pipes
+and shared memory. `communication.ipc.windows.namedPipe` lists endpoint
 evidence and client-to-server matches for local Windows pipe names. A wrapper
 call can become an endpoint when a referenced local library exposes matching
 parameter evidence. Direct endpoints use the same matcher. Test endpoints
@@ -134,7 +135,7 @@ Core also adds a repository identity to recognized CMake `GIT_REPOSITORY`
 declarations. The original arguments and source location remain available.
 SSH and HTTPS URLs for the same hosted repository can share the same ID.
 
-## Persistent local engine management
+## Engine installation and upgrades
 
 ```sh
 scryer engine install java --from ../scryer-java-engine/build/install/scryer-java-engine
@@ -163,7 +164,14 @@ For a configured engine, `scryer engine install cpp` or `scryer engine install r
 GitHub Release that includes a package for the host platform.
 `scryer engine upgrade cpp` stages and verifies a newer release before replacing
 the installed package. An installed development build can upgrade to a stable
-release. Source compilation and pinned versions are separate work.
+release. Remote install and upgrade show per-engine progress on stderr in
+terminal mode. The download has its own 15-minute limit, separate from release
+lookup. With `--json`, stdout remains the final result. If one engine fails
+after others have completed, the result is `partial` and the command exits
+nonzero. An unsuccessful download leaves that engine's installed version in
+place. Release lookup uses the GitHub anonymous API quota; a rate-limit error
+includes the reset time when available. Direct source compilation and pinned
+versions remain planned.
 
 The default release sources are declared in the bundled
 `internal/engine/releases.json`. Override a source through
@@ -192,7 +200,7 @@ configuration and other engines. A missing uninstall target is an error. Empty
 list returns an empty array and does not create a global home.
 
 Add --json to return operation/status/persisted and engines. Each installation
-contains engine identity, executable, packageRoot, sourcePath and installedAt.
+contains engine identity, library or executable, packageRoot, sourcePath and installedAt.
 Persisted is true; management no longer returns mock receipts. Protocol/report
 JSON remains a separate contract and is unchanged by installation metadata.
 
@@ -200,17 +208,18 @@ The home defaults to ~/.config/scryer, matching the nvim/Orrery directory
 convention even on macOS, and is created automatically on installation. SCRYER_HOME is an optional
 advanced/test override. Users need not initialize or understand the directory.
 Mutations use an interprocess lock; incomplete copies are never listed as installs.
-Current persistent management targets macOS/Linux; Windows is to be supported.
+Remote packages are available on the OS and architecture combinations listed below.
 
-Discovery order is an explicit development executable/SCRYER_ENGINE_<ID> override,
-then the persisted installation, then scryer-<id>-engine on PATH. Invalid explicit
-overrides and broken installed metadata fail visibly rather than silently falling
-back. Normal installed-engine use needs no path environment variables. Core reads
-installed inventory per invocation, so Orrery need not restart after installation.
+Core discovers installed engine libraries on each invocation. The engine client
+checks explicit `SCRYER_ENGINE_<ID>` overrides first, then installed packages,
+then its legacy executable fallback. Selected facts still use the installed
+capability inventory. Orrery can use newly installed engines without a restart.
 
-## Run
+## Java scan and analyze
 
-Core requires Go, not Java/Gradle. The independent Java engine uses Java 21, Kotlin 2.2.21 and the Gradle 8.14.3 Wrapper. Install its local package once; PATH or SCRYER_ENGINE_JAVA remain optional development overrides. Core starts the wrapper; the wrapper starts its JVM. Target repositories may use older JDKs and build tools.
+Install the Java engine to collect Java dependency facts and to run
+`project analyze`. Its ABI library starts the bundled Java 21 worker.
+The target repository may require its own JDK and build tools.
 
 Run project analyze from inside the target Git repository (or a subdirectory):
 
@@ -222,7 +231,7 @@ scryer project analyze --help
 
 References resolve to commit SHAs through Git: SHA IDs, branches, tags and expressions such as `HEAD~1` are accepted. The comparison is a direct before-to-after snapshot diff, not a merge-base diff. Commit-to-commit comparisons exclude working-tree changes; use `--after .` for the supported isolated working-tree mode described below. Output lists statuses, before/after paths (including detected renames), and zero-context old/new line ranges. A zero-length range is an insertion/deletion boundary. Binary, mode-only and pure rename changes can have no textual ranges. Rename detection uses Git similarity heuristics.
 
-Both reference arguments are required; invalid arguments exit with code 2. Invalid refs, a non-Git current directory or Git failures exit with code 1. Analysis creates a temporary shared clone and two standalone detached checkouts, reads changed `.java` files with the JDK Java parser, and removes the temporary workspace afterwards. The target repository's working tree and worktree registrations remain unchanged. Git and a full JDK 21 are required.
+Both reference arguments are required; invalid arguments exit with code 2. Invalid refs, a non-Git current directory or Git failures exit with code 1. Analysis creates a temporary shared clone and two standalone detached checkouts, reads changed `.java` files with the JDK Java parser, and removes the temporary workspace afterwards. The target repository's working tree and worktree registrations remain unchanged. Git and a Java 21 engine runtime are required.
 
 Methods and constructors are matched by package, enclosing class, name and source parameter types. Output distinguishes ADDED, MODIFIED and DELETED declarations with before/after locations. Overloads and named nested classes are supported. Signature changes appear as deletion plus addition; a pure file rename with identical declarations produces no method changes. AST comparison ignores comments and formatting and includes declaration annotations, return types and method bodies. Test methods are included too, with production/test/unknown source roles retained.
 
@@ -233,13 +242,6 @@ Analyze also performs JDK source attribution for both snapshots and constructs *
 `DIRECT` edges mean the compile-time target, not observed runtime execution. Source overrides are included as `POSSIBLE_DISPATCH`; `super`, static, private and final calls are not expanded. Method references and lambda bodies are potential calls; creating a callback does not prove it executes. Constructors and recursive cycles are supported.
 
 The collector currently includes Java files outside `.git`, `.tooling`, `.gradle`, `build`, `target` and `node_modules`. With build-model execution enabled, it uses discovered module/source roots and target dependency classpaths; source-only fallback remains partial. Missing types/dependencies, external targets and initializer calls are boundaries. Duplicate symbol identities across files are excluded rather than merged. Javac attribution diagnostics indicate incomplete resolution, not target build results. Framework/DI wiring, dynamic reflection, generated code, dynamically loaded/external subclasses and non-method context impact remain unknown. No absence of callers or graph percentage implies safety. JSON, Markdown and HTML exports retain these boundaries.
-
-```sh
-export JAVA_HOME="$(mise where java)"
-./scripts/build
-export PATH="$PWD/build/install/scryer/bin:$PATH"
-scryer project scan ../legacy-java-fixture --facts dependencies --resolve
-```
 
 The legacy Java report shows a concise summary and, unless requested with `--static`, attempts dependency resolution with the target repository's Wrapper. This evaluates target build configuration and may download dependency metadata/plugins; it does **not** compile, test or package the target. Arbitrary build configuration code can have its own side effects. Use `--static` to inspect local declarations/source signals without executing target configuration or downloading anything.
 
@@ -268,9 +270,8 @@ Quote paths with spaces. The selected path (current directory by default) must c
 
 ## Summary and count semantics
 
-The default view groups Project, Dependencies, Key dependencies (at most five), Testing, Code Characteristics, Verification and collection notes. It does not print the entire transitive graph. `--json` retains all notes and facts; the terminal summary retains collection notes.
+The legacy Java view groups Project, Dependencies, Key dependencies (at most five), Testing, Code Characteristics, Verification and collection notes. It does not print the entire transitive graph. `--json` retains all notes and facts; the terminal summary retains collection notes.
 
-For the legacy fixture, scan observes Java source/target 8, Gradle 4.10.3, one module, Spring Boot plugin 2.1.18.RELEASE, JUnit 4, JaCoCo configuration, javax usage and reflection. Actual resolved Spring starters are 2.1.18.RELEASE and Mockito is 2.23.4.
 
 - Direct (observed): unique module/group/artifact declarations across configurations, including dependencies added by evaluated build configuration. Dependency detail retains each configuration and declaration expression. Managed-only entries are not counted as direct dependencies; explicitly declared platforms are.
 - Resolved components: unique group/artifact/version across collected configurations. Includes build-tool configurations such as JaCoCo, not only application runtime.

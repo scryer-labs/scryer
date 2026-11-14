@@ -1,28 +1,18 @@
 # Analyzer contract v1
 
-Go owns public commands, snapshots and rendering. The independent Java engine
-imports no Core internal packages: the interoperable boundary is JSON, not Go
-struct linkage. `internal/contract.Analyzer` is Core's internal use-case interface.
-Core dispatches project facts through installed engine capabilities. Local
-package installation is persistent and separate from fact transport.
+Core dispatches project facts through installed engine capabilities.
+`internal/contract.Analyzer` is Core's internal use-case interface.
+The engine boundary uses versioned JSON carried by the C ABI.
+The Java scan/analyze examples below describe the Java report contract.
 
 ## Engine transport
 
-Core resolves an explicit override, its installed inventory or a launcher on PATH.
-For a package declaring a library, Core uses the [C ABI v1 contract](ENGINE-ABI.md).
-For an executable entrypoint, Core invokes `execute`. The Go wrapper starts the
-JVM worker and forwards stdin,
-stdout and stderr without rendering or rewriting JSON. Each invocation accepts
-one request and returns one response. Diagnostics use stderr; framing is EOF,
-not JSON Lines. Requests are limited to 1 MiB by the JVM worker. Paths are absolute
-filesystem paths. Exit 0 means delivery, not necessarily successful analysis:
-a structured engine error or failed target tests can be part of a valid response.
-
-The separate `describe` operation returns exactly one identity with protocolVersion
-1, id/name/version/source and mock false for the real Java engine. Core applies a
-10-second describe deadline. Persistent management returns installed/list/uninstalled receipts with persisted
-true; identity mock false describes the real engine. Installation metadata uses
-its own engine.json schema and is not a fact report.
+Official packages declare their ABI library, identity and capabilities in
+`engine.json`. Core loads the [C ABI v1 contract](ENGINE-ABI.md) and invokes
+`execute_v1` with a JSON request. Java forwards its request to the JVM worker
+over stdin/stdout and keeps diagnostics on stderr. Core also retains a legacy
+executable adapter for development overrides. A valid response may describe a
+structured engine error or a failed target test. Paths in requests are absolute.
 
 Request envelope:
 
@@ -132,7 +122,7 @@ the Java dependency/version-oriented scan implementation.
 ## Installed capabilities and selected scan facts
 
 A package can declare `capabilities` in its manifest with `languages`,
-`operations` and `scanFacts` arrays. `engine list --json` exposes the effective
+`operations`, `scanFacts` and optional `resolveFacts` arrays. `engine list --json` exposes the effective
 capabilities and their source. Older Java packages expose the legacy scan and
 analyze operations without opt-in filtered facts.
 
@@ -146,6 +136,7 @@ Java supports filtered `dependencies` and returns `UNSUPPORTED_FACT` or
 
 ## Project scan consumer contracts
 
+- [Go project facts](https://github.com/scryer-labs/scryer-go-engine/blob/main/docs/FACTS.md)
 - [Rust call graph](rust-call-graph.md)
 - [TS/JS call graph and Svelte facts](ts-js-call-graph.md)
 - [React architecture](react-architecture.md)

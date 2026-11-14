@@ -1,5 +1,8 @@
 # Work decision 001: Independent analyzer distribution and Go integration
 
+Historical decision record. See the [current documentation](../README.md)
+for delivered behavior and priorities.
+
 Date: 2026-10-25
 Status: Java repository/process extraction implemented 2026-11-02; persistent installation and release publication remain planned.
 

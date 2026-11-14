@@ -1,9 +1,7 @@
 # Technical debt and existing analysis limitations
 
-Updated 2026-11-10. Item IDs are not priority ranks. New analyzer installation,
-language support and architecture/test fact capabilities belong in
-[milestones](MILESTONES.md), not duplicated implementation tasks here. The CLI/configuration and
-engine-extraction sequence takes precedence unless a real regression requires a fix.
+Item IDs are stable. Delivery order and new capabilities live in
+[milestones](MILESTONES.md).
 
 ## TD-001: Finish the Go/JVM migration cleanup
 
@@ -42,14 +40,12 @@ missing evidence or test adequacy from current reports.
 
 ## TD-004: Packaging portability and independent release transition
 
-- [ ] Status: deferred maintenance coordinated with M1.
+- [ ] Status: official engine releases verified. Core release publication is M1.
 
-Packages are host-specific directory distributions; current CI builds Ubuntu/Linux
-amd64 packages and uploads workflow artifacts. Windows-native distribution,
-additional OS/architecture coverage and published release installation are not
-proven by those artifact checks. Core and engine packaging are now separate; maintain relocation, runtime
-discovery, legal notices and the distinction between analyzer and target JVMs. Installer/repository design is owned by
-[decision 001](decisions/001-analyzer-distribution.md).
+Preserve package relocation, runtime discovery, legal notices and separate JVMs
+for the Java worker and target builds. Current Windows release checks cover native
+Core, engine lifecycle and static scans. Target-specific resolution and execution
+need their own acceptance.
 
 ## TD-005: Remove refactor-plan generation from Scryer
 
@@ -59,11 +55,9 @@ discovery, legal notices and the distinction between analyzer and target JVMs. I
 
 Removed `refactor-plan generate`, its phase/cycle scheduling implementation,
 platform-plan YAML export and dedicated presentation/tests. A CLI regression check
-requires the removed command to fail without invoking an analyzer. Orrery already derives
-phases and creates plan drafts from dependency facts; its Scryer provider calls
-`analyze workspace`, not `refactor-plan`. Execution-plan generation belongs to the
-consuming platform. Preserve the CSV dependency facts and JSON/HTML path used by
-Orrery. Future bounded shared checks do not justify keeping this plan generator.
+requires the removed command to fail without invoking an analyzer.
+Execution-plan generation belongs to Orrery. Its CSV input was subsequently
+retired under TD-006.
 
 ## TD-006: Retire CSV-in/dependencies-out workspace adaptation
 

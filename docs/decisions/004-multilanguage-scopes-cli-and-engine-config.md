@@ -1,5 +1,8 @@
 # Work decision 004: Multilanguage scopes, commands and engine configuration
 
+Historical decision record. See the [current documentation](../README.md)
+for delivered behavior and priorities.
+
 Date: 2026-11-02
 Updated: 2026-11-02, including configuration and report-layer refinements.
 Status: Agreed design direction and core command behavior; not implemented.

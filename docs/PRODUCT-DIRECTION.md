@@ -1,139 +1,52 @@
-# Product direction and engine handoff
+# Product direction
 
-Updated 2026-11-02. Planned boundaries, not implemented commands or configuration.
-[Milestones](MILESTONES.md) owns delivery order; [CLI](CLI.md) and
-[architecture](ARCHITECTURE.md) describe current behavior.
+[Milestones](MILESTONES.md) holds the delivery order, and the
+[command reference](CLI.md) describes the current interface.
 
-## Independent facts tool
+## Facts and consumers
 
-Scryer is an independent fact-scanning tool with installable language engines.
-It produces structured facts and human-readable reports for people, AI and other
-consumers, including Orrery and a future Hunch-test comparator. Future plugin
-categories are possible, but do not justify a general plugin framework now.
+Scryer is a lightweight repository fact provider for people and tools. Core
+owns scope, engine selection, shared contracts, aggregation and presentation.
+Engines own language and framework extraction and return JSON. JSON carries
+the collected facts, including source locations, provenance, unresolved
+observations and unsupported capabilities. Markdown is a human-readable
+projection of those facts.
 
-Scryer does not own scan history, tracking, persistent timelines, plan execution
-or design judgments. It may scan explicitly supplied Git history or branch-policy
-inputs in the future without retaining its own history. Installed-engine settings,
-portable `.scryer/` configuration, temporary snapshots, output files and caches are
-compatible with this boundary. Existing retained evidence is not deleted or
-reinterpreted by this decision.
+Orrery owns durable scan and plan history, interactive architecture, user
+annotations and design decisions. Scryer may read Git history and explicitly
+run target tooling to collect evidence. It keeps no history of its own scans.
+Static scanning works without a successful target build. Toolchain resolution
+and test execution have separate, explicit evidence boundaries.
 
-Language/build-specific parsing, symbol resolution and evidence-backed relationship
-extraction belong to engines. Core may later provide shared, reproducible rules
-for code smells, bounded test-effectiveness checks and evidence-backed refactoring
-suggestions. Business/design trade-offs and consultant-style advice remain human
-or consumer responsibilities. Existing Java impact/evidence
-matching remains; the CLI review must classify it before deliberately migrating
-behavior. Workspace phase/plan generation has been removed; Orrery owns that use
-case. The Mod-fed workspace CSV adapter has been removed under TD-006.
+## Scope and composition
 
-Shared CLI/fact contracts and presentation stay in Core. Engine interfaces do not
-import Orrery types or have to match Orrery provider interfaces. Terminal, JSON and
-other reports derive from the same facts; presentation must not invent evidence.
-Engines return only structured JSON; Core aggregates engine/project/workspace results
-through distinct contracts. Core generates MD/HTML from JSON using shared components,
-stack-specific report modules and separate scope views. Unknown extensions retain
-JSON-detail fallbacks; there is no report plugin framework in this slice.
-Every command, including engine management, must provide a JSON result contract.
-The exact default stdout/file delivery policy remains to be designed.
+A project is a single repository, possibly with multiple languages and build
+units. A workspace is the highest scope and explicitly groups projects.
+Core dispatches workspace scans to projects and project scans to matching
+engines. Workspace aggregation uses project facts to match relationships
+such as local library references and IPC. A build-system workspace or project
+module remains internal to its repository.
 
-## Explicit scan scopes
+Architecture, files and call graphs provide linked detail. Components belong
+to a project. Files record component membership where observed. Symbols and
+call sites have source locations. Identity and source evidence let consumers
+follow the relationships without merging unrelated candidates.
 
-A project is a repository and may contain multiple languages and build modules.
-A workspace explicitly groups projects and their cross-repository relationships.
-A build-system workspace/module is a project-internal structure, not automatically
-Scryer's workspace scope. Native workspace scanning orchestrates scans of
-configured projects and matches supported cross-repository relationships.
+Workspace membership uses `.scryer/workspace.yaml`. The agreed future
+project-local configuration is `.scryer/engines/<engine-id>.yaml`. Engines
+would supply minimal defaults and Core would initialize missing files.
+Ordinary scanning and engine-free stack/LOC discovery leave installation
+to an explicit engine command.
 
-Workspace configuration retains explicit members, managed through init/add/remove.
-Workspace initially uses only `.scryer/workspace.yaml`; project configuration uses
-`.scryer/engines/<engine-id>.yaml`, with no generic project.yaml. Engines supply
-minimal default templates (initially allowed to be empty), and Core initializes
-missing files without overwriting existing choices. Derive fields from real needs;
-pre-stability engine configs do not require compatibility/migration mechanisms.
-Workspace never owns engine-specific configuration. Scope-first commands, default
-stack/LOC scanning, analyze, report completeness and outstanding schema decisions
-are consolidated in [decision 004](decisions/004-multilanguage-scopes-cli-and-engine-config.md).
-These are agreed design, not implemented CLI/configuration capabilities.
+## Evidence-backed checks
 
-## Stack discovery and shared checks
+Future shared checks may evaluate coverage, change impact, test effectiveness
+and code smells using defined inputs. Engines supply language-specific
+evidence, with common rules shared where the facts support them. Missing
+evidence remains unknown. Architectural trade-offs and consultant-style
+recommendations stay with users and consumers.
 
-Core should identify project/workspace technology-stack signals without installed
-language engines, using lightweight file/manifest/build-declaration detection with
-source evidence. Workspace discovery uses configured membership. Users explicitly
-batch-install missing engines. Installed inventory and a remote available-engine
-list remain separate; no install-all or stack-driven auto-install is planned in
-this slice. This refines decision 003's earlier auto-install direction. Ordinary
-scans do not install engines, but first engine use may initialize its missing
-project configuration as agreed in decision 004.
-
-Shared checks operate on common facts rather than being reimplemented in every
-engine repository. Declarative mappings can describe language-to-fact normalization
-and rule conditions; JSON configuration does not replace semantic extraction or
-shared algorithms. Engine capabilities progressively cover symbols, typed relations,
-types, source locations, control/data flow and test/execution evidence. Rules declare
-the facts they require; missing capabilities/evidence remain unsupported or unknown.
-Findings and raw facts remain distinct. See
-[decision 003](decisions/003-stack-discovery-and-shared-rules.md), which refines the
-previous blanket exclusion of rule judgments. `suggest`/`check` names and schema
-remain open; derive the shared rule format from concrete cross-language cases later.
-
-## Source-first facts and supported platform
-
-Basic source/symbol extraction must not require the target project to build or run.
-Richer resolution may need dependencies, generated sources, compiler options or
-build metadata. Execution evidence requires explicit execution capabilities/options.
-Retain available facts and identify unresolved or unsupported portions rather than
-requiring a successful target build before producing anything.
-
-macOS is the current primary development and acceptance platform. Windows migration
-for daily input-method development is deferred until Scryer and Orrery are stable;
-Ubuntu-specific IPC work is outside the current scope. Existing Ubuntu CI remains
-in place. Keep platform boundaries clear without adding Windows work now.
-
-## Engine handoff and consumer loop
-
-The first command reorganization preserves Java behavior. Then verify engine
-management with mocks and a minimal worker, install from a user-created Java-engine
-repository, and move Java behind an independent Go-wrapper process. Publish packages
-with bundled Java runtime and support development installs from source. Define the
-external contract as extraction needs it, without blocking the first CLI slice. The `engine`
-category name is provisional. Keep existing Java capabilities and evidence during
-the split, with Java runtime requirements owned by the optional Java engine.
-Java validates the engine mechanism and preserves its current abilities; future
-capabilities may be unsupported until there is a concrete Java need.
-
-Command-level consumer adaptation now ships immediately with provider v1.4; no
-legacy CLI entries remain. After extraction, milestone **2.1** handles the remaining
-installed-engine/configuration contract changes. Add a new published provider version; do not edit immutable
-published provider YAML. Validate standalone use and the Orrery integration.
-
-Implement engine-free default stack/LOC after extraction and the 2.1 checkpoint.
-Core global state is automatic and transparent to users; standalone Core go install
-must not require Java. Core, engine and their integration get separate/composable
-acceptance plans. The next language is chosen after the extraction checkpoint. C++, Rust, TypeScript, Go and Markdown
-are target capabilities; their implementation order is undecided. Mixed-language
-projects include Scriptorium Ink (Tauri), Orrery (TypeScript/HTML/CSS/Rust) and
-Scryer (Go/Kotlin). Compose available engines and expose coverage gaps before
-attempting complete cross-language semantic linkage. Tauri is a framework, not a
-source language.
-
-Facts should cover symbols, typed relations, architecture structure/pattern signals,
-internal dependencies and workspace-local cross-repository dependencies. Prioritize
-library/package relationships and concrete REST/named-pipe use cases. REST takes
-priority over other network mechanisms; GraphQL/RPC wait. Windows shared-memory
-validation remains deferred under the macOS-first agreement. Preserve package,
-version, configuration, source and engine/schema provenance. A matching name alone
-is not proof that a local checkout supplies a dependency or that two endpoints
-communicate. Candidate matches and unresolved relations remain explicit.
-
-Orrery owns durable history, code-state associations, interactive architecture
-views and user annotations. Consumers may compare supplied facts and evaluate
-architectural expectations; missing evidence must not become a passing judgment.
-Do not wait for every language or IPC mechanism before exposing useful project facts.
-
-## Development acceptance
-
-[Contributor instructions](../AGENTS.md#development-acceptance) own the Orrery plan
-location, invocation rules and acceptance reporting. The current plan covers the
-combined CLI/Java-engine layout; update it alongside CI when repositories split.
+macOS is the primary development and local acceptance platform. Windows
+packages are part of the distribution path. Build and execution support
+depends on the target toolchain and project. See
+[architecture](ARCHITECTURE.md) and [milestones](MILESTONES.md).

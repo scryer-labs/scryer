@@ -15,8 +15,8 @@ scryer workspace scan --facts dependencies,ipc --json > workspace.json
 The workspace root must contain `.scryer/workspace.yaml` with its member paths.
 Use a current Scryer build and an installed C++ Engine that advertises `ipc`.
 The C++ engine reads source and CMake declarations without building the Windows
-target. Use Orrery's `scryer@v1.9/scan-workspace` for workspace IPC. For a project
-scan plan, pass `architecture,ipc` to `scryer@v1.9/scan`. `ipc` alone also
+target. In Orrery, use the published Scryer provider's workspace or project scan
+operation with the same facts. `ipc` alone also
 collects executable ownership evidence. `architecture` supplies the component
 table for joining and display.
 
@@ -99,37 +99,16 @@ links describe a named resource association without a data-flow direction.
 The `shared_memory_exp` project demonstrates this between its `app` and
 `tester` executables.
 
-## First Orrery view
+## Consumer rendering
 
-Display a single duplex IPC edge **Brush ↔ Inkstone** for
-`scriptorium_input_protocol_pipe`. Brush is the client and Inkstone is
-the server. Render `client-to-server` with an arrowhead at the server,
-`server-to-client` at the client, and `duplex` at both ends. For
-`unknown` or `incompatible`, show the relationship and its status
-without a data-flow arrowhead. Keep the two Felt library edges under
-their own relation type. An IPC edge detail should show the client and
-server call locations and the corresponding Felt parameter evidence. Keep
-Inkstone's UI pipe available as a server-only endpoint. Keep Felt's test
-endpoint distinguishable from production evidence.
+Show named-pipe access direction independently of endpoint role. A duplex
+match can be drawn with an arrowhead at each end. Unknown or incompatible
+access can be displayed without a data-flow arrowhead. Preserve source
+locations, wrapper parameter evidence, unmatched endpoints and ambiguous
+candidate sets. Library dependency edges remain independent of IPC.
 
-Suggested checks for the view are a shared server referenced by multiple
-clients, an ambiguous server match and a server-only endpoint. Run Orrery's
-existing Daily Dev Pipeline after changes to the UI or backend.
-
-## Verified local artifacts
-
-Scryer + C++ Engine Integration run `20261112T134947228Z-56fbf5a1` passed in
-`scryer-lab`. Its `workspace-scan` step scanned the existing Scriptorium
-workspace and verified the Brush–Inkstone duplex link in the [complete workspace JSON](/Users/edwardnoaland/Desktop/experiment/scryer-lab/.orrery/plans/runs/20261112T134947228Z-56fbf5a1/outputs/20261112T134947228Z-56fbf5a1/workspace-scan/dccc1262-2a10-4411-afca-aca34c4f7c95/workspace.json).
-
-The `shared_memory_exp` project scan produced a [project facts artifact](/Users/edwardnoaland/Desktop/experiment/shared_memory_exp/.orrery/plans/runs/20261112T135125327Z-737425f9/outputs/20261112T135125327Z-da4dfc06/scan/7cbcc97d-96a7-4945-875d-0ef77f60a32c/facts.json)
-with the `tester` and `app` shared-memory link under
-`communication.ipc.windows.sharedMemory`.
-
-Felt's project-level IPC Verify run `20261112T111656560Z-0818ae63` passed in
-`scriptorium-workspace`. Its [IPC evidence JSON](/Users/edwardnoaland/Desktop/experiment/input_method/scriptorium-workspace/.orrery/plans/runs/20261112T111656560Z-0818ae63/outputs/20261112T111656560Z-0818ae63/scan/b2e17994-1fa0-494c-a0eb-4f1104a21930/ipc.json)
-shows three factory and three constructor parameter observations and a
-concrete test endpoint.
+Acceptance examples include Scriptorium's Brush and Inkstone duplex link,
+Felt wrapper parameter evidence and the shared_memory_exp project association.
 
 See the [CLI reference](../CLI.md), [Workspace report type](../../internal/application/workspace_scan.go)
 and [IPC types and matcher](../../internal/application/workspace_ipc.go).
