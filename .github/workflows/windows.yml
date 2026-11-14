@@ -24,23 +24,8 @@ jobs:
           export CGO_ENABLED=1
           go build -trimpath -o build/windows/scryer.exe ./cmd/scryer
           build/windows/scryer.exe engine --help
-      - name: Install published C++ engine and collect facts
-        shell: bash
-        run: |
-          set -eu
-          export SCRYER_HOME="$(cygpath -w "$(mktemp -d)")"
-          fixture="$(mktemp -d)"
-          printf 'int main() { return 0; }\n' > "$fixture/main.cpp"
-          build/windows/scryer.exe engine install cpp --json > build/install.json
-          build/windows/scryer.exe engine upgrade cpp --json > build/current.json
-          python -c 'import json; assert json.load(open("build/current.json"))["status"]=="up-to-date"'
-          python -c 'import json,shutil; from pathlib import Path; dest=Path("build/old-engine"); source=Path(json.load(open("build/install.json"))["engines"][0]["packageRoot"]); shutil.copytree(source,dest,ignore=shutil.ignore_patterns(".scryer-install.json")); manifest=dest/"engine.json"; data=json.loads(manifest.read_text()); data["engine"]["version"]="0.0.0-dev"; manifest.write_text(json.dumps(data))'
-          build/windows/scryer.exe engine uninstall cpp
-          build/windows/scryer.exe engine install cpp --from build/old-engine
-          build/windows/scryer.exe engine upgrade cpp --json > build/upgraded.json
-          python -c 'import json; assert json.load(open("build/upgraded.json"))["status"]=="upgraded"'
-          build/windows/scryer.exe project scan "$(cygpath -w "$fixture")" --facts files --json --compact > build/facts.json
-          python -c 'import json; facts=json.load(open("build/facts.json")); assert any(x.get("engine")=="cpp" and x["status"]=="collected" and x["data"]["files"][0]["path"]=="main.cpp" for x in facts["engineFacts"]),facts'
+      - name: Install and upgrade released engines and collect facts
+        run: python scripts/check-release-engines.py build/windows/scryer.exe
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: scryer-windows-amd64
