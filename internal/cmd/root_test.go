@@ -282,3 +282,41 @@ func Test_should_collect_stack_and_loc_when_no_engine_is_installed(t *testing.T)
 		})
 	}
 }
+
+func Test_should_keep_scan_facts_when_json_is_compacted(t *testing.T) {
+	directory := t.TempDir()
+	config := filepath.Join(directory, ".scryer")
+	if err := os.Mkdir(config, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(config, "workspace.yaml"), []byte("projects: [member]\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(directory, "member"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, scope := range []string{"project", "workspace"} {
+		t.Run(scope, func(t *testing.T) {
+			scan := func(flags ...string) []byte {
+				t.Helper()
+				var output bytes.Buffer
+				command := NewRoot(&application.Service{}, &output, &output)
+				command.SetArgs(append([]string{scope, "scan", directory, "--json", "--facts", "stack"}, flags...))
+				if err := command.Execute(); err != nil {
+					t.Fatal(err)
+				}
+				return output.Bytes()
+			}
+			pretty := scan()
+			compact := scan("--compact")
+			var expected bytes.Buffer
+			if err := json.Compact(&expected, pretty); err != nil {
+				t.Fatal(err)
+			}
+			expected.WriteByte('\n')
+			if len(compact) >= len(pretty) || !bytes.Equal(compact, expected.Bytes()) {
+				t.Fatal("compact JSON must contain the same facts on one line")
+			}
+		})
+	}
+}

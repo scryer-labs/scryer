@@ -80,3 +80,6 @@ Use `scryer project scan --facts stack,loc` for explicit fact selection. See
 execution and long-lived history. macOS remains the primary acceptance platform.
 
 Contributions follow [AGENTS.md](AGENTS.md), including `<type>: <summary>` commits.
+
+Use the global `--compact` flag with `--json` to emit a single-line JSON
+report. This applies to project and workspace scans and project analysis.

@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -59,9 +58,13 @@ func newScanCommand(service *application.Service) *cobra.Command {
 				fmt.Fprintln(cmd.ErrOrStderr(), "scryer: report written to "+output)
 			}
 			if jsonOutput {
-				encoder := json.NewEncoder(cmd.OutOrStdout())
-				encoder.SetIndent("", "  ")
-				return encoder.Encode(result)
+				compact, _ := cmd.Flags().GetBool("compact")
+				data, err := report.JSONOutput(result, compact)
+				if err != nil {
+					return err
+				}
+				_, err = cmd.OutOrStdout().Write(data)
+				return err
 			}
 			out := cmd.OutOrStdout()
 			if result.Dependencies != nil {

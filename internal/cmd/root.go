@@ -23,6 +23,7 @@ import (
 
 func NewRoot(service *application.Service, out, errOut io.Writer) *cobra.Command {
 	root := &cobra.Command{Use: "scryer", Short: "Repository facts and change/test evidence", SilenceUsage: true, SilenceErrors: true}
+	root.PersistentFlags().Bool("compact", false, "Write JSON without indentation")
 	root.SetOut(out)
 	root.SetErr(errOut)
 	root.AddCommand(projectcmd.New(service), workspacecmd.New(service), enginecmd.New())

@@ -59,11 +59,31 @@ func decode(document contract.Document) (Object, error) {
 	return result, err
 }
 func JSON(document contract.Document) ([]byte, error) {
+	return JSONOutput(document.Data, false)
+}
+
+func JSONOutput(value any, compact bool) ([]byte, error) {
 	var output bytes.Buffer
-	if err := json.Indent(&output, document.Data, "", "  "); err != nil {
+	if raw, ok := value.(json.RawMessage); ok {
+		var err error
+		if compact {
+			err = json.Compact(&output, raw)
+		} else {
+			err = json.Indent(&output, raw, "", "  ")
+		}
+		if err != nil {
+			return nil, err
+		}
+		output.WriteByte('\n')
+		return output.Bytes(), nil
+	}
+	encoder := json.NewEncoder(&output)
+	if !compact {
+		encoder.SetIndent("", "  ")
+	}
+	if err := encoder.Encode(value); err != nil {
 		return nil, err
 	}
-	output.WriteByte('\n')
 	return output.Bytes(), nil
 }
 func Terminal(document contract.Document, out io.Writer, verbose, color bool) error {

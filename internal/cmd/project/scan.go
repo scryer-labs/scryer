@@ -79,8 +79,9 @@ func newScanCommand(service *application.Service) *cobra.Command {
 		if err != nil {
 			return err
 		}
+		compact, _ := cmd.Flags().GetBool("compact")
 		if jsonOutput {
-			data, err := report.JSON(document)
+			data, err := report.JSONOutput(document.Data, compact)
 			if err != nil {
 				return err
 			}

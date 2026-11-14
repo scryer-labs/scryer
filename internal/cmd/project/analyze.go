@@ -87,8 +87,9 @@ func runAnalysis(cmd *cobra.Command, args []string, service *application.Service
 	if err != nil {
 		return err
 	}
+	compact, _ := cmd.Flags().GetBool("compact")
 	if jsonOutput {
-		data, err := report.JSON(document)
+		data, err := report.JSONOutput(document.Data, compact)
 		if err != nil {
 			return err
 		}
@@ -104,7 +105,7 @@ func runAnalysis(cmd *cobra.Command, args []string, service *application.Service
 		var data []byte
 		switch strings.ToLower(filepath.Ext(output)) {
 		case ".json":
-			data, err = report.JSON(document)
+			data, err = report.JSONOutput(document.Data, compact)
 		case ".md":
 			data, err = report.Markdown(document)
 		case ".html":
