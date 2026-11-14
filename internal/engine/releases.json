@@ -1,0 +1,6 @@
+{
+  "cpp": {
+    "repository": "scryer-labs/scryer-cpp-engine",
+    "asset": "scryer-cpp-engine-{version}-{os}-{arch}.zip"
+  }
+}

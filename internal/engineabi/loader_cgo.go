@@ -1,10 +1,14 @@
-//go:build cgo && (darwin || linux)
+//go:build cgo && (darwin || linux || windows)
 
 package engineabi
 
 /*
 #cgo linux LDFLAGS: -ldl
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <dlfcn.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include "scryer_engine_v1.h"
@@ -26,12 +30,31 @@ static void call_release(void *fn, scryer_buffer_v1 buffer) {
 }
 
 static void *open_engine(const char *path, char **error) {
+#ifdef _WIN32
+    int size = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, NULL, 0);
+    if (!size) return NULL;
+    wchar_t *wide = calloc(size, sizeof(wchar_t));
+    if (!wide) return NULL;
+    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, wide, size);
+    HMODULE handle = LoadLibraryExW(wide, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_SYSTEM32);
+    free(wide);
+    return (void *)handle;
+#else
     void *handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
     if (!handle) {
         const char *message = dlerror();
         if (message) *error = strdup(message);
     }
     return handle;
+#endif
+}
+
+static void *engine_symbol(void *handle, const char *symbol) {
+#ifdef _WIN32
+    return (void *)GetProcAddress((HMODULE)handle, symbol);
+#else
+    return dlsym(handle, symbol);
+#endif
 }
 */
 import "C"
@@ -72,7 +95,7 @@ func open(path string) (library, error) {
 	lookup := func(symbol string) unsafe.Pointer {
 		name := C.CString(symbol)
 		defer C.free(unsafe.Pointer(name))
-		return C.dlsym(handle, name)
+		return C.engine_symbol(handle, name)
 	}
 	result := library{lookup("execute_v1"), lookup("cancel_v1"), lookup("release_buffer_v1")}
 	if result.executeFn == nil || result.cancelFn == nil || result.releaseFn == nil {

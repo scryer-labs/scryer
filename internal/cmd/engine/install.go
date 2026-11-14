@@ -14,7 +14,7 @@ func newInstallCommand() *cobra.Command {
 	var jsonOutput bool
 	command := &cobra.Command{
 		Use:   "install <engine> [engines...]",
-		Short: "Install complete local engine packages",
+		Short: "Install stable releases or complete local engine packages",
 		Args:  cobra.MinimumNArgs(1),
 	}
 	command.Flags().StringSliceVar(&sources, "from", nil, "Local package directories (repeat for multiple engines)")
@@ -24,9 +24,7 @@ func newInstallCommand() *cobra.Command {
 		if executable != "" && len(sources) > 0 {
 			return fmt.Errorf("--from and --executable are mutually exclusive")
 		}
-		if executable == "" && len(sources) == 0 {
-			return fmt.Errorf("provide --from <local-package>; release/source installation is not supported yet")
-		}
+
 		return nil
 	}
 	command.RunE = func(cmd *cobra.Command, args []string) error {
@@ -36,6 +34,9 @@ func newInstallCommand() *cobra.Command {
 				return err
 			}
 			sources = []string{directory}
+		}
+		if len(sources) == 0 {
+			return fetch(cmd, args, jsonOutput, false)
 		}
 		packages := map[string]string{}
 		for _, source := range sources {

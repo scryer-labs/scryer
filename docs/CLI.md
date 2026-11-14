@@ -159,8 +159,32 @@ engines with status partial and exits nonzero. This is not a batch transaction.
 --executable remains available for a launcher inside a complete local package;
 it resolves engine.json rather than installing an arbitrary bin directory.
 Existing installations are not overwritten: uninstall before reinstalling.
-Archive extraction, release download, source compilation and version switching
-are later work. Installing a slim package still requires external Java 21;
+For the C++ engine, `scryer engine install cpp` installs the latest stable
+GitHub Release that includes a package for the host platform.
+`scryer engine upgrade cpp` stages and verifies a newer release before replacing
+the installed package. An installed development build can upgrade to a stable
+release. Source compilation and pinned versions are separate work.
+
+The default release sources are declared in the bundled
+`internal/engine/releases.json`. Override a source through
+`~/.config/scryer/engine-sources.json`, or under `SCRYER_HOME`. The file
+maps engine IDs to `repository` (GitHub owner and repository) and `asset`
+(a ZIP filename template with `{version}`, `{os}`, and `{arch}`).
+For example:
+
+```json
+{
+  "cpp": {
+    "repository": "scryer-labs/scryer-cpp-engine",
+    "asset": "scryer-cpp-engine-{version}-{os}-{arch}.zip"
+  }
+}
+```
+
+The installer checks the asset's published SHA-256, package ID, version,
+platform and C ABI. An engine package is executable code. Select release
+sources you trust.
+ Installing a slim package still requires external Java 21;
 a bundled-runtime package does not.
 
 List and uninstall use persisted inventory and take no executable/source path.

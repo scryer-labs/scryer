@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -82,14 +83,14 @@ func ReadPackage(directory string) (Manifest, string, error) {
 		}
 	}
 	if manifest.Library != "" && !engineabi.IsLibrary(manifest.Library) {
-		return manifest, "", fmt.Errorf("engine library must be a .dylib or .so")
+		return manifest, "", fmt.Errorf("engine library must be a .dylib, .so or .dll")
 	}
 	return manifest, root, nil
 }
 
 func verifyPackage(ctx context.Context, root string, manifest Manifest, diagnostics io.Writer) error {
 	if manifest.Library != "" {
-		if err := engineabi.Check(filepath.Join(root, filepath.FromSlash(manifest.Library))); err != nil {
+		if err := checkLibrary(ctx, filepath.Join(root, filepath.FromSlash(manifest.Library))); err != nil {
 			return err
 		}
 	}
@@ -102,6 +103,21 @@ func verifyPackage(ctx context.Context, root string, manifest Manifest, diagnost
 	}
 	if identity != manifest.Engine {
 		return fmt.Errorf("engine describe identity does not match package manifest")
+	}
+	return nil
+}
+
+func checkLibrary(ctx context.Context, library string) error {
+	if runtime.GOOS != "windows" {
+		return engineabi.Check(library)
+	}
+	// A loaded Windows DLL cannot be moved into the installation directory.
+	executable, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	if output, err := exec.CommandContext(ctx, executable, "__engine-abi-check", library).CombinedOutput(); err != nil {
+		return fmt.Errorf("engine ABI check: %w: %s", err, output)
 	}
 	return nil
 }

@@ -1,0 +1,48 @@
+name: Windows Core
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: go.mod
+      - name: Select Windows C compiler
+        shell: bash
+        run: echo 'C:\msys64\mingw64\bin' >> "$GITHUB_PATH"
+      - name: Build native Core executable
+        shell: bash
+        run: |
+          set -eu
+          export CGO_ENABLED=1
+          go build -trimpath -o build/windows/scryer.exe ./cmd/scryer
+          build/windows/scryer.exe engine --help
+      - name: Install published C++ engine and collect facts
+        shell: bash
+        run: |
+          set -eu
+          if ! gh api repos/scryer-labs/scryer-cpp-engine/releases/latest --jq '.tag_name' >/dev/null; then
+            echo "No C++ release yet; run this workflow again after publishing it."
+            exit 0
+          fi
+          export SCRYER_HOME="$(mktemp -d)"
+          mkdir -p build/fixture
+          printf 'int main() { return 0; }\n' > build/fixture/main.cpp
+          build/windows/scryer.exe engine install cpp
+          build/windows/scryer.exe engine upgrade cpp
+          build/windows/scryer.exe project scan build/fixture --facts files --json --compact > build/facts.json
+          python -c 'import json; facts=json.load(open("build/facts.json")); assert any(x.get("engine")=="cpp" and x["status"]=="collected" and x["data"]["files"][0]["path"]=="main.cpp" for x in facts["engineFacts"]),facts'
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scryer-windows-amd64
+          path: build/windows/scryer.exe
+          if-no-files-found: error

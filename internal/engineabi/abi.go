@@ -10,7 +10,7 @@ import (
 
 func IsLibrary(path string) bool {
 	ext := filepath.Ext(path)
-	return ext == ".dylib" || ext == ".so"
+	return ext == ".dylib" || ext == ".so" || ext == ".dll"
 }
 
 func Execute(ctx context.Context, path, id string, request []byte) ([]byte, error) {

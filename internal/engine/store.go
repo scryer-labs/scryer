@@ -140,6 +140,10 @@ func (s Store) load(id string) (Installation, error) {
 }
 
 func (s Store) Install(ctx context.Context, id, source string, diagnostics io.Writer) (Installation, error) {
+	return s.install(ctx, id, source, "", Installation{}, diagnostics)
+}
+
+func (s Store) install(ctx context.Context, id, source, provenance string, previous Installation, diagnostics io.Writer) (Installation, error) {
 	if err := validateID(id); err != nil {
 		return Installation{}, err
 	}
@@ -165,12 +169,20 @@ func (s Store) Install(ctx context.Context, id, source string, diagnostics io.Wr
 	}
 	target := filepath.Join(s.directory(), id)
 	if _, err := os.Lstat(target); err == nil {
-		if _, err := s.load(id); err != nil {
+		current, err := s.load(id)
+		if err != nil {
 			return Installation{}, err
 		}
-		return Installation{}, fmt.Errorf("engine %q is already installed; uninstall it before installing another package", id)
+		if previous.Engine.ID == "" {
+			return Installation{}, fmt.Errorf("engine %q is already installed; use engine upgrade or uninstall first", id)
+		}
+		if !reflect.DeepEqual(current, previous) {
+			return Installation{}, fmt.Errorf("engine %q changed during upgrade; retry", id)
+		}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return Installation{}, err
+	} else if previous.Engine.ID != "" {
+		return Installation{}, ErrNotInstalled
 	}
 	staging, err := os.MkdirTemp(s.directory(), ".install-")
 	if err != nil {
@@ -186,13 +198,38 @@ func (s Store) Install(ctx context.Context, id, source string, diagnostics io.Wr
 	if err := verifyPackage(ctx, staging, manifest, diagnostics); err != nil {
 		return Installation{}, err
 	}
-	metadata := record{SchemaVersion: 1, Manifest: manifest, SourcePath: source, InstalledAt: time.Now().UTC().Format(time.RFC3339Nano)}
+	if provenance == "" {
+		provenance = source
+	}
+	metadata := record{SchemaVersion: 1, Manifest: manifest, SourcePath: provenance, InstalledAt: time.Now().UTC().Format(time.RFC3339Nano)}
 	if err := writeJSON(filepath.Join(staging, installRecord), metadata); err != nil {
 		return Installation{}, err
 	}
-	// Publish only the fully copied and verified package. Existing installations are never overwritten.
-	if err := os.Rename(staging, target); err != nil {
+	if err := ctx.Err(); err != nil {
 		return Installation{}, err
+	}
+	if previous.Engine.ID == "" {
+		if err := os.Rename(staging, target); err != nil {
+			return Installation{}, err
+		}
+	} else {
+		backupDir, err := os.MkdirTemp(s.directory(), ".upgrade-")
+		if err != nil {
+			return Installation{}, err
+		}
+		backup := filepath.Join(backupDir, id)
+		if err := os.Rename(target, backup); err != nil {
+			_ = os.Remove(backupDir)
+			return Installation{}, err
+		}
+		if err := os.Rename(staging, target); err != nil {
+			if restoreErr := os.Rename(backup, target); restoreErr != nil {
+				return Installation{}, errors.Join(err, fmt.Errorf("old installation retained at %s: %w", backup, restoreErr))
+			}
+			_ = os.Remove(backupDir)
+			return Installation{}, err
+		}
+		_ = os.RemoveAll(backupDir)
 	}
 
 	return s.load(id)

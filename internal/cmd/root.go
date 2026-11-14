@@ -18,6 +18,7 @@ import (
 	workspacecmd "github.com/edwardnoaland/scryer/internal/cmd/workspace"
 	"github.com/edwardnoaland/scryer/internal/contract"
 	"github.com/edwardnoaland/scryer/internal/engine"
+	"github.com/edwardnoaland/scryer/internal/engineabi"
 	"github.com/spf13/cobra"
 )
 
@@ -59,6 +60,13 @@ func wrapCommandValidation(command *cobra.Command) {
 }
 
 func Execute() int {
+	if len(os.Args) == 3 && os.Args[1] == "__engine-abi-check" {
+		if err := engineabi.Check(os.Args[2]); err != nil {
+			fmt.Fprintln(os.Stderr, "scryer:", err)
+			return 1
+		}
+		return 0
+	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	root := NewRoot(&application.Service{
