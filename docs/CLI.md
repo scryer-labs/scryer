@@ -146,8 +146,8 @@ scryer engine uninstall java --json
 Install copies a complete local package, including worker jars and an optional
 bundled runtime, into owned user-level storage. The source can then be moved or
 removed. Each package contains engine.json (schemaVersion 1, engine identity,
-relative executable, OS and architecture); install checks platform and identity
-against the copied launcher's describe response before publishing it. The reserved
+relative ABI library, OS and architecture). Core checks the package identity,
+platform and ABI exports before moving it into place. The reserved
 .scryer-install.json records ownership, source and installation time. Foreign
 platforms, escaping links/paths, mismatched identities and unowned destinations
 are rejected. Internal links are relocated inside the copied package.
@@ -470,14 +470,13 @@ Changed Java files containing anonymous classes no longer abort method-change an
 
 ## Bundled Java runtime
 
-Java runtime packaging belongs to the independent engine repository. Its
-`-with-java21` ZIP/TAR keeps `bin/`, `lib/java/` and `runtime/` together and runs
-`bin/scryer-java-engine`. Runtime selection is SCRYER_ANALYZER_JAVA_HOME, then the
-engine's bundled runtime, then JAVA_HOME/PATH. SCRYER_JAVA_CLASSPATH remains an
-engine-owned development override. SCRYER_JAVA_HOME separately selects the target
-build/test JVM. Core packages contain no Java runtime or jars and no longer accept
-`scripts/package --with-runtime`.
+Java releases carry the ABI library, the worker jars and a Java 21 runtime.
+Runtime selection is `SCRYER_ANALYZER_JAVA_HOME`, then the bundled runtime, then
+`JAVA_HOME` or `PATH`. `SCRYER_JAVA_CLASSPATH` is a development override.
+`SCRYER_JAVA_HOME` separately selects the JVM used by target build and test
+commands. Core packages contain only the CLI and its report resources.
 
-Core and engine remain OS/architecture-specific distributions. CI builds Ubuntu
-packages; macOS is the primary local acceptance platform. GitHub Release publication
-and release/source engine installation are not implemented yet.
+Official releases are available for macOS arm64 and Windows amd64. Java also
+publishes a Linux amd64 package. These packages support static scanning after
+installation. Resolve and analysis operations may require the target project's
+toolchain.

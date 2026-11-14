@@ -20,26 +20,18 @@ Java, Kotlin, Gradle or an engine checkout:
 go install ./cmd/scryer
 ```
 
-Java scan/analyze uses the independently built
-[scryer-java-engine](https://github.com/scryer-labs/scryer-java-engine).
-Build/extract its complete local package, then install it once:
+Install the official engines you need for your projects:
 
 ```sh
-./build/install/scryer/bin/scryer engine install java --from /absolute/path/to/scryer-java-engine/build/install/scryer-java-engine
-./build/install/scryer/bin/scryer project scan ../legacy-maven-fixture --static
-./build/install/scryer/bin/scryer project analyze ../repository --before HEAD~1 --after HEAD
+scryer engine install cpp rust ts-js go java
+scryer engine upgrade cpp rust ts-js go java
+scryer project scan . --facts architecture,files,call-graph --json
 ```
 
-Core starts the Go wrapper, which starts its JVM worker. The engine owns Java 21,
-worker jars and runtime selection; Core owns snapshots, protocol validation and
-reports. No Kotlin sources or Gradle files remain in this repository. Missing
-engines produce an explicit error for engine operations.
-Local-package engine installation, listing and uninstall are persistent. Core automatically discovers installed engines. PATH and SCRYER_ENGINE_JAVA remain development overrides; release downloads and source builds are not implemented.
-
-Default Java scans evaluate target build configuration and may download metadata;
-`--static` skips build-model execution. Analyze runs target tests unless
-`--skip-tests` is supplied. See the [command reference](docs/CLI.md) for modes,
-side effects, working-tree comparisons, custom commands and evidence limits.
+Core discovers installed engines and loads their ABI libraries. The Java engine
+runs its JVM worker with a bundled Java 21 runtime. Use `--from` to install a
+local package during engine development. See the [command reference](docs/CLI.md)
+for scan modes, resolve prerequisites and analysis options.
 
 ## Verify and package
 
@@ -52,14 +44,15 @@ node --test scripts/test-report-graph.cjs
 
 Core packages contain only the Go CLI, embedded reporting assets, README and
 license; no jars or Java runtime. Archives are written under `build/distributions/`.
-The engine owns its slim and Java-21-runtime packages. Both distributions can be
-relocated independently; installed packages are copied in full and discovered automatically.
+The Java engine owns its slim and Java-21-runtime packages. Installed engine
+packages are copied in full and discovered automatically.
 
 The [CI workflow](.github/workflows/ci.yml) checks Go and browser report code,
 builds Core without Java, verifies extracted packages and standalone `go install`,
-and uploads archives/checksums. Engine CI owns JVM tests and packaging. Neither
-workflow publishes GitHub Releases yet. Local acceptance uses Orrery plans as
-specified in [AGENTS.md](AGENTS.md).
+and uploads archives/checksums. The Windows workflow checks the released engines
+through the native CLI. Official engine repositories publish platform-specific
+GitHub Releases. Install them with `scryer engine install cpp rust ts-js go java`.
+Local acceptance uses Orrery plans as specified in [AGENTS.md](AGENTS.md).
 
 ## Documentation and direction
 
