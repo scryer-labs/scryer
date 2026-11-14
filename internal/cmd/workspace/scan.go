@@ -34,7 +34,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 				return err
 			}
 			if resolve && !slices.ContainsFunc(selection.EngineFacts, contract.IsResolvableScanFact) {
-				return fmt.Errorf("--resolve requires dependencies, files or call-graph in --facts")
+				return fmt.Errorf("--resolve requires dependencies, files, call-graph or ipc in --facts")
 			}
 			return nil
 		},

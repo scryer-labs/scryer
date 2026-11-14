@@ -44,7 +44,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 			collectStack, collectLOC, engineFacts = selection.Stack, selection.LOC, selection.EngineFacts
 		}
 		if resolve && !slices.ContainsFunc(engineFacts, contract.IsResolvableScanFact) {
-			return fmt.Errorf("--resolve requires dependencies, files or call-graph in --facts")
+			return fmt.Errorf("--resolve requires dependencies, files, call-graph or ipc in --facts")
 		}
 		if request.CompileCommands != "" && (!resolve || !slices.ContainsFunc(engineFacts, func(fact string) bool { return fact == "files" || fact == "call-graph" })) {
 			return fmt.Errorf("--compile-commands requires --resolve and files or call-graph in --facts")

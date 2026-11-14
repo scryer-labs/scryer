@@ -34,5 +34,5 @@ func SelectScanFacts(facts string) (ScanSelection, error) {
 }
 
 func IsResolvableScanFact(fact string) bool {
-	return fact == "dependencies" || fact == "files" || fact == "call-graph"
+	return fact == "dependencies" || fact == "files" || fact == "call-graph" || fact == "ipc"
 }
