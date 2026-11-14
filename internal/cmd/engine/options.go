@@ -10,10 +10,11 @@ import (
 )
 
 type result struct {
-	Operation string                `json:"operation"`
-	Status    string                `json:"status"`
-	Persisted bool                  `json:"persisted"`
-	Engines   []engine.Installation `json:"engines"`
+	Operation      string                `json:"operation"`
+	Status         string                `json:"status"`
+	Persisted      bool                  `json:"persisted"`
+	Engines        []engine.Installation `json:"engines"`
+	engineStatuses []string
 }
 
 func bindJSON(command *cobra.Command, jsonOutput *bool) {
@@ -31,12 +32,16 @@ func present(command *cobra.Command, jsonOutput bool, response result) error {
 		_, err := fmt.Fprintln(command.OutOrStdout(), "No engines installed.")
 		return err
 	}
-	for _, installed := range response.Engines {
+	for index, installed := range response.Engines {
+		status := response.Status
+		if index < len(response.engineStatuses) {
+			status = response.engineStatuses[index]
+		}
 		entrypoint := installed.Library
 		if entrypoint == "" {
 			entrypoint = installed.Executable
 		}
-		if _, err := fmt.Fprintf(command.OutOrStdout(), "%s: %s %s (%s)\n", response.Status, installed.Engine.ID, installed.Engine.Version, entrypoint); err != nil {
+		if _, err := fmt.Fprintf(command.OutOrStdout(), "%s: %s %s (%s)\n", status, installed.Engine.ID, installed.Engine.Version, entrypoint); err != nil {
 			return err
 		}
 		if response.Operation == "list" && installed.Capabilities != nil {

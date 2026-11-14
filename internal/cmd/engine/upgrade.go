@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"io"
 
 	"github.com/edwardnoaland/scryer/internal/engine"
 	"github.com/spf13/cobra"
@@ -32,19 +33,31 @@ func fetch(cmd *cobra.Command, args []string, jsonOutput, upgrade bool) error {
 		}
 		seen[id] = true
 	}
+	var progress io.Writer = io.Discard
+	if !jsonOutput {
+		progress = cmd.ErrOrStderr()
+	}
 	for _, id := range args {
-		installed, changed, err := store.Fetch(cmd.Context(), id, upgrade, cmd.ErrOrStderr())
+		fmt.Fprintf(progress, "Checking releases for %s…\n", id)
+		installed, changed, err := store.Fetch(cmd.Context(), id, upgrade, cmd.ErrOrStderr(), progress)
 		if err != nil {
+			err = fmt.Errorf("%s %s: %w", response.Operation, id, err)
 			if len(response.Engines) > 0 {
 				response.Status = "partial"
 				return errors.Join(err, present(cmd, jsonOutput, response))
 			}
 			return err
 		}
-		response.Engines = append(response.Engines, installed)
-		if upgrade && changed {
-			response.Status = "upgraded"
+		status := "installed"
+		if upgrade {
+			status = "up-to-date"
+			if changed {
+				status = "upgraded"
+				response.Status = status
+			}
 		}
+		response.Engines = append(response.Engines, installed)
+		response.engineStatuses = append(response.engineStatuses, status)
 	}
 	return present(cmd, jsonOutput, response)
 }

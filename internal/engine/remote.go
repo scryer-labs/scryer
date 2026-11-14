@@ -34,6 +34,7 @@ type releaseSource struct {
 type releaseAsset struct {
 	Name   string
 	Digest string
+	Size   int64
 	URL    string `json:"browser_download_url"`
 }
 
@@ -92,7 +93,7 @@ func (s Store) releaseSource(id string) (releaseSource, error) {
 	return source, nil
 }
 
-var releaseHTTP = &http.Client{Timeout: 90 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+var releaseHTTP = &http.Client{CheckRedirect: func(req *http.Request, via []*http.Request) error {
 	if req.URL.Scheme != "https" || len(via) >= 6 {
 		return fmt.Errorf("invalid release redirect")
 	}
@@ -110,12 +111,21 @@ func releaseGet(ctx context.Context, address string) (*http.Response, error) {
 	}
 	if response.StatusCode != http.StatusOK {
 		response.Body.Close()
+		if response.StatusCode == http.StatusForbidden && response.Header.Get("X-RateLimit-Remaining") == "0" {
+			reset, err := strconv.ParseInt(response.Header.Get("X-RateLimit-Reset"), 10, 64)
+			if err == nil {
+				return nil, fmt.Errorf("GitHub API rate limit reached; retry after %s", time.Unix(reset, 0).UTC().Format(time.RFC3339))
+			}
+			return nil, fmt.Errorf("GitHub API rate limit reached")
+		}
 		return nil, fmt.Errorf("GitHub release request returned %s", response.Status)
 	}
 	return response, nil
 }
 
 func (source releaseSource) latest(ctx context.Context) (string, releaseAsset, error) {
+	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
+	defer cancel()
 	var best releaseAsset
 	var bestVersion [3]uint64
 	var tag string
@@ -156,7 +166,26 @@ func (source releaseSource) latest(ctx context.Context) (string, releaseAsset, e
 
 const maxReleaseBytes = 512 << 20
 
-func downloadPackage(ctx context.Context, asset releaseAsset, dir string) (string, error) {
+type downloadProgress struct {
+	output     io.Writer
+	name       string
+	size       int64
+	downloaded int64
+	nextUpdate time.Time
+}
+
+func (p *downloadProgress) Write(data []byte) (int, error) {
+	p.downloaded += int64(len(data))
+	now := time.Now()
+	if !now.Before(p.nextUpdate) {
+		fmt.Fprintf(p.output, "%s: %.1f / %.1f MiB downloaded\n", p.name,
+			float64(p.downloaded)/(1<<20), float64(p.size)/(1<<20))
+		p.nextUpdate = now.Add(5 * time.Second)
+	}
+	return len(data), nil
+}
+
+func downloadPackage(ctx context.Context, asset releaseAsset, dir string, output io.Writer) (string, error) {
 	expected, err := hex.DecodeString(strings.TrimPrefix(asset.Digest, "sha256:"))
 	if err != nil || len(expected) != sha256.Size || !strings.HasPrefix(asset.Digest, "sha256:") {
 		return "", fmt.Errorf("release asset lacks a valid GitHub SHA-256 digest")
@@ -165,9 +194,15 @@ func downloadPackage(ctx context.Context, asset releaseAsset, dir string) (strin
 	if err != nil || address.Scheme != "https" || address.Host != "github.com" || address.User != nil {
 		return "", fmt.Errorf("invalid GitHub release asset URL")
 	}
-	response, err := releaseGet(ctx, address.String())
+	if asset.Size <= 0 || asset.Size > maxReleaseBytes {
+		return "", fmt.Errorf("invalid release asset size: %d bytes", asset.Size)
+	}
+	fmt.Fprintf(output, "Downloading %s (%.1f MiB)\n", asset.Name, float64(asset.Size)/(1<<20))
+	downloadCtx, cancel := context.WithTimeout(ctx, 15*time.Minute)
+	defer cancel()
+	response, err := releaseGet(downloadCtx, address.String())
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("start download: %w", err)
 	}
 	defer response.Body.Close()
 	archive, err := os.CreateTemp(dir, "asset-*.zip")
@@ -176,17 +211,19 @@ func downloadPackage(ctx context.Context, asset releaseAsset, dir string) (strin
 	}
 	defer archive.Close()
 	hash := sha256.New()
-	size, err := io.Copy(io.MultiWriter(archive, hash), io.LimitReader(response.Body, maxReleaseBytes+1))
+	progress := downloadProgress{output: output, name: asset.Name, size: asset.Size, nextUpdate: time.Now().Add(5 * time.Second)}
+	size, err := io.Copy(io.MultiWriter(archive, hash, &progress), io.LimitReader(response.Body, asset.Size+1))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("download after %d of %d bytes: %w", size, asset.Size, err)
 	}
-	if size > maxReleaseBytes || !bytes.Equal(expected, hash.Sum(nil)) {
+	if size != asset.Size || !bytes.Equal(expected, hash.Sum(nil)) {
 		return "", fmt.Errorf("release asset size or SHA-256 verification failed")
 	}
 	reader, err := zip.NewReader(archive, size)
 	if err != nil {
 		return "", err
 	}
+	fmt.Fprintf(output, "Verified %s; extracting package\n", asset.Name)
 	root := filepath.Join(dir, "package")
 	if err := extractPackage(ctx, reader, root); err != nil {
 		return "", err
@@ -243,13 +280,13 @@ func extractFile(entry *zip.File, target string) error {
 	return errors.Join(copyErr, output.Close())
 }
 
-func (s Store) Fetch(ctx context.Context, id string, upgrade bool, diagnostics io.Writer) (Installation, bool, error) {
+func (s Store) Fetch(ctx context.Context, id string, upgrade bool, diagnostics, progress io.Writer) (Installation, bool, error) {
 	if err := validateID(id); err != nil {
 		return Installation{}, false, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Minute)
-	defer cancel()
-	previous, err := s.Find(ctx, id)
+	lookupCtx, cancelLookup := context.WithTimeout(ctx, 3*time.Minute)
+	previous, err := s.Find(lookupCtx, id)
+	cancelLookup()
 	if upgrade && err != nil {
 		return Installation{}, false, err
 	}
@@ -265,7 +302,7 @@ func (s Store) Fetch(ctx context.Context, id string, upgrade bool, diagnostics i
 	}
 	tag, asset, err := source.latest(ctx)
 	if err != nil {
-		return Installation{}, false, err
+		return Installation{}, false, fmt.Errorf("check releases: %w", err)
 	}
 	if upgrade {
 		current, ok := version(previous.Engine.Version)
@@ -279,9 +316,9 @@ func (s Store) Fetch(ctx context.Context, id string, upgrade bool, diagnostics i
 		return Installation{}, false, err
 	}
 	defer os.RemoveAll(dir)
-	pkg, err := downloadPackage(ctx, asset, dir)
+	pkg, err := downloadPackage(ctx, asset, dir, progress)
 	if err != nil {
-		return Installation{}, false, err
+		return Installation{}, false, fmt.Errorf("prepare release %s: %w", tag, err)
 	}
 	manifest, _, err := ReadPackage(pkg)
 	if err != nil {
@@ -293,6 +330,8 @@ func (s Store) Fetch(ctx context.Context, id string, upgrade bool, diagnostics i
 	if !upgrade {
 		previous = Installation{}
 	}
-	installed, err := s.install(ctx, id, pkg, asset.URL, previous, diagnostics)
+	installCtx, cancel := context.WithTimeout(ctx, 3*time.Minute)
+	defer cancel()
+	installed, err := s.install(installCtx, id, pkg, asset.URL, previous, diagnostics)
 	return installed, err == nil, err
 }
