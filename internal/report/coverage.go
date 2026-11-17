@@ -55,6 +55,12 @@ func writeCoverage(out io.Writer, document contract.Document) error {
 	if view.Message != "" {
 		fmt.Fprintln(&output, view.Message)
 	}
+	for _, run := range view.Runs {
+		fmt.Fprintf(&output, "%s: %s (%d profiles)\n", run.Name, run.Status, run.Profiles)
+		if run.Message != "" {
+			fmt.Fprintln(&output, run.Message)
+		}
+	}
 	if evidence := view.Evidence; evidence != nil {
 		fmt.Fprintf(&output, "Source match: %s (%s)\n", evidence.SourceMatch, evidence.Granularity)
 		for _, row := range view.Rows {
@@ -78,6 +84,14 @@ func coverageMarkdown(document contract.Document) ([]byte, error) {
 	fmt.Fprintf(&output, "**Project** %s\n\n**Status** %s\n\n", escape(view.Root), escape(view.Status))
 	if view.Message != "" {
 		fmt.Fprintln(&output, escape(view.Message))
+	}
+	if len(view.Runs) != 0 {
+		section(&output, 2, "Test runs")
+		var rows [][]string
+		for _, run := range view.Runs {
+			rows = append(rows, []string{run.Name, run.Status, fmt.Sprint(run.Profiles), run.Message})
+		}
+		table(&output, []string{"Test", "Status", "Profiles", "Diagnostic"}, rows)
 	}
 	if evidence := view.Evidence; evidence != nil {
 		fmt.Fprintf(&output, "**Artifact** %s\n\n**Source match** %s (%s)\n\n",
@@ -106,6 +120,10 @@ input { font: inherit; margin: .5rem 0; max-width: 90% }
 <h1>Runtime coverage</h1>
 <p><strong>Project</strong> {{.Root}}</p><p><strong>Status</strong> {{.Status}}</p>
 {{if .Message}}<p>{{.Message}}</p>{{end}}
+{{if .Runs}}<h2>Test runs</h2>
+<ul>{{range .Runs}}<li>{{.Name}}: {{.Status}} ({{.Profiles}} profiles)
+{{if .Message}}<details><summary>Diagnostic</summary><pre>{{.Message}}</pre></details>{{end}}</li>{{end}}</ul>
+{{end}}
 {{with .Evidence}}
 <p><strong>Source match</strong> {{.SourceMatch}} ({{.Granularity}})</p>
 <details><summary>Artifact and evidence notes</summary><p>{{.Artifact}}</p><p>SHA-256 {{.SHA256}}</p>

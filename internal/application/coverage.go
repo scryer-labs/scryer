@@ -12,20 +12,17 @@ import (
 )
 
 // CollectCoverage is reusable by operations that need coverage evidence.
-func (s *Service) CollectCoverage(ctx context.Context, directory, stack, artifact string) (contract.Document, error) {
-	project, err := projectfacts.Collect(ctx, directory, artifact != "" && stack == "", false)
+func (s *Service) CollectCoverage(ctx context.Context, directory, stack string, request contract.CoverageRequest) (contract.Document, error) {
+	project, err := projectfacts.Collect(ctx, directory, stack == "", false)
 	if err != nil {
 		return contract.Document{}, err
 	}
-	result := contract.CoverageReport{SchemaVersion: contract.ReportVersion, Root: project.Root}
-	if artifact == "" {
-		result.Status = "unavailable"
-		result.Message = "No coverage artifact supplied. Use --coverage-file with an export from the target build."
-		return contract.NewDocument("", contract.CoverageOperation, result)
-	}
-	artifact, err = filepath.Abs(artifact)
-	if err != nil {
-		return contract.Document{}, err
+	request.Repository = project.Root
+	if request.Artifact != "" {
+		request.Artifact, err = filepath.Abs(request.Artifact)
+		if err != nil {
+			return contract.Document{}, err
+		}
 	}
 	store, err := engine.DefaultStore()
 	if err != nil {
@@ -58,28 +55,41 @@ func (s *Service) CollectCoverage(ctx context.Context, directory, stack, artifac
 	if !ok {
 		return contract.Document{}, fmt.Errorf("engine %q has no coverage adapter", selected.Engine.ID)
 	}
-	document, err := collector.CollectCoverage(ctx, contract.CoverageRequest{Repository: project.Root, Artifact: artifact})
+	document, err := collector.CollectCoverage(ctx, request)
 	if err != nil {
 		return contract.Document{}, err
 	}
-	var collected struct {
-		Root     string          `json:"root"`
-		Coverage json.RawMessage `json:"coverage"`
-	}
-	if err := json.Unmarshal(document.Data, &collected); err != nil {
+	var result contract.CoverageReport
+	if err := json.Unmarshal(document.Data, &result); err != nil {
 		return contract.Document{}, err
 	}
-	var evidence contract.CoverageEvidence
-	if err := json.Unmarshal(collected.Coverage, &evidence); err != nil {
-		return contract.Document{}, err
+	if result.Root != project.Root {
+		return contract.Document{}, fmt.Errorf("coverage response does not identify the requested project")
 	}
-	if collected.Root != project.Root || evidence.Artifact != artifact {
-		return contract.Document{}, fmt.Errorf("coverage response does not identify the requested project and artifact")
+	result.Engine = selected.Engine.ID
+	if len(result.Coverage) > 0 {
+		var evidence contract.CoverageEvidence
+		if err := json.Unmarshal(result.Coverage, &evidence); err != nil {
+			return contract.Document{}, err
+		}
+		if request.Artifact != "" && evidence.Artifact != request.Artifact {
+			return contract.Document{}, fmt.Errorf("coverage response does not identify the requested artifact")
+		}
+		if len(evidence.Files) == 0 {
+			result.Status = "unavailable"
+			result.Message = "The artifact contains no coverage paths mapped to this project."
+		}
 	}
-	result.Engine, result.Status, result.Coverage = selected.Engine.ID, "collected", collected.Coverage
-	if len(evidence.Files) == 0 {
-		result.Status = "unavailable"
-		result.Message = "The artifact contains no coverage paths mapped to this project."
+	switch result.Status {
+	case "":
+		// Coverage import engines from the first ABI iteration omitted status.
+		if len(result.Coverage) == 0 {
+			return contract.Document{}, fmt.Errorf("engine omitted coverage evidence")
+		}
+		result.Status = "collected"
+	case "collected", "partial", "unavailable":
+	default:
+		return contract.Document{}, fmt.Errorf("invalid coverage status %q", result.Status)
 	}
 	return contract.NewDocument(selected.Engine.ID, contract.CoverageOperation, result)
 }

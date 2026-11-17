@@ -1,17 +1,25 @@
 # Runtime coverage v1
 
-Standalone project coverage reads an explicitly provided artifact against
-the current project directory. The CLI chooses an installed engine that
+Standalone coverage uses the current project directory and can generate or import
+coverage evidence. The CLI chooses an installed engine that
 advertises `coverage`. The engine request uses `operation: "coverage"` and
-`coverage: {repository, artifact}`, with absolute paths. The ABI functions
+`coverage: {repository, artifact?, testBinaries?}`. Repository and artifact paths
+are absolute. With an artifact it imports. With test binaries it builds and runs
+the listed paths relative to the temporary build directory. With neither it
+builds and runs registered CTest tests. The ABI functions
 and request/response version remain unchanged.
 
-The engine returns `schemaVersion`, `root` and `coverage`. The project
-report adds `engine` and `status` and preserves the JSON evidence:
+The engine returns `schemaVersion`, `root`, `status` and any available evidence.
+The project report adds `engine` and retains the JSON evidence:
 
-- `format`, `version`, `artifact` and `sha256` identify the input.
-- `sourceMatch: "unverified"` records that the imported C++ artifact cannot
-  establish a source snapshot. An artifact digest identifies the artifact,
+- `format`, `version`, `artifact` and `sha256` identify the evidence. An
+  import keeps the input path. Generated evidence uses the logical name
+  `llvm-cov.json` because the intermediate export is temporary.
+- Generated reports include `runs[]` with a test name, profile count and
+  status (`succeeded`, `failed`, `no-profile` or `no-tests`) and an optional
+  diagnostic. CTest has one execution entry. Direct execution has one entry
+  per binary, in request order.
+- `sourceMatch: "unverified"` records that the C++ evidence has no verified source snapshot. An artifact digest identifies the artifact,
   and does not identify the source revision.
 - `granularity: "aggregate"` describes the observed profile. No per-test
   identity is known.
@@ -21,8 +29,9 @@ report adds `engine` and `status` and preserves the JSON evidence:
   file totals.
 - `notes[]` records missing provenance or paths that could not be mapped.
 
-A missing input or no mapped files yields `status: "unavailable"`. Invalid
-inputs and failed collectors return an error. CLI JSON, Markdown and HTML
-all use the same project report. Future impact analysis can call the same
-coverage use case, but must verify evidence against its selected after
-snapshot before using it to label impacted code.
+No usable profiles or no mapped files yields `status: "unavailable"`.
+Partial test execution with collected evidence yields `status: "partial"`.
+Invalid inputs and failed configure/build/export stages return an error. CLI
+JSON, Markdown and HTML use the same project report. Future impact analysis
+can reuse this operation and must verify evidence against its selected after
+snapshot before labelling impacted code.

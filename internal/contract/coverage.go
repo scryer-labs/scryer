@@ -8,8 +8,9 @@ import (
 const CoverageOperation = "coverage"
 
 type CoverageRequest struct {
-	Repository string `json:"repository"`
-	Artifact   string `json:"artifact"`
+	Repository   string   `json:"repository"`
+	Artifact     string   `json:"artifact,omitempty"`
+	TestBinaries []string `json:"testBinaries,omitempty"`
 }
 
 type CoverageCollector interface {
@@ -22,7 +23,15 @@ type CoverageReport struct {
 	Engine        string          `json:"engine,omitempty"`
 	Status        string          `json:"status"`
 	Message       string          `json:"message,omitempty"`
+	Runs          []CoverageRun   `json:"runs,omitempty"`
 	Coverage      json.RawMessage `json:"coverage,omitempty"`
+}
+
+type CoverageRun struct {
+	Name     string `json:"name"`
+	Status   string `json:"status"`
+	Profiles int    `json:"profiles"`
+	Message  string `json:"message,omitempty"`
 }
 
 type CoverageEvidence struct {

@@ -18,12 +18,14 @@ type ExecutionError struct{ Status string }
 func (e ExecutionError) Error() string { return "after test command: " + e.Status }
 func newAnalyzeCommand(service *application.Service) *cobra.Command {
 	var request contract.AnalyzeRequest
-	var stack, output, color, operations, coverageFile string
+	var stack, output, color, operations string
+	var coverage contract.CoverageRequest
+	var testBinaryArgs []string
 	var jsonOutput, verbose, runTests bool
 	var selected analyzeOperations
 	command := &cobra.Command{
 		Use: "analyze [path]", Short: "Analyze change impact or collect coverage evidence",
-		Long: "Analyze one project. The default operation is impact. A clean worktree compares HEAD^1 to HEAD; a changed worktree compares HEAD to an isolated snapshot. Pass both --before and --after to override the comparison. Coverage alone uses the current project and accepts --coverage-file.",
+		Long: "Analyze one project. The default operation is impact. A clean worktree compares HEAD^1 to HEAD; a changed worktree compares HEAD to an isolated snapshot. Pass both --before and --after to override the comparison. Coverage alone builds and tests the current project. Use --test-binary to select built executables or --coverage-file to import existing evidence.",
 		Args: cobra.MaximumNArgs(1),
 	}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -35,7 +37,11 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 		if err != nil {
 			return err
 		}
-		if err := selected.validate(cmd, request, coverageFile, runTests); err != nil {
+		if err := selected.validate(cmd, request, coverage.Artifact, runTests); err != nil {
+			return err
+		}
+		coverage.TestBinaries, err = selectTestBinaries(selected, coverage.Artifact, testBinaryArgs)
+		if err != nil {
 			return err
 		}
 		if request.SkipTests && request.TestCommand != "" {
@@ -72,7 +78,7 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 			request.SkipTests = request.SkipTests || (!runTests && request.TestCommand == "")
 			document, err = service.Analyze(cmd.Context(), stack, directory, request)
 		} else {
-			document, err = service.CollectCoverage(cmd.Context(), directory, stack, coverageFile)
+			document, err = service.CollectCoverage(cmd.Context(), directory, stack, coverage)
 		}
 		if err != nil {
 			return err
@@ -84,7 +90,8 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 	flags.StringVar(&color, "color", "auto", "auto, always or never")
 	flags.StringVar(&stack, "stack", "", "Select an engine (impact currently uses Java)")
 	flags.StringVar(&operations, "operations", "impact", "Comma-separated analysis operations: impact, coverage")
-	flags.StringVar(&coverageFile, "coverage-file", "", "Read an existing coverage artifact (C++: llvm-cov JSON export)")
+	flags.StringVar(&coverage.Artifact, "coverage-file", "", "Import coverage instead of building and testing (C++: llvm-cov JSON)")
+	flags.StringArrayVar(&testBinaryArgs, "test-binary", nil, "Coverage test executables relative to the build directory (repeat or comma-separate)")
 	flags.BoolVar(&runTests, "run-tests", false, "Run the default Java test lifecycle for impact")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle for both models and tests")
 	flags.StringVar(&request.Before, "before", "", "Before Git commit/ref")

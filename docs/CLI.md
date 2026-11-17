@@ -223,19 +223,37 @@ snapshot of staged, unstaged and non-ignored untracked files. Pass both
 `--before` and `--after` to choose the comparison explicitly. An initial
 commit with a clean working tree has no default baseline.
 
-`coverage` works on the current project directory and rejects both comparison
-flags. For C++, pass a v2 or v3 JSON export from `llvm-cov export`:
+`coverage` uses the current project directory and rejects both comparison
+flags. On macOS the C++ engine configures and builds a CMake project with Apple
+Clang coverage instrumentation in a temporary directory. It executes registered
+CTest tests by default. Choose built executables directly with paths relative
+to that build directory. Repeat the option or use a comma-separated list:
 
 ```sh
-scryer project analyze . --operations coverage --coverage-file /path/to/llvm-cov.json --json --compact -o coverage.html
+scryer project analyze . --operations coverage --json
+scryer project analyze . --operations coverage \
+  --test-binary tests/unit_tests,tests/integration_tests --json -o coverage.html
+scryer project analyze . --operations coverage \
+  --test-binary tests/unit_tests --test-binary tests/integration_tests --json
+scryer project analyze . --operations coverage \
+  --coverage-file /path/to/llvm-cov.json --json --compact -o coverage.md
 ```
 
-The CLI can also write `coverage.md`. The operation reads an existing artifact
-without starting a compiler or tests. With no artifact, it reports
-`unavailable`. The C++ engine imports aggregate counts and source segments
-for absolute paths under the project root. The artifact is hashed and its
-source match is reported as `unverified`, since the export does not establish
-which revision was tested. See the [coverage contract](contracts/COVERAGE.md).
+Automatic collection requires CMake, a working Apple Clang toolchain
+discoverable through `xcrun`, and a project that builds and runs locally.
+The engine configures a Debug build with testing enabled using Unix Makefiles.
+Scryer leaves its own generated files in temporary storage. The project's
+configure, build and test commands run normally. Direct binaries run from
+their output directory. `--coverage-file` imports a v2 or v3 LLVM export
+without compilation or test execution and is mutually exclusive with
+`--test-binary`.
+
+The report keeps each direct test execution's result and combines the
+available profiles. Test failures with usable evidence yield `partial`;
+no test profiles yield `unavailable`. A successful CLI invocation can return
+either status, so automation should inspect `status`. Tool or build failures
+return an error identifying the stage. Coverage remains aggregate and its
+source revision is marked `unverified`. See the [coverage contract](contracts/COVERAGE.md).
 
 Java supplies the current impact implementation. It runs tests when explicitly
 requested with `--run-tests` or `--test-command`. C++ impact and combined

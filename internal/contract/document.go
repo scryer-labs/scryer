@@ -19,6 +19,9 @@ func (d Document) Validate() error {
 	switch d.Operation {
 	case CoverageOperation:
 		required = map[string]string{"root": "string"}
+		if _, ok := report["runs"]; ok {
+			required["runs"] = "array"
+		}
 		if _, ok := report["coverage"]; ok {
 			required["coverage"] = "object"
 			if err := validateFields(report["coverage"], map[string]string{

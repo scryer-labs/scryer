@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/contract"
@@ -43,7 +44,7 @@ func (selected analyzeOperations) validate(cmd *cobra.Command, request contract.
 	}
 	if selected.coverage && (cmd.Flags().Changed("run-tests") || cmd.Flags().Changed("skip-tests") ||
 		cmd.Flags().Changed("test-command") || cmd.Flags().Changed("build-tool")) {
-		return fmt.Errorf("coverage reads existing artifacts; test execution and build flags are currently available for Java impact only")
+		return fmt.Errorf("these test execution and build flags are for Java impact; coverage runs tests automatically unless importing an artifact")
 	}
 	if cmd.Flags().Changed("coverage-file") && (!selected.coverage || strings.TrimSpace(artifact) == "") {
 		return fmt.Errorf("--coverage-file requires the coverage operation and a nonempty path")
@@ -55,4 +56,30 @@ func (selected analyzeOperations) validate(cmd *cobra.Command, request contract.
 		return fmt.Errorf("combining impact and coverage is not yet supported")
 	}
 	return nil
+}
+
+func selectTestBinaries(selected analyzeOperations, artifact string, arguments []string) ([]string, error) {
+	if len(arguments) == 0 {
+		return nil, nil
+	}
+	if !selected.coverage || artifact != "" {
+		return nil, fmt.Errorf("--test-binary requires coverage and cannot be used with --coverage-file")
+	}
+	var binaries []string
+	seen := map[string]bool{}
+	for _, argument := range arguments {
+		for _, value := range strings.Split(argument, ",") {
+			value = strings.TrimSpace(value)
+			path := filepath.Clean(value)
+			if !filepath.IsLocal(value) || path == "." || strings.ContainsRune(value, 0) {
+				return nil, fmt.Errorf("--test-binary requires a nonempty executable path inside the build directory: %q", value)
+			}
+			if seen[path] {
+				return nil, fmt.Errorf("duplicate --test-binary path %q", path)
+			}
+			seen[path] = true
+			binaries = append(binaries, path)
+		}
+	}
+	return binaries, nil
 }
