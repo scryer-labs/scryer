@@ -85,3 +85,11 @@ Java-specific.
 - Broader language or framework adapters, shared rules for code smells and
   further toolchain-resolution work. See
   [product direction](PRODUCT-DIRECTION.md) and [resolution](contracts/RESOLVE.md).
+
+### CMake test target pattern matching
+
+Low priority. Let users select multiple CMake executable targets with a single
+pattern in `--test-target`. Expand against the configured CMake target names,
+deduplicate the matches in a deterministic order, and report which targets ran.
+Keep exact names useful for selecting one target. Decide pattern syntax when
+implementing the feature.
