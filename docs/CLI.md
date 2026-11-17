@@ -226,11 +226,14 @@ commit with a clean working tree has no default baseline.
 `coverage` uses the current project directory and rejects both comparison
 flags. On macOS the C++ engine configures and builds a CMake project with Apple
 Clang coverage instrumentation in a temporary directory. It executes registered
-CTest tests by default. Choose built executables directly with paths relative
-to that build directory. Repeat the option or use a comma-separated list:
+CTest tests by default. Use `--test-target` to build and run named CMake
+executable targets. Use `--test-binary` for explicit executable paths relative
+to the temporary coverage build directory (for example `tests/unit_tests`).
+Both flags accept repeated values and comma-separated lists.
 
 ```sh
 scryer project analyze . --operations coverage --json
+scryer project analyze . --operations coverage --test-target unit_tests,integration_tests -o coverage.html
 scryer project analyze . --operations coverage \
   --test-binary tests/unit_tests,tests/integration_tests --json -o coverage.html
 scryer project analyze . --operations coverage \
@@ -245,8 +248,8 @@ The engine configures a Debug build with testing enabled using Unix Makefiles.
 Scryer leaves its own generated files in temporary storage. The project's
 configure, build and test commands run normally. Direct binaries run from
 their output directory. `--coverage-file` imports a v2 or v3 LLVM export
-without compilation or test execution and is mutually exclusive with
-`--test-binary`.
+without compilation or test execution. Choose at most one of
+`--test-target`, `--test-binary`, and `--coverage-file`.
 
 The report keeps each direct test execution's result and combines the
 available profiles. Test failures with usable evidence yield `partial`;

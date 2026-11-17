@@ -3,11 +3,13 @@
 Standalone coverage uses the current project directory and can generate or import
 coverage evidence. The CLI chooses an installed engine that
 advertises `coverage`. The engine request uses `operation: "coverage"` and
-`coverage: {repository, artifact?, testBinaries?}`. Repository and artifact paths
-are absolute. With an artifact it imports. With test binaries it builds and runs
-the listed paths relative to the temporary build directory. With neither it
-builds and runs registered CTest tests. The ABI functions
-and request/response version remain unchanged.
+`coverage: {repository, artifact?, testBinaries?, testTargets?}`. Repository
+and artifact paths are absolute. Select at most one of the optional inputs.
+`artifact` imports evidence. `testBinaries` selects executable paths relative
+to the temporary build directory. `testTargets` selects CMake executable
+target names. Core sends target selections only if the package declares
+`coverageTestTargets`. With no optional input the engine builds and runs
+CTest. The ABI functions and request/response version remain unchanged.
 
 The engine returns `schemaVersion`, `root`, `status` and any available evidence.
 The project report adds `engine` and retains the JSON evidence:

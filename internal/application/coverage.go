@@ -48,6 +48,9 @@ func (s *Service) CollectCoverage(ctx context.Context, directory, stack string, 
 	if selected == nil {
 		return contract.Document{}, fmt.Errorf("no installed coverage-capable engine matches the project or selected stack")
 	}
+	if len(request.TestTargets) != 0 && !selected.Capabilities.CoverageTestTargets {
+		return contract.Document{}, fmt.Errorf("engine %q does not support --test-target; install a newer package or use --test-binary", selected.Engine.ID)
+	}
 	if s.NewInstalledAnalyzer == nil {
 		return contract.Document{}, fmt.Errorf("coverage engine execution is unavailable")
 	}

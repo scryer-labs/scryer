@@ -11,6 +11,7 @@ type CoverageRequest struct {
 	Repository   string   `json:"repository"`
 	Artifact     string   `json:"artifact,omitempty"`
 	TestBinaries []string `json:"testBinaries,omitempty"`
+	TestTargets  []string `json:"testTargets,omitempty"`
 }
 
 type CoverageCollector interface {

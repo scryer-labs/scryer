@@ -20,12 +20,12 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 	var request contract.AnalyzeRequest
 	var stack, output, color, operations string
 	var coverage contract.CoverageRequest
-	var testBinaryArgs []string
+	var testBinaryArgs, testTargetArgs []string
 	var jsonOutput, verbose, runTests bool
 	var selected analyzeOperations
 	command := &cobra.Command{
 		Use: "analyze [path]", Short: "Analyze change impact or collect coverage evidence",
-		Long: "Analyze one project. The default operation is impact. A clean worktree compares HEAD^1 to HEAD; a changed worktree compares HEAD to an isolated snapshot. Pass both --before and --after to override the comparison. Coverage alone builds and tests the current project. Use --test-binary to select built executables or --coverage-file to import existing evidence.",
+		Long: "Analyze one project. The default operation is impact. A clean worktree compares HEAD^1 to HEAD; a changed worktree compares HEAD to an isolated snapshot. Pass both --before and --after to override the comparison. Coverage alone builds and tests the current project. Use --test-target for CMake targets, --test-binary for paths relative to the temporary build directory, or --coverage-file to import existing evidence.",
 		Args: cobra.MaximumNArgs(1),
 	}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -40,7 +40,7 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 		if err := selected.validate(cmd, request, coverage.Artifact, runTests); err != nil {
 			return err
 		}
-		coverage.TestBinaries, err = selectTestBinaries(selected, coverage.Artifact, testBinaryArgs)
+		err = selected.selectCoverageTests(&coverage, testBinaryArgs, testTargetArgs)
 		if err != nil {
 			return err
 		}
@@ -91,7 +91,8 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 	flags.StringVar(&stack, "stack", "", "Select an engine (impact currently uses Java)")
 	flags.StringVar(&operations, "operations", "impact", "Comma-separated analysis operations: impact, coverage")
 	flags.StringVar(&coverage.Artifact, "coverage-file", "", "Import coverage instead of building and testing (C++: llvm-cov JSON)")
-	flags.StringArrayVar(&testBinaryArgs, "test-binary", nil, "Coverage test executables relative to the build directory (repeat or comma-separate)")
+	flags.StringArrayVar(&testBinaryArgs, "test-binary", nil, "Executable paths relative to the temporary coverage build directory (repeat or comma-separate)")
+	flags.StringArrayVar(&testTargetArgs, "test-target", nil, "CMake executable target names for coverage (repeat or comma-separate)")
 	flags.BoolVar(&runTests, "run-tests", false, "Run the default Java test lifecycle for impact")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle for both models and tests")
 	flags.StringVar(&request.Before, "before", "", "Before Git commit/ref")
