@@ -87,6 +87,9 @@ func JSONOutput(value any, compact bool) ([]byte, error) {
 	return output.Bytes(), nil
 }
 func Terminal(document contract.Document, out io.Writer, verbose, color bool) error {
+	if document.Operation == contract.CoverageOperation {
+		return writeCoverage(out, document)
+	}
 	data, err := decode(document)
 	if err != nil {
 		return err
@@ -102,6 +105,9 @@ func Terminal(document contract.Document, out io.Writer, verbose, color bool) er
 	return nil
 }
 func Markdown(document contract.Document) ([]byte, error) {
+	if document.Operation == contract.CoverageOperation {
+		return coverageMarkdown(document)
+	}
 	data, err := decode(document)
 	if err != nil {
 		return nil, err

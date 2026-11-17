@@ -150,3 +150,5 @@ within the same report. The optional `resolutionReason` describes an observed
 item, and `limitations[]` describes coverage gaps for the enclosing fact.
 
 See also [toolchain-assisted scan facts](RESOLVE.md).
+
+See [runtime coverage](COVERAGE.md) for the standalone coverage operation.

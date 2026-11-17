@@ -32,6 +32,14 @@ func TestSnapshotsResolveExpressionsPreserveDirtySourceAndCleanUp(t *testing.T) 
 	}
 	run("add", ".")
 	run("commit", "-m", "after")
+	clean, err := Open(ctx, root, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer clean.Close()
+	if clean.Before != run("rev-parse", "HEAD^1") || clean.After != run("rev-parse", "HEAD") || clean.WorkingBase != "" {
+		t.Fatal("clean checkout did not compare HEAD with its first parent")
+	}
 	if err := os.WriteFile(file, []byte("dirty"), 0600); err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +123,7 @@ func TestWorkingTreeCapturesCurrentContentWithoutChangingOriginal(t *testing.T) 
 		t.Fatal(err)
 	}
 	status, index, trees := run("status", "--porcelain"), run("ls-files", "--stage"), run("worktree", "list", "--porcelain")
-	snapshots, err := Open(ctx, root, "HEAD", ".")
+	snapshots, err := Open(ctx, root, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -17,6 +17,19 @@ func (d Document) Validate() error {
 	}
 	required := map[string]string{}
 	switch d.Operation {
+	case CoverageOperation:
+		required = map[string]string{"root": "string"}
+		if _, ok := report["coverage"]; ok {
+			required["coverage"] = "object"
+			if err := validateFields(report["coverage"], map[string]string{
+				"artifact": "string", "sha256": "string", "format": "string", "version": "string",
+				"sourceMatch": "string", "granularity": "string", "files": "array", "notes": "array",
+			}); err != nil {
+				return fmt.Errorf("coverage: %w", err)
+			}
+		} else if string(report["status"]) != `"unavailable"` {
+			return fmt.Errorf("missing coverage evidence")
+		}
 	case EngineFactsOperation:
 		required = map[string]string{"root": "string", "facts": "object"}
 	case ProjectFactsOperation:
@@ -147,6 +160,8 @@ func validateFields(raw json.RawMessage, required map[string]string) error {
 		}
 		valid := false
 		switch kind {
+		case "string":
+			_, valid = parsed.(string)
 		case "array":
 			_, valid = parsed.([]any)
 		case "object":

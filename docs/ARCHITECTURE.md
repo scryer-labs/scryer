@@ -28,6 +28,14 @@ package before replacing an owned installation. Inventory changes are locked
 across processes. The default home on macOS is `~/.config/scryer`, and
 `SCRYER_HOME` overrides the default.
 
+## Project analyze operations
+
+CLI validates operation selection and the shared comparison flags. Git
+snapshot defaults belong to the repository layer. The application exposes
+coverage as a reusable use case and selects an installed engine with the
+coverage capability. The C++ engine imports LLVM evidence and returns JSON.
+Core renders the result independently of the engine.
+
 ## Java analyze
 
 Core resolves refs to immutable SHAs and creates isolated checkouts. The Java

@@ -14,6 +14,9 @@ import (
 var assets embed.FS
 
 func HTML(document contract.Document) ([]byte, error) {
+	if document.Operation == contract.CoverageOperation {
+		return coverageHTML(document)
+	}
 	if document.Operation != "analyze" {
 		return nil, fmt.Errorf("HTML currently supports analyze reports")
 	}

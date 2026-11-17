@@ -36,9 +36,19 @@ func Open(ctx context.Context, directory, before, after string) (*Snapshots, err
 	resolve := func(ref string) (string, error) {
 		return git(ctx, root, "rev-parse", "--verify", "--end-of-options", ref+"^{commit}")
 	}
+	if before == "" && after == "" {
+		status, err := git(ctx, root, "status", "--porcelain", "--untracked-files=normal")
+		if err != nil {
+			return nil, err
+		}
+		before, after = "HEAD^1", "HEAD"
+		if status != "" {
+			before, after = "HEAD", "."
+		}
+	}
 	beforeSHA, err := resolve(before)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot resolve comparison baseline %q: %w", before, err)
 	}
 	afterRef := after
 	if after == "." {

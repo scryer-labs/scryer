@@ -44,12 +44,13 @@ type Document struct {
 	Data      json.RawMessage
 }
 type Request struct {
-	ProtocolVersion int             `json:"protocolVersion"`
-	RequestID       string          `json:"requestId"`
-	Stack           string          `json:"stack"`
-	Operation       string          `json:"operation"`
-	Scan            *ScanRequest    `json:"scan,omitempty"`
-	Analyze         *AnalyzeRequest `json:"analyze,omitempty"`
+	ProtocolVersion int              `json:"protocolVersion"`
+	RequestID       string           `json:"requestId"`
+	Stack           string           `json:"stack"`
+	Operation       string           `json:"operation"`
+	Scan            *ScanRequest     `json:"scan,omitempty"`
+	Analyze         *AnalyzeRequest  `json:"analyze,omitempty"`
+	Coverage        *CoverageRequest `json:"coverage,omitempty"`
 }
 type Response struct {
 	ProtocolVersion int             `json:"protocolVersion"`

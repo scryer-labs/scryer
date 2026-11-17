@@ -7,7 +7,7 @@ See [milestones](MILESTONES.md) for planned work.
 
 ```text
 scryer project scan [path]
-scryer project analyze [path] --before <ref> --after <ref|.>
+scryer project analyze [path] [--operations impact|coverage]
 scryer workspace scan [path]
 scryer engine list
 scryer engine install <engine> [engines...]
@@ -215,6 +215,32 @@ checks explicit `SCRYER_ENGINE_<ID>` overrides first, then installed packages,
 then its legacy executable fallback. Selected facts still use the installed
 capability inventory. Orrery can use newly installed engines without a restart.
 
+## Project analyze operations
+
+`project analyze` defaults to `impact`. A clean Git working tree compares
+`HEAD^1` with `HEAD`; a dirty working tree compares `HEAD` with an isolated
+snapshot of staged, unstaged and non-ignored untracked files. Pass both
+`--before` and `--after` to choose the comparison explicitly. An initial
+commit with a clean working tree has no default baseline.
+
+`coverage` works on the current project directory and rejects both comparison
+flags. For C++, pass a v2 or v3 JSON export from `llvm-cov export`:
+
+```sh
+scryer project analyze . --operations coverage --coverage-file /path/to/llvm-cov.json --json --compact -o coverage.html
+```
+
+The CLI can also write `coverage.md`. The operation reads an existing artifact
+without starting a compiler or tests. With no artifact, it reports
+`unavailable`. The C++ engine imports aggregate counts and source segments
+for absolute paths under the project root. The artifact is hashed and its
+source match is reported as `unverified`, since the export does not establish
+which revision was tested. See the [coverage contract](contracts/COVERAGE.md).
+
+Java supplies the current impact implementation. It runs tests when explicitly
+requested with `--run-tests` or `--test-command`. C++ impact and combined
+`impact,coverage` are planned follow-ups.
+
 ## Java scan and analyze
 
 Install the Java engine to collect Java dependency facts and to run
@@ -231,11 +257,11 @@ scryer project analyze --help
 
 References resolve to commit SHAs through Git: SHA IDs, branches, tags and expressions such as `HEAD~1` are accepted. The comparison is a direct before-to-after snapshot diff, not a merge-base diff. Commit-to-commit comparisons exclude working-tree changes; use `--after .` for the supported isolated working-tree mode described below. Output lists statuses, before/after paths (including detected renames), and zero-context old/new line ranges. A zero-length range is an insertion/deletion boundary. Binary, mode-only and pure rename changes can have no textual ranges. Rename detection uses Git similarity heuristics.
 
-Both reference arguments are required; invalid arguments exit with code 2. Invalid refs, a non-Git current directory or Git failures exit with code 1. Analysis creates a temporary shared clone and two standalone detached checkouts, reads changed `.java` files with the JDK Java parser, and removes the temporary workspace afterwards. The target repository's working tree and worktree registrations remain unchanged. Git and a Java 21 engine runtime are required.
+Explicit reference arguments must be provided together; invalid arguments exit with code 2. Invalid refs, a non-Git current directory or Git failures exit with code 1. Analysis creates a temporary shared clone and two standalone detached checkouts, reads changed `.java` files with the JDK Java parser, and removes the temporary workspace afterwards. The target repository's working tree and worktree registrations remain unchanged. Git and a Java 21 engine runtime are required.
 
 Methods and constructors are matched by package, enclosing class, name and source parameter types. Output distinguishes ADDED, MODIFIED and DELETED declarations with before/after locations. Overloads and named nested classes are supported. Signature changes appear as deletion plus addition; a pure file rename with identical declarations produces no method changes. AST comparison ignores comments and formatting and includes declaration annotations, return types and method bodies. Test methods are included too, with production/test/unknown source roles retained.
 
-Method-difference detection is source syntax comparison; the later attribution/impact phase adds resolved symbol identities and partial static impact. Imports, fields, initializer blocks and inheritance changes are reported as a context-analysis limitation for changed Java files; they can affect unchanged methods. Anonymous-class methods/initializers are reported as partial change-impact limitations without speculative identities; ambiguous local-class identities remain explicit limitations. Parse errors also exit with code 1. Parsing uses JDK 21 syntax; unsupported newer syntax, generated sources, submodule contents and Git LFS content are not materialized/analyzed as Java source in this increment. The static phase does not compile or execute target code. The command now follows it with target test execution unless `--skip-tests` is supplied; fresh execution artifacts are collected before cleanup and matched against production impact methods.
+Method-difference detection is source syntax comparison; the later attribution/impact phase adds resolved symbol identities and partial static impact. Imports, fields, initializer blocks and inheritance changes are reported as a context-analysis limitation for changed Java files; they can affect unchanged methods. Anonymous-class methods/initializers are reported as partial change-impact limitations without speculative identities; ambiguous local-class identities remain explicit limitations. Parse errors also exit with code 1. Parsing uses JDK 21 syntax; unsupported newer syntax, generated sources, submodule contents and Git LFS content are not materialized/analyzed as Java source in this increment. The static phase does not compile or execute target code. With `--run-tests` or `--test-command`, the command follows it with target test execution; fresh execution artifacts are collected before cleanup and matched against production impact methods.
 
 Analyze also performs JDK source attribution for both snapshots and constructs **partial** call graphs. Symbol IDs use binary class names, method names and JVM-style erased descriptors, for example `example.Order#total(I)Ljava/math/BigDecimal;`. Changes are mapped to resolved declarations; unresolved mappings are explicitly listed. Reverse reachability includes changed methods and their transitive callers, retaining separate before/after graphs so deleted callers/targets are not lost.
 
@@ -336,7 +362,7 @@ Analyze also exports Markdown/Mermaid and HTML impact maps with `-o`; see the re
 
 ## After test command execution
 
-Analyze now runs a conventional test lifecycle in the isolated after checkout by default, after static analysis. Gradle uses the root Wrapper with `clean test`, `--rerun-tasks` and `--no-build-cache` to prevent cached test outcomes; Maven uses its root Wrapper with `clean verify` so configured integration-test lifecycle phases can run. This is not discovery of every custom test task: Gradle integration/evidence tasks outside `test` are not automatically invoked, and Maven profiles/skips remain as configured. The default test lifecycle requires one root POSIX Wrapper and uses no global build-tool fallback. Mixed or missing Wrappers are UNAVAILABLE unless an explicit custom test command is supplied. Use `--test-command` for an explicit custom lifecycle.
+With `--run-tests`, analyze runs a conventional test lifecycle in the isolated after checkout after static analysis. Gradle uses the root Wrapper with `clean test`, `--rerun-tasks` and `--no-build-cache` to prevent cached test outcomes; Maven uses its root Wrapper with `clean verify` so configured integration-test lifecycle phases can run. This is not discovery of every custom test task: Gradle integration/evidence tasks outside `test` are not automatically invoked, and Maven profiles/skips remain as configured. The default test lifecycle requires one root POSIX Wrapper and uses no global build-tool fallback. Mixed or missing Wrappers are UNAVAILABLE unless an explicit custom test command is supplied. Use `--test-command` for an explicit custom lifecycle.
 
 `--skip-tests` explicitly returns static analysis only and reports SKIPPED. Otherwise the report records after SHA, argument list, target JAVA_HOME, duration, exit code and a durable combined stdout/stderr log. SUCCEEDED means command exit 0, not proof that any test executed, covered a method or that a release package was produced. Failed, timed-out, unavailable or snapshot-mutating commands exit Scryer with code 1, while preserving static impact output. Tracked source/index or HEAD changes invalidate the command result for the requested snapshot.
 
@@ -364,7 +390,7 @@ Coverage scope remains aggregate/unknown. Session IDs and XML report filenames d
 
 ## Analyze module/classpath inputs
 
-Before static attribution, default analyze resolves each snapshot's own build inputs using its Wrapper and target JVM. Gradle's injected metadata task reads Java source-set roots, compile classpaths and project dependencies without compiling or testing. Maven reads the effective POM and test-scope dependency classpaths per reactor module. Downloads may occur; logs are retained under `runs/model-*`. Analyze model commands default to a 180-second timeout each (`SCRYER_RESOLUTION_TIMEOUT_SECONDS`).
+When test execution is requested, Java impact resolves each snapshot's own build inputs before static attribution using its Wrapper and target JVM. Gradle's injected metadata task reads Java source-set roots, compile classpaths and project dependencies without compiling or testing. Maven reads the effective POM and test-scope dependency classpaths per reactor module. Downloads may occur; logs are retained under `runs/model-*`. Analyze model commands default to a 180-second timeout each (`SCRYER_RESOLUTION_TIMEOUT_SECONDS`).
 
 Javac attribution is separated per module. Reactor dependency sources support cross-module calls even before class outputs exist; supporting sources do not become duplicate graph nodes. Source-set classpaths are combined within a module in this increment, so contradictory main/test dependency versions are a limitation. Configured main/test roots provide role labels; unknown custom source-set semantics stay UNKNOWN. Independent modules declaring the same binary symbol are explicitly excluded as ambiguous rather than conflated.
 
@@ -386,7 +412,7 @@ Matching smoke validation used all seven legacy-fixture refs: tested change with
 
 Default terminal output now leads with command/test outcomes and method evidence gaps. `--verbose` includes full before/after scope graphs, file ranges, boundaries, artifact provenance, test records and interpretation notes. Concise lists explicitly indicate omitted entries. All report formats use one versioned report model; production/test roles, independent datasets, unknowns and the distinction between method hits and path/test attribution are preserved.
 
-`analyze --json` writes the complete report to stdout (`schemaVersion: 1`), with progress/errors only on stderr. `-o report.json` saves the same model with atomic file replacement; it can be combined with `--json`. JSON uses plain string paths and symbol identities, arrays for scope nodes/edges, explicit nullable unknown metrics and independent coverage/matching datasets. `--verbose` and `--json` are mutually exclusive. Failed test outcomes still export a report and retain exit code 1; report-writing failure also exits 1.
+`analyze --json` writes the complete report to stdout (`schemaVersion: 1`), with progress/errors only on stderr. Redirect stdout to save JSON to a file. Use `-o` for Markdown or HTML reports. JSON uses plain string paths and symbol identities, arrays for scope nodes/edges, explicit nullable unknown metrics and independent coverage/matching datasets. `--verbose` and `--json` are mutually exclusive. Failed test outcomes still export a report and retain exit code 1; report-writing failure also exits 1.
 
 `-o report.md` exports the complete Markdown report: outcomes, independent dataset evidence tables, changed declarations, before/after Mermaid graphs, boundaries, test records, class-ID provenance and retained artifact hashes. Graphs include every resolved scope edge, cycles and shared nodes, with changed/caller/indirect colors and explicit production/test roles. A Markdown viewer with Mermaid support renders the diagrams; other viewers retain readable graph source. Names are escaped according to [Mermaid flowchart syntax](https://mermaid.js.org/syntax/flowchart.html). Markdown escaping and variable-length source fences prevent repository text from breaking table/code structure. `--json -o report.md` keeps stdout JSON while saving Markdown.
 
@@ -397,7 +423,7 @@ HTML's impact map is a local SVG graph with pan/zoom/fit, draggable nodes with l
 ```bash
 scryer project analyze --before HEAD~1 --after HEAD
 scryer project analyze --before HEAD~1 --after HEAD --verbose
-scryer project analyze --before HEAD~1 --after HEAD --json -o report.json
+scryer project analyze --before HEAD~1 --after HEAD --json > report.json
 scryer project analyze --before HEAD~1 --after HEAD -o report.md
 scryer project analyze --before HEAD~1 --after HEAD -o report.html
 ```

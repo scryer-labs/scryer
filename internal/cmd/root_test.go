@@ -180,6 +180,25 @@ func Test_should_reject_legacy_entries_when_only_scope_commands_are_supported(t 
 	}
 }
 
+func Test_should_reject_json_file_export_when_project_analyze_uses_output(t *testing.T) {
+	fake := &fakeAnalyzer{}
+	var out, diagnostics bytes.Buffer
+	root := NewRoot(&application.Service{Analyzer: fake}, &out, &diagnostics)
+	output := filepath.Join(t.TempDir(), "report.json")
+	root.SetArgs([]string{"project", "analyze", "--before", "HEAD", "--after", "HEAD", "--json", "-o", output})
+
+	err := root.Execute()
+	if err == nil || exitCode(err) != 2 || !strings.Contains(err.Error(), "use --json to write JSON to stdout") {
+		t.Fatalf("expected output format error, got %v", err)
+	}
+	if fake.calls != 0 || out.Len() != 0 {
+		t.Fatal("invalid output format must fail before analysis")
+	}
+	if _, err := os.Stat(output); !os.IsNotExist(err) {
+		t.Fatalf("expected no output file, stat returned %v", err)
+	}
+}
+
 func Test_should_preserve_analysis_options_when_project_analyze_uses_default_or_explicit_path(t *testing.T) {
 	dir := t.TempDir()
 	for _, args := range [][]string{

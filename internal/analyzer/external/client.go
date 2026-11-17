@@ -37,6 +37,9 @@ func (c *Client) Scan(ctx context.Context, r contract.ScanRequest) (contract.Doc
 func (c *Client) Analyze(ctx context.Context, r contract.AnalyzeRequest) (contract.Document, error) {
 	return c.call(ctx, contract.Request{Operation: "analyze", Analyze: &r})
 }
+func (c *Client) CollectCoverage(ctx context.Context, r contract.CoverageRequest) (contract.Document, error) {
+	return c.call(ctx, contract.Request{Operation: contract.CoverageOperation, Coverage: &r})
+}
 func (c *Client) call(ctx context.Context, request contract.Request) (contract.Document, error) {
 	request.ProtocolVersion = contract.ProtocolVersion
 	request.Stack = c.Stack()

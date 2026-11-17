@@ -3,7 +3,6 @@ package project
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -19,15 +18,25 @@ type ExecutionError struct{ Status string }
 func (e ExecutionError) Error() string { return "after test command: " + e.Status }
 func newAnalyzeCommand(service *application.Service) *cobra.Command {
 	var request contract.AnalyzeRequest
-	var stack, output, color string
-	var jsonOutput, verbose bool
-	command := &cobra.Command{Use: "analyze [path] --before <ref> --after <ref|.>", Short: "Analyze changes and existing test evidence", Args: cobra.MaximumNArgs(1)}
+	var stack, output, color, operations, coverageFile string
+	var jsonOutput, verbose, runTests bool
+	var selected analyzeOperations
+	command := &cobra.Command{
+		Use: "analyze [path]", Short: "Analyze change impact or collect coverage evidence",
+		Long: "Analyze one project. The default operation is impact. A clean worktree compares HEAD^1 to HEAD; a changed worktree compares HEAD to an isolated snapshot. Pass both --before and --after to override the comparison. Coverage alone uses the current project and accepts --coverage-file.",
+		Args: cobra.MaximumNArgs(1),
+	}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if color != "auto" && color != "always" && color != "never" {
 			return fmt.Errorf("--color must be auto, always or never")
 		}
-		if strings.TrimSpace(request.Before) == "" || strings.TrimSpace(request.After) == "" {
-			return fmt.Errorf("--before and --after are required")
+		var err error
+		selected, err = selectAnalyzeOperations(operations)
+		if err != nil {
+			return err
+		}
+		if err := selected.validate(cmd, request, coverageFile, runTests); err != nil {
+			return err
 		}
 		if request.SkipTests && request.TestCommand != "" {
 			return fmt.Errorf("--skip-tests and --test-command are mutually exclusive")
@@ -41,27 +50,42 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 		if request.BuildTool != "" && request.BuildTool != "maven" && request.BuildTool != "gradle" {
 			return fmt.Errorf("--build-tool must be maven or gradle")
 		}
-		if request.TestCommand != "" && strings.TrimSpace(request.TestCommand) == "" {
-			return fmt.Errorf("--test-command must not be blank")
-		}
 		if strings.ContainsRune(request.TestCommand, 0) {
 			return fmt.Errorf("--test-command must not contain NUL")
 		}
 		if output != "" {
 			ext := strings.ToLower(filepath.Ext(output))
-			if ext != ".json" && ext != ".md" && ext != ".html" {
-				return fmt.Errorf("-o must use .json, .md or .html")
+			if ext != ".md" && ext != ".html" {
+				return fmt.Errorf("-o must use .md or .html; use --json to write JSON to stdout")
 			}
 		}
 		return nil
 	}
 	command.RunE = func(cmd *cobra.Command, args []string) error {
-		return runAnalysis(cmd, args, service, request, stack, output, color, jsonOutput, verbose)
+		directory := "."
+		if len(args) == 1 {
+			directory = args[0]
+		}
+		var document contract.Document
+		var err error
+		if selected.impact {
+			request.SkipTests = request.SkipTests || (!runTests && request.TestCommand == "")
+			document, err = service.Analyze(cmd.Context(), stack, directory, request)
+		} else {
+			document, err = service.CollectCoverage(cmd.Context(), directory, stack, coverageFile)
+		}
+		if err != nil {
+			return err
+		}
+		return presentAnalysis(cmd, document, output, color, jsonOutput, verbose)
 	}
 
 	flags := command.Flags()
 	flags.StringVar(&color, "color", "auto", "auto, always or never")
-	flags.StringVar(&stack, "stack", "java", "Technology stack (currently java)")
+	flags.StringVar(&stack, "stack", "", "Select an engine (impact currently uses Java)")
+	flags.StringVar(&operations, "operations", "impact", "Comma-separated analysis operations: impact, coverage")
+	flags.StringVar(&coverageFile, "coverage-file", "", "Read an existing coverage artifact (C++: llvm-cov JSON export)")
+	flags.BoolVar(&runTests, "run-tests", false, "Run the default Java test lifecycle for impact")
 	flags.StringVar(&request.BuildTool, "build-tool", "", "Select maven or gradle for both models and tests")
 	flags.StringVar(&request.Before, "before", "", "Before Git commit/ref")
 	flags.StringVar(&request.After, "after", "", "After Git commit/ref, or . for the working tree")
@@ -69,24 +93,14 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 	flags.StringVar(&request.TestCommand, "test-command", "", "Explicit after test lifecycle")
 	flags.BoolVar(&jsonOutput, "json", false, "Print report JSON")
 	flags.BoolVar(&verbose, "verbose", false, "Show full graphs and evidence")
-	flags.StringVarP(&output, "output", "o", "", "Save JSON, Markdown or HTML report")
+	flags.StringVarP(&output, "output", "o", "", "Save a Markdown or HTML report")
 	command.MarkFlagsMutuallyExclusive("skip-tests", "test-command")
 	command.MarkFlagsMutuallyExclusive("json", "verbose")
 	return command
 }
 
-func runAnalysis(cmd *cobra.Command, args []string, service *application.Service, request contract.AnalyzeRequest, stack, output, color string, jsonOutput, verbose bool) error {
-	directory, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	if len(args) == 1 {
-		directory = args[0]
-	}
-	document, err := service.Analyze(cmd.Context(), stack, directory, request)
-	if err != nil {
-		return err
-	}
+func presentAnalysis(cmd *cobra.Command, document contract.Document, output, color string, jsonOutput, verbose bool) error {
+	var err error
 	compact, _ := cmd.Flags().GetBool("compact")
 	if jsonOutput {
 		data, err := report.JSONOutput(document.Data, compact)
@@ -104,8 +118,6 @@ func runAnalysis(cmd *cobra.Command, args []string, service *application.Service
 	if output != "" {
 		var data []byte
 		switch strings.ToLower(filepath.Ext(output)) {
-		case ".json":
-			data, err = report.JSONOutput(document.Data, compact)
 		case ".md":
 			data, err = report.Markdown(document)
 		case ".html":
@@ -122,6 +134,9 @@ func runAnalysis(cmd *cobra.Command, args []string, service *application.Service
 			return err
 		}
 		fmt.Fprintln(cmd.ErrOrStderr(), "scryer: Report saved to "+absolute)
+	}
+	if document.Operation == contract.CoverageOperation {
+		return nil
 	}
 	var result struct {
 		Execution struct {
