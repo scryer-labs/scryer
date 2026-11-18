@@ -124,11 +124,13 @@
       path.setAttribute('aria-label', `Inspect ${edge.count} relation evidence records`);
       path.append(svgNode('title', {}, edge.kinds.map(item => `${kindLabel(item.kind)}: ${item.count}`).join(' · '))); world.append(path);
       const inspect = event => { event.stopPropagation(); inspectConnection(edge); };
+      path.addEventListener('pointerdown', event => event.stopPropagation());
       path.addEventListener('click', inspect);
       path.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); inspect(event); } });
       const labelText = edge.kinds.map(item => kindLabel(item.kind)).join(' + ') + (edge.count > 1 ? ` · ${edge.count}` : '');
       const label = svgNode('text', {x: position.x, y: position.y, class: 'edge-kind'}, labelText);
-      label.style.pointerEvents = 'auto'; label.style.cursor = 'pointer'; label.addEventListener('click', inspect);
+      label.style.pointerEvents = 'auto'; label.style.cursor = 'pointer';
+      label.addEventListener('pointerdown', event => event.stopPropagation()); label.addEventListener('click', inspect);
       if (label) world.append(label);
       edgeElements.push({edge, path, label});
     });
