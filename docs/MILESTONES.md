@@ -47,8 +47,10 @@ architecture and test evidence to Orrery for interactive rendering.
 
 ## M3 — Runtime coverage and change impact
 
-Design a shared execution-evidence contract, then implement the first C++
-collector against a repeatable test setup:
+Current macOS coverage can build instrumented CMake targets and run tests.
+The first C++ impact slice compares immutable function projections and traverses
+candidate calls in Core. Coverage-to-after-snapshot matching remains open.
+Continue with a shared execution-evidence contract:
 
 1. Bind test executions and coverage observations to a specific revision,
    build configuration and artifact. Keep test identity, observed file/line or

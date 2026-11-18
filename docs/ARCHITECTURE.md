@@ -30,7 +30,11 @@ across processes. The default home on macOS is `~/.config/scryer`, and
 
 ## Project analyze operations
 
-CLI validates operation selection and the shared comparison flags. Git
+CLI validates operation selection and the shared comparison flags.
+For C++ impact, the engine supplies per-snapshot source identities, token
+fingerprints and call candidates. Core compares declarations and traverses
+incoming and outgoing graph edges in `internal/application/impact.go`.
+The language-specific projection is owned by the engine. Git
 snapshot defaults belong to the repository layer. The application exposes
 coverage as a reusable use case and selects an installed engine with the
 coverage capability. The C++ engine imports LLVM evidence and returns JSON.

@@ -68,9 +68,6 @@ func (s *Service) Scan(ctx context.Context, stack string, request contract.ScanR
 	return document, err
 }
 func (s *Service) Analyze(ctx context.Context, stack, directory string, request contract.AnalyzeRequest) (document contract.Document, err error) {
-	if err := s.selectStack(stack); err != nil {
-		return contract.Document{}, err
-	}
 	snapshots, err := repository.Open(ctx, directory, request.Before, request.After)
 	if err != nil {
 		return contract.Document{}, err
@@ -82,7 +79,29 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 	request.ComparisonRepository = snapshots.ComparisonRepository
 	request.BeforeRoot = snapshots.BeforeRoot
 	request.AfterRoot = snapshots.AfterRoot
-	document, err = s.Analyzer.Analyze(ctx, request)
+	analyzer, projection, err := s.impactAnalyzer(ctx, stack, snapshots.BeforeRoot, snapshots.AfterRoot)
+	if err != nil {
+		return document, err
+	}
+	if projection {
+		collector, ok := analyzer.(contract.ImpactCollector)
+		if !ok {
+			return document, fmt.Errorf("engine %q has no impact projection adapter", analyzer.Stack())
+		}
+		if !request.SkipTests || request.TestCommand != "" || request.BuildTool != "" {
+			return document, fmt.Errorf("engine %q supplies static impact evidence; test execution and build options are not supported in this slice", analyzer.Stack())
+		}
+		var raw contract.Document
+		raw, err = collector.CollectImpact(ctx, request)
+		if err == nil {
+			var facts contract.ImpactFacts
+			if err = json.Unmarshal(raw.Data, &facts); err == nil {
+				document, err = compareImpact(analyzer.Stack(), request, facts)
+			}
+		}
+	} else {
+		document, err = analyzer.Analyze(ctx, request)
+	}
 	if err != nil || snapshots.WorkingBase == "" {
 		return document, err
 	}

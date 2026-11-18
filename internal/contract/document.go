@@ -17,6 +17,16 @@ func (d Document) Validate() error {
 	}
 	required := map[string]string{}
 	switch d.Operation {
+	case ImpactOperation:
+		required = map[string]string{"beforeSha": "string", "afterSha": "string", "before": "object", "after": "object"}
+		for _, name := range []string{"before", "after"} {
+			if err := validateFields(report[name], map[string]string{"symbols": "array", "calls": "array", "notes": "array"}); err != nil {
+				return fmt.Errorf("impact %s: %w", name, err)
+			}
+			if err := validateImpactSnapshot(report[name]); err != nil {
+				return fmt.Errorf("impact %s: %w", name, err)
+			}
+		}
 	case CoverageOperation:
 		required = map[string]string{"root": "string"}
 		if _, ok := report["runs"]; ok {

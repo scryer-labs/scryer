@@ -50,6 +50,7 @@ type Request struct {
 	Operation       string           `json:"operation"`
 	Scan            *ScanRequest     `json:"scan,omitempty"`
 	Analyze         *AnalyzeRequest  `json:"analyze,omitempty"`
+	Impact          *AnalyzeRequest  `json:"impact,omitempty"`
 	Coverage        *CoverageRequest `json:"coverage,omitempty"`
 }
 type Response struct {

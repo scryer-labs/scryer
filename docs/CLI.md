@@ -258,10 +258,23 @@ either status, so automation should inspect `status`. Tool or build failures
 return an error identifying the stage. Coverage remains aggregate and its
 source revision is marked `unverified`. See the [coverage contract](contracts/COVERAGE.md).
 
-Java supplies the current impact implementation. It runs tests when explicitly
-requested with `--run-tests` or `--test-command`. C++ impact and combined
-`impact,coverage` are planned follow-ups.
+Impact selects an installed engine from the languages in both snapshots.
+Use `--stack cpp` or `--stack java` when more than one engine supports impact.
 
+```sh
+scryer project analyze . --json -o impact.html
+scryer project analyze . --before HEAD~2 --after HEAD --stack cpp -o impact.md
+```
+
+C++ impact currently supplies syntax-based change and candidate call evidence.
+Core compares the engine's declaration keys and fingerprints, finds incoming
+callers and outgoing potential impacts, and preserves unresolved calls and
+context changes. The report is static, with unknown coverage and source roles.
+C++ test execution and combined `impact,coverage` remain subsequent work.
+See the [impact contract](contracts/IMPACT.md).
+
+Java retains its analyze implementation, with tests enabled by an explicit
+`--run-tests` or `--test-command`.
 ## Java scan and analyze
 
 Install the Java engine to collect Java dependency facts and to run

@@ -88,7 +88,7 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 
 	flags := command.Flags()
 	flags.StringVar(&color, "color", "auto", "auto, always or never")
-	flags.StringVar(&stack, "stack", "", "Select an engine (impact currently uses Java)")
+	flags.StringVar(&stack, "stack", "", "Select an engine when multiple engines support the operation")
 	flags.StringVar(&operations, "operations", "impact", "Comma-separated analysis operations: impact, coverage")
 	flags.StringVar(&coverage.Artifact, "coverage-file", "", "Import coverage instead of building and testing (C++: llvm-cov JSON)")
 	flags.StringArrayVar(&testBinaryArgs, "test-binary", nil, "Executable paths relative to the temporary coverage build directory (repeat or comma-separate)")
