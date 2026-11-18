@@ -35,6 +35,7 @@ type ImpactSymbol struct {
 }
 
 type ImpactCall struct {
+	Target     string      `json:"targetSymbolId,omitempty"`
 	ID         string      `json:"callSiteId"`
 	Caller     string      `json:"callerSymbolId"`
 	Candidate  string      `json:"candidateSymbolId"`
@@ -49,10 +50,11 @@ type ImpactContext struct {
 }
 
 type ImpactSnapshot struct {
-	Contexts []ImpactContext `json:"contexts"`
-	Symbols  []ImpactSymbol  `json:"symbols"`
-	Calls    []ImpactCall    `json:"calls"`
-	Notes    []string        `json:"notes"`
+	Resolution json.RawMessage `json:"resolution,omitempty"`
+	Contexts   []ImpactContext `json:"contexts"`
+	Symbols    []ImpactSymbol  `json:"symbols"`
+	Calls      []ImpactCall    `json:"calls"`
+	Notes      []string        `json:"notes"`
 }
 
 type ImpactFacts struct {

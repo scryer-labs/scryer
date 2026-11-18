@@ -115,6 +115,13 @@ func compareImpact(stack string, request contract.AnalyzeRequest, facts contract
 		Matching:  contract.Matching{AfterSHA: request.After, Datasets: []contract.DatasetMatch{}, Removed: []string{}, UnresolvedChanges: unresolved, Notes: []string{"No revision-verified coverage."}},
 		Notes:     notes,
 	}
+	if request.IncludeCoverage && !request.Resolve {
+		report.CoverageReport = &contract.CoverageReport{SchemaVersion: 1, Root: request.Repository, Engine: stack, Status: "unavailable", Message: "Static impact does not run tests; supply --test-target or --test-binary for dynamic analysis."}
+	}
+	if request.Resolve {
+		report.Notes[0] = "Impact uses compiler-resolved scan edges. Missing compiler targets remain boundaries without syntax fallback."
+		report.Extensions = map[string]json.RawMessage{"beforeResolution": facts.Before.Resolution, "afterResolution": facts.After.Resolution}
+	}
 	return contract.NewDocument(stack, "analyze", report)
 }
 
@@ -159,10 +166,14 @@ func impactGraph(facts contract.ImpactSnapshot, changed map[string]bool, unresol
 	}
 	incoming, outgoing := map[string][]string{}, map[string][]string{}
 	for _, call := range facts.Calls {
-		if ids[call.Caller] && ids[call.Candidate] {
-			graph.Edges = append(graph.Edges, contract.Relation{Caller: call.Caller, Callee: call.Candidate, Kind: "NAME_CANDIDATE", CallSiteID: call.ID, Path: call.Site.File, Line: call.Site.Start.Line})
-			incoming[call.Candidate] = append(incoming[call.Candidate], call.Caller)
-			outgoing[call.Caller] = append(outgoing[call.Caller], call.Candidate)
+		target, kind := call.Candidate, "NAME_CANDIDATE"
+		if call.Target != "" {
+			target, kind = call.Target, "COMPILER_RESOLVED"
+		}
+		if ids[call.Caller] && ids[target] {
+			graph.Edges = append(graph.Edges, contract.Relation{Caller: call.Caller, Callee: target, Kind: kind, CallSiteID: call.ID, Path: call.Site.File, Line: call.Site.Start.Line})
+			incoming[target] = append(incoming[target], call.Caller)
+			outgoing[call.Caller] = append(outgoing[call.Caller], target)
 		} else {
 			var caller *string
 			if ids[call.Caller] {

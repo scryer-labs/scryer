@@ -47,6 +47,9 @@ func (selected analyzeOperations) validate(cmd *cobra.Command, request contract.
 		cmd.Flags().Changed("test-command") || cmd.Flags().Changed("build-tool")) {
 		return fmt.Errorf("these test execution and build flags are for Java impact; coverage runs tests automatically unless importing an artifact")
 	}
+	if selected.impact && cmd.Flags().Changed("coverage-file") {
+		return fmt.Errorf("impact uses fresh after-snapshot coverage with --test-target or --test-binary; --coverage-file is for standalone coverage")
+	}
 	if cmd.Flags().Changed("coverage-file") && (!(selected.coverage || selected.impact) || strings.TrimSpace(artifact) == "") {
 		return fmt.Errorf("--coverage-file requires a nonempty path")
 	}

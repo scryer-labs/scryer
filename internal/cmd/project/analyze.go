@@ -25,7 +25,7 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 	var selected analyzeOperations
 	command := &cobra.Command{
 		Use: "analyze [path]", Short: "Analyze change impact or collect coverage evidence",
-		Long: "Analyze one project. The default operation is impact. A clean worktree compares HEAD^1 to HEAD; a changed worktree compares HEAD to an isolated snapshot. Pass both --before and --after to override the comparison. Coverage alone builds and tests the current project. Use --test-target for CMake targets, --test-binary for paths relative to the temporary build directory, or --coverage-file to import existing evidence.",
+		Long: "Analyze one project. The default operation is impact. A clean worktree compares HEAD^1 to HEAD; a changed worktree compares HEAD to an isolated snapshot. Pass both --before and --after to override the comparison. Impact uses static scan facts by default. --test-target or --test-binary selects compiler resolution and testing; failures stop analysis. Coverage alone builds and tests the current project. Use --test-target for CMake targets, --test-binary for paths relative to the temporary build directory, or --coverage-file to import existing evidence.",
 		Args: cobra.MaximumNArgs(1),
 	}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {

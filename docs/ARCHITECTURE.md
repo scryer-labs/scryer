@@ -31,11 +31,11 @@ across processes. The default home on macOS is `~/.config/scryer`, and
 ## Project analyze operations
 
 CLI validates operation selection and the shared comparison flags.
-For C++ impact, the engine supplies per-snapshot source identities, token
+For C++ impact, the engine reuses scan collection and supplies per-snapshot source identities, token
 fingerprints and call candidates. Core compares declarations and traverses
 incoming and outgoing graph edges in `internal/application/impact.go`.
-The language-specific projection is owned by the engine. Impact reuses the
-coverage service on the after checkout. The repository layer verifies the
+The language-specific projection is owned by the engine. A test target or binary path enables compiler-resolved scan evidence for both
+snapshots and coverage on the after checkout. Dynamic failure stops analysis. The repository layer verifies the
 checkout stayed clean at that commit before Core associates normalized
 coverage regions with affected symbols. Git
 snapshot defaults belong to the repository layer. The application exposes

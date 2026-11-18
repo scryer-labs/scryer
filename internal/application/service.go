@@ -91,13 +91,22 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 		if request.TestCommand != "" || request.BuildTool != "" || request.RunTests {
 			return document, fmt.Errorf("engine %q supplies static impact evidence; test execution and build options are not supported in this slice", analyzer.Stack())
 		}
+		request.Resolve = len(request.Coverage.TestTargets) != 0 || len(request.Coverage.TestBinaries) != 0
 		var raw contract.Document
 		raw, err = collector.CollectImpact(ctx, request)
 		if err == nil {
 			var facts contract.ImpactFacts
 			if err = json.Unmarshal(raw.Data, &facts); err == nil {
+				if request.Resolve {
+					for _, snapshot := range []contract.ImpactSnapshot{facts.Before, facts.After} {
+						var resolution struct{ Status string }
+						if json.Unmarshal(snapshot.Resolution, &resolution) != nil || resolution.Status != "resolved" {
+							return document, fmt.Errorf("engine %q did not return resolved scan evidence for dynamic impact; upgrade the engine", analyzer.Stack())
+						}
+					}
+				}
 				document, err = compareImpact(analyzer.Stack(), request, facts)
-				if err == nil && !request.SkipTests {
+				if err == nil && request.Resolve {
 					document, err = s.attachImpactCoverage(ctx, analyzer.Stack(), request, facts, document)
 				}
 			}

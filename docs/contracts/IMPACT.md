@@ -30,7 +30,7 @@ and whitespace do not change token fingerprints. A file rename or declarator
 change is reported as removal and addition. Duplicate keys stay ambiguous.
 Lambdas, anonymous scopes and malformed definitions have no correspondence key.
 
-Call candidates are unique textual name matches from the existing static
+Static call candidates are unique textual name matches from the shared scan
 call graph. `NAME_CANDIDATE` edges express potential relationships. They carry
 the call-site ID and location, and do not establish overload or type binding.
 Unavailable source targets remain boundaries. Non-function context changes
@@ -49,15 +49,26 @@ The report uses the current analyze envelope and JSON, Markdown and offline
 HTML renderers. Changed-file rows summarize declaration changes. Node roles
 remain `UNKNOWN` for C++.
 
-## After coverage
+## Mode selection and after coverage
 
-Core reuses the coverage use case against the after snapshot by default.
+Without test targets or binary paths, impact uses the static scan path.
+Selecting `--test-target` or `--test-binary` sets `impact.resolve: true`.
+The engine calls the same scan path with compiler resolution for each
+snapshot. A skipped or partial resolution is an error. Compiler-confirmed
+definitions use `targetSymbolId` and yield `COMPILER_RESOLVED` edges.
+Missing compiler targets stay unresolved without textual candidate fallback.
+Resolution details are retained under the report's `extensions`.
+
+The shared scan joins cross-translation-unit declarations to definitions
+by libclang USR. Ambiguous definitions are left unresolved.
+
+For dynamic impact Core reuses coverage collection on the after snapshot.
 It checks checkout HEAD and source status before and after collection.
 Generated evidence on an unchanged snapshot gains
 `sourceMatch: "verified-snapshot"` and `sourceSha: afterSha`.
-Imported artifacts stay unverified. Source mutation invalidates matching and
-sets `execution.status: "SNAPSHOT_CHANGED"`. Build, test, and no-profile
-failures retain static impact and their execution diagnostics.
+Source mutation, failed builds or tests, and missing profiles stop analysis
+with an error. Core does not emit an impact report for failed dynamic analysis.
+Existing coverage artifacts can be imported through standalone coverage.
 
 The engine normalizes LLVM segments into `files[].regions[]` with
 `start`, exclusive `end` line/byte-column, and execution `count`.
@@ -68,6 +79,7 @@ observed intervals have hits, `NOT_EXECUTED` when none have hits, and
 `UNKNOWN`. These statuses describe source observations and do not prove
 branch adequacy, causal test attribution or complete execution paths.
 
-`--skip-tests` retains static impact only. `impact,coverage` adds a top-level
+`--skip-tests` is consistent with static impact and conflicts with test
+selection. `impact,coverage` adds a top-level
 `coverageReport` for the complete collection result. Impact alone includes
 the collection under `evidence.coverage[]` and its affected-symbol matching.

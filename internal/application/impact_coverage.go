@@ -17,19 +17,23 @@ func (s *Service) attachImpactCoverage(ctx context.Context, stack string, reques
 		return document, err
 	}
 	collection := contract.CoverageReport{SchemaVersion: 1, Root: request.Repository, Engine: stack}
-	beforeCheck := repository.CheckSnapshot(ctx, request.AfterRoot, request.After)
-	raw, collectionErr := s.CollectCoverage(ctx, request.AfterRoot, stack, request.Coverage)
-	if ctx.Err() != nil {
-		return document, ctx.Err()
+	if err := repository.CheckSnapshot(ctx, request.AfterRoot, request.After); err != nil {
+		return document, err
 	}
-	if collectionErr == nil {
-		if err := json.Unmarshal(raw.Data, &collection); err != nil {
-			return document, err
-		}
-	} else {
-		collection.Status, collection.Message = "unavailable", collectionErr.Error()
+	raw, err := s.CollectCoverage(ctx, request.AfterRoot, stack, request.Coverage)
+	if err != nil {
+		return document, fmt.Errorf("impact coverage failed; analysis stopped: %w", err)
 	}
-	afterCheck := repository.CheckSnapshot(ctx, request.AfterRoot, request.After)
+	if err := json.Unmarshal(raw.Data, &collection); err != nil {
+		return document, err
+	}
+	if collection.Status != "collected" {
+		details, _ := json.Marshal(collection.Runs)
+		return document, fmt.Errorf("impact tests or coverage did not complete (%s): %s; runs: %s", collection.Status, collection.Message, details)
+	}
+	if err := repository.CheckSnapshot(ctx, request.AfterRoot, request.After); err != nil {
+		return document, fmt.Errorf("impact stopped: %w", err)
+	}
 	collection.Root = request.Repository
 	evidence := contract.CoverageEvidence{}
 	if len(collection.Coverage) > 0 {
@@ -37,32 +41,20 @@ func (s *Service) attachImpactCoverage(ctx context.Context, stack string, reques
 			return document, err
 		}
 	}
-	verified := beforeCheck == nil && afterCheck == nil && request.Coverage.Artifact == "" && len(collection.Coverage) > 0
+	if request.Coverage.Artifact != "" || len(collection.Coverage) == 0 {
+		return document, fmt.Errorf("impact requires coverage collected from the selected after snapshot")
+	}
+	verified := true
 	if verified {
 		evidence.SourceMatch, evidence.SourceSHA = "verified-snapshot", request.After
 		evidence.Notes = append(evidence.Notes, "Core verified the after checkout stayed clean at the requested commit across collection.")
 		evidence.Notes = filterCoverageNotes(evidence.Notes)
-		collection.Coverage, collectionErr = json.Marshal(evidence)
-		if collectionErr != nil {
-			return document, collectionErr
+		collection.Coverage, err = json.Marshal(evidence)
+		if err != nil {
+			return document, err
 		}
 	}
-	executionStatus := "UNAVAILABLE"
-	switch collection.Status {
-	case "collected":
-		executionStatus = "SUCCEEDED"
-	case "partial":
-		executionStatus = "FAILED"
-	}
-	if request.Coverage.Artifact != "" {
-		executionStatus = "SKIPPED"
-	}
-	if beforeCheck != nil || afterCheck != nil {
-		executionStatus = "SNAPSHOT_CHANGED"
-		evidence.SourceMatch = "unverified"
-		collection.Message = "After checkout changed during collection; coverage matching remains unknown."
-		collection.Status = "partial"
-	}
+	executionStatus := "SUCCEEDED"
 	report.Execution.Status = executionStatus
 	report.Execution.Notes = []string{collection.Message}
 	report.Evidence.CommandStatus = executionStatus
@@ -71,7 +63,7 @@ func (s *Service) attachImpactCoverage(ctx context.Context, stack string, reques
 	if !verified {
 		report.Matching.Notes = append(report.Matching.Notes, "Coverage is not verified against the after snapshot.")
 	}
-	report.Notes = []string{report.Notes[0], "Impact coverage is collected on the after checkout. Test or collection failures remain visible alongside static impact."}
+	report.Notes = []string{report.Notes[0], "Impact reuses compiler scan evidence and coverage from the after checkout. Dynamic failures stop analysis."}
 	rawCollection, err := json.Marshal(collection)
 	if err != nil {
 		return document, err

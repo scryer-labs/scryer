@@ -18,6 +18,7 @@ type ScanRequest struct {
 	BuildTool       string   `json:"buildTool,omitempty"`
 }
 type AnalyzeRequest struct {
+	Resolve              bool            `json:"resolve,omitempty"`
 	Coverage             CoverageRequest `json:"-"`
 	IncludeCoverage      bool            `json:"-"`
 	RunTests             bool            `json:"-"`

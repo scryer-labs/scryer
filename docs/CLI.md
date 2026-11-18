@@ -267,9 +267,10 @@ scryer project analyze . --before HEAD~2 --after HEAD --stack cpp -o impact.md
 ```
 
 C++ impact compares syntax-based declaration fingerprints and traverses
-candidate calls. By default it reuses coverage collection on the immutable
-after checkout. Select CMake tests with `--test-target`, select executable
-paths with `--test-binary`, or use `--skip-tests` for static impact only.
+candidate calls. Without a test selection it reuses the static scan path and
+does not build or run tests. `--test-target` or `--test-binary` selects dynamic
+impact, which reuses `scan --resolve` for both snapshots and collects after
+coverage. Compiler resolution, build, and test execution must all succeed.
 
 ```sh
 scryer project analyze . --test-target cxx_reflection_tests -o impact.html
@@ -278,10 +279,10 @@ scryer project analyze . --skip-tests --json
 ```
 
 Only coverage collected while the after checkout remains at its requested
-commit is matched to symbols. Test and build failures retain static impact,
-report execution status, and exit nonzero. Source mutation is reported as
-`SNAPSHOT_CHANGED` with unknown coverage matching. Imported artifacts retain
-unverified provenance. Matching statuses describe source-region observations
+commit is matched to symbols. Failed or partial compiler resolution,
+failed builds or tests, missing coverage, and source mutations produce an error
+and stop dynamic impact. No static replacement report is emitted.
+Use `--coverage-file` with standalone coverage to import existing artifacts. Matching statuses describe source-region observations
 within symbol ranges and retain aggregate profile granularity. Calls remain
 syntax candidates and symbol source roles remain unknown.
 
