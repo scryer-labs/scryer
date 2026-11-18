@@ -266,12 +266,28 @@ scryer project analyze . --json -o impact.html
 scryer project analyze . --before HEAD~2 --after HEAD --stack cpp -o impact.md
 ```
 
-C++ impact currently supplies syntax-based change and candidate call evidence.
-Core compares the engine's declaration keys and fingerprints, finds incoming
-callers and outgoing potential impacts, and preserves unresolved calls and
-context changes. The report is static, with unknown coverage and source roles.
-C++ test execution and combined `impact,coverage` remain subsequent work.
-See the [impact contract](contracts/IMPACT.md).
+C++ impact compares syntax-based declaration fingerprints and traverses
+candidate calls. By default it reuses coverage collection on the immutable
+after checkout. Select CMake tests with `--test-target`, select executable
+paths with `--test-binary`, or use `--skip-tests` for static impact only.
+
+```sh
+scryer project analyze . --test-target cxx_reflection_tests -o impact.html
+scryer project analyze . --operations impact,coverage --test-target unit_tests,integration_tests --json -o impact.html
+scryer project analyze . --skip-tests --json
+```
+
+Only coverage collected while the after checkout remains at its requested
+commit is matched to symbols. Test and build failures retain static impact,
+report execution status, and exit nonzero. Source mutation is reported as
+`SNAPSHOT_CHANGED` with unknown coverage matching. Imported artifacts retain
+unverified provenance. Matching statuses describe source-region observations
+within symbol ranges and retain aggregate profile granularity. Calls remain
+syntax candidates and symbol source roles remain unknown.
+
+Selecting `impact,coverage` also emits `coverageReport` in JSON, appends its
+file tables in Markdown, and embeds a downloadable full coverage HTML in the
+impact HTML. See the [impact contract](contracts/IMPACT.md).
 
 Java retains its analyze implementation, with tests enabled by an explicit
 `--run-tests` or `--test-command`.

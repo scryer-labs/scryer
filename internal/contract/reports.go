@@ -179,20 +179,21 @@ type Evidence struct {
 	Notes         []string          `json:"notes"`
 }
 type AnalyzeReport struct {
-	SchemaVersion int                        `json:"schemaVersion"`
-	GeneratedAt   string                     `json:"generatedAt"`
-	Repository    string                     `json:"repository"`
-	BeforeSHA     string                     `json:"beforeSha"`
-	AfterSHA      string                     `json:"afterSha"`
-	Files         []FileChange               `json:"files"`
-	Changes       []Change                   `json:"changes"`
-	Before        Snapshot                   `json:"before"`
-	After         Snapshot                   `json:"after"`
-	Execution     Execution                  `json:"execution"`
-	Evidence      Evidence                   `json:"evidence"`
-	Matching      Matching                   `json:"matching"`
-	Notes         []string                   `json:"notes"`
-	Extensions    map[string]json.RawMessage `json:"extensions,omitempty"`
+	CoverageReport *CoverageReport            `json:"coverageReport,omitempty"`
+	SchemaVersion  int                        `json:"schemaVersion"`
+	GeneratedAt    string                     `json:"generatedAt"`
+	Repository     string                     `json:"repository"`
+	BeforeSHA      string                     `json:"beforeSha"`
+	AfterSHA       string                     `json:"afterSha"`
+	Files          []FileChange               `json:"files"`
+	Changes        []Change                   `json:"changes"`
+	Before         Snapshot                   `json:"before"`
+	After          Snapshot                   `json:"after"`
+	Execution      Execution                  `json:"execution"`
+	Evidence       Evidence                   `json:"evidence"`
+	Matching       Matching                   `json:"matching"`
+	Notes          []string                   `json:"notes"`
+	Extensions     map[string]json.RawMessage `json:"extensions,omitempty"`
 }
 
 func NewDocument(stack, operation string, report any) (Document, error) {

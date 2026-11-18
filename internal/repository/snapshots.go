@@ -96,3 +96,19 @@ func Open(ctx context.Context, directory, before, after string) (*Snapshots, err
 	complete = true
 	return snapshot, nil
 }
+
+// CheckSnapshot detects source or revision changes caused by project commands.
+func CheckSnapshot(ctx context.Context, directory, sha string) error {
+	head, err := git(ctx, directory, "rev-parse", "HEAD")
+	if err != nil {
+		return err
+	}
+	state, err := git(ctx, directory, "status", "--porcelain", "--untracked-files=all")
+	if err != nil {
+		return err
+	}
+	if head != sha || state != "" {
+		return fmt.Errorf("after snapshot changed during coverage collection")
+	}
+	return nil
+}

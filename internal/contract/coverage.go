@@ -41,6 +41,7 @@ type CoverageEvidence struct {
 	Artifact    string         `json:"artifact"`
 	SHA256      string         `json:"sha256"`
 	SourceMatch string         `json:"sourceMatch"`
+	SourceSHA   string         `json:"sourceSha,omitempty"`
 	Granularity string         `json:"granularity"`
 	Files       []CoverageFile `json:"files"`
 	Notes       []string       `json:"notes"`
@@ -51,8 +52,15 @@ type CoverageCount struct {
 	Count   uint64 `json:"count"`
 }
 
+type CoverageRegion struct {
+	Start ImpactPosition `json:"start"`
+	End   ImpactPosition `json:"end"`
+	Count uint64         `json:"count"`
+}
+
 type CoverageFile struct {
-	Path    string `json:"path"`
+	Regions []CoverageRegion `json:"regions,omitempty"`
+	Path    string           `json:"path"`
 	Summary struct {
 		Lines     *CoverageCount `json:"lines"`
 		Functions *CoverageCount `json:"functions"`

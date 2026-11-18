@@ -49,7 +49,8 @@ architecture and test evidence to Orrery for interactive rendering.
 
 Current macOS coverage can build instrumented CMake targets and run tests.
 The first C++ impact slice compares immutable function projections and traverses
-candidate calls in Core. Coverage-to-after-snapshot matching remains open.
+candidate calls in Core. Impact now reuses coverage on the after snapshot and verifies that the checkout
+stays at the requested commit before matching source regions to affected symbols.
 Continue with a shared execution-evidence contract:
 
 1. Bind test executions and coverage observations to a specific revision,

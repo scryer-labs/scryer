@@ -75,7 +75,7 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 		var document contract.Document
 		var err error
 		if selected.impact {
-			request.SkipTests = request.SkipTests || (!runTests && request.TestCommand == "")
+			request.Coverage, request.IncludeCoverage, request.RunTests = coverage, selected.coverage, runTests
 			document, err = service.Analyze(cmd.Context(), stack, directory, request)
 		} else {
 			document, err = service.CollectCoverage(cmd.Context(), directory, stack, coverage)

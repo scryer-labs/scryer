@@ -101,6 +101,13 @@ func Terminal(document contract.Document, out io.Writer, verbose, color bool) er
 		viewFor(document.Stack).scanTerminal(data, out, color)
 	} else {
 		analyzeTerminal(data, out, verbose, color, viewFor(document.Stack).analysis)
+		if coverage := data["coverageReport"]; coverage != nil {
+			coverageDocument, err := contract.NewDocument(document.Stack, contract.CoverageOperation, coverage)
+			if err != nil {
+				return err
+			}
+			return writeCoverage(out, coverageDocument)
+		}
 	}
 	return nil
 }
@@ -118,7 +125,19 @@ func Markdown(document contract.Document) ([]byte, error) {
 	if document.Operation == "scan" {
 		return []byte(viewFor(document.Stack).scanMarkdown(data)), nil
 	}
-	return []byte(analyzeMarkdown(data, viewFor(document.Stack).analysis)), nil
+	output := []byte(analyzeMarkdown(data, viewFor(document.Stack).analysis))
+	if coverage := data["coverageReport"]; coverage != nil {
+		coverageDocument, err := contract.NewDocument(document.Stack, contract.CoverageOperation, coverage)
+		if err != nil {
+			return nil, err
+		}
+		section, err := coverageMarkdown(coverageDocument)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, section...)
+	}
+	return output, nil
 }
 
 // WriteFile atomically replaces only after rendering has succeeded, preserving an existing report on failure.

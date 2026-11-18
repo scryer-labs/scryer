@@ -88,7 +88,7 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 		if !ok {
 			return document, fmt.Errorf("engine %q has no impact projection adapter", analyzer.Stack())
 		}
-		if !request.SkipTests || request.TestCommand != "" || request.BuildTool != "" {
+		if request.TestCommand != "" || request.BuildTool != "" || request.RunTests {
 			return document, fmt.Errorf("engine %q supplies static impact evidence; test execution and build options are not supported in this slice", analyzer.Stack())
 		}
 		var raw contract.Document
@@ -97,9 +97,16 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 			var facts contract.ImpactFacts
 			if err = json.Unmarshal(raw.Data, &facts); err == nil {
 				document, err = compareImpact(analyzer.Stack(), request, facts)
+				if err == nil && !request.SkipTests {
+					document, err = s.attachImpactCoverage(ctx, analyzer.Stack(), request, facts, document)
+				}
 			}
 		}
 	} else {
+		if request.IncludeCoverage || request.Coverage.Artifact != "" || len(request.Coverage.TestTargets) != 0 || len(request.Coverage.TestBinaries) != 0 {
+			return document, fmt.Errorf("engine %q does not support separate impact coverage collection", analyzer.Stack())
+		}
+		request.SkipTests = request.SkipTests || (!request.RunTests && request.TestCommand == "")
 		document, err = analyzer.Analyze(ctx, request)
 	}
 	if err != nil || snapshots.WorkingBase == "" {

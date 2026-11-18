@@ -46,9 +46,28 @@ precedence over either reachability class. Both snapshot graphs are retained,
 including cycles and source boundaries.
 
 The report uses the current analyze envelope and JSON, Markdown and offline
-HTML renderers. Changed-file rows summarize declaration changes and contain
-no inferred Git hunks. Node roles remain `UNKNOWN` for C++ in this slice.
-`execution.status` is `SKIPPED` and coverage datasets are empty. Coverage
-remains unknown until the reusable coverage collector is bound to the
-selected after snapshot. C++ runtime analysis and combined `impact,coverage`
-are subsequent work.
+HTML renderers. Changed-file rows summarize declaration changes. Node roles
+remain `UNKNOWN` for C++.
+
+## After coverage
+
+Core reuses the coverage use case against the after snapshot by default.
+It checks checkout HEAD and source status before and after collection.
+Generated evidence on an unchanged snapshot gains
+`sourceMatch: "verified-snapshot"` and `sourceSha: afterSha`.
+Imported artifacts stay unverified. Source mutation invalidates matching and
+sets `execution.status: "SNAPSHOT_CHANGED"`. Build, test, and no-profile
+failures retain static impact and their execution diagnostics.
+
+The engine normalizes LLVM segments into `files[].regions[]` with
+`start`, exclusive `end` line/byte-column, and execution `count`.
+Gap and count-less segments are excluded. Core intersects these source
+intervals with affected symbol locations. Matching is `EXECUTED` when all
+observed intervals have hits, `NOT_EXECUTED` when none have hits, and
+`PARTIALLY_EXECUTED` when both occur. Missing or unverified evidence stays
+`UNKNOWN`. These statuses describe source observations and do not prove
+branch adequacy, causal test attribution or complete execution paths.
+
+`--skip-tests` retains static impact only. `impact,coverage` adds a top-level
+`coverageReport` for the complete collection result. Impact alone includes
+the collection under `evidence.coverage[]` and its affected-symbol matching.

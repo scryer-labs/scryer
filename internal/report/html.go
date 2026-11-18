@@ -20,7 +20,8 @@ func HTML(document contract.Document) ([]byte, error) {
 	if document.Operation != "analyze" {
 		return nil, fmt.Errorf("HTML currently supports analyze reports")
 	}
-	if _, err := decode(document); err != nil {
+	decoded, err := decode(document)
+	if err != nil {
 		return nil, err
 	}
 	read := func(name string) (string, error) {
@@ -67,6 +68,19 @@ func HTML(document contract.Document) ([]byte, error) {
 		return nil, err
 	}
 	template = strings.ReplaceAll(template, "__SCRYER_EXECUTION_DETAILS__", string(runtimeJSON))
+	if coverage := decoded["coverageReport"]; coverage != nil {
+		coverageDocument, err := contract.NewDocument(document.Stack, contract.CoverageOperation, coverage)
+		if err != nil {
+			return nil, err
+		}
+		page, err := coverageHTML(coverageDocument)
+		if err != nil {
+			return nil, err
+		}
+		link := `<section class="limits"><h2>Full coverage report</h2><a download="coverage.html" href="data:text/html;base64,` +
+			base64.StdEncoding.EncodeToString(page) + `">Save full coverage HTML</a></section>`
+		template = strings.Replace(template, "<footer>", link+"<footer>", 1)
+	}
 	data, err := JSON(document)
 	if err != nil {
 		return nil, err

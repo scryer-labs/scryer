@@ -47,14 +47,14 @@ func (selected analyzeOperations) validate(cmd *cobra.Command, request contract.
 		cmd.Flags().Changed("test-command") || cmd.Flags().Changed("build-tool")) {
 		return fmt.Errorf("these test execution and build flags are for Java impact; coverage runs tests automatically unless importing an artifact")
 	}
-	if cmd.Flags().Changed("coverage-file") && (!selected.coverage || strings.TrimSpace(artifact) == "") {
-		return fmt.Errorf("--coverage-file requires the coverage operation and a nonempty path")
+	if cmd.Flags().Changed("coverage-file") && (!(selected.coverage || selected.impact) || strings.TrimSpace(artifact) == "") {
+		return fmt.Errorf("--coverage-file requires a nonempty path")
 	}
 	if runTests && request.SkipTests {
 		return fmt.Errorf("--run-tests and --skip-tests are mutually exclusive")
 	}
-	if selected.impact && selected.coverage {
-		return fmt.Errorf("combining impact and coverage is not yet supported")
+	if request.SkipTests && (cmd.Flags().Changed("coverage-file") || cmd.Flags().Changed("test-target") || cmd.Flags().Changed("test-binary") || selected.coverage) {
+		return fmt.Errorf("--skip-tests cannot be combined with coverage input or test selection")
 	}
 	return nil
 }
@@ -65,8 +65,8 @@ func (selected analyzeOperations) selectCoverageTests(request *contract.Coverage
 	if len(binaries) == 0 && len(targets) == 0 {
 		return nil
 	}
-	if !selected.coverage || request.Artifact != "" || len(binaries) != 0 && len(targets) != 0 {
-		return fmt.Errorf("--test-target and --test-binary require coverage and are mutually exclusive with each other and --coverage-file")
+	if !(selected.coverage || selected.impact) || request.Artifact != "" || len(binaries) != 0 && len(targets) != 0 {
+		return fmt.Errorf("--test-target and --test-binary are mutually exclusive with each other and --coverage-file")
 	}
 	var err error
 	if len(targets) != 0 {

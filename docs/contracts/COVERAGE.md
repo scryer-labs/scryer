@@ -26,14 +26,13 @@ The project report adds `engine` and retains the JSON evidence:
 - `granularity: "aggregate"` describes the observed profile. No per-test
   identity is known.
 - `files[]` contains repository-relative `path` and line, function and
-  region counts as `{covered, count}`. An optional `llvmSegments` contains
-  original LLVM segment tuples. Consumers should use LLVM counts for the
+  region counts as `{covered, count}`. Normalized `regions[]` describes start/end line and byte-column with an
+  execution count. Optional `llvmSegments` retains the original LLVM tuples. Consumers should use LLVM counts for the
   file totals.
 - `notes[]` records missing provenance or paths that could not be mapped.
 
 No usable profiles or no mapped files yields `status: "unavailable"`.
 Partial test execution with collected evidence yields `status: "partial"`.
 Invalid inputs and failed configure/build/export stages return an error. CLI
-JSON, Markdown and HTML use the same project report. Future impact analysis
-can reuse this operation and must verify evidence against its selected after
-snapshot before labelling impacted code.
+JSON, Markdown and HTML use the same project report. Impact reuses this operation on the after snapshot and verifies checkout identity
+before associating evidence with affected symbols.
