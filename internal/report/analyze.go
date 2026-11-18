@@ -49,7 +49,7 @@ func analyzeTerminal(data Object, out io.Writer, verbose, color bool, view analy
 	}
 	fmt.Fprintln(out, style.heading("\nAfter evidence and gaps"))
 	for _, dataset := range objects(matching["datasets"]) {
-		fmt.Fprintf(out, "  Dataset: %s\n  %s\n  Method execution: %s (%s/%s assessed; UNKNOWN excluded)\n", str(field(dataset, "artifact"), "source"), style.counts(field(dataset, "counts")), style.fact(percent(dataset["methodExecutionPercent"])), str(dataset, "withHits"), str(dataset, "assessed"))
+		fmt.Fprintf(out, "  Dataset: %s\n  %s\n  Method execution: %s (%s/%s assessed; UNKNOWN and NOT_APPLICABLE excluded)\n", str(field(dataset, "artifact"), "source"), style.counts(field(dataset, "counts")), style.fact(percent(dataset["methodExecutionPercent"])), str(dataset, "withHits"), str(dataset, "assessed"))
 		methods := []Object{}
 		for _, method := range objects(dataset["methods"]) {
 			if verbose || str(method, "status") != "EXECUTED" {
@@ -199,7 +199,7 @@ func analyzeMarkdown(data Object, view analyzeView) string {
 	section(&b, 2, "After evidence and gaps")
 	for _, dataset := range objects(matching["datasets"]) {
 		section(&b, 3, "Dataset: "+str(field(dataset, "artifact"), "source"))
-		fmt.Fprintf(&b, "Method execution: **%s** (%s/%s assessed; UNKNOWN excluded).\n\n", percent(dataset["methodExecutionPercent"]), str(dataset, "withHits"), str(dataset, "assessed"))
+		fmt.Fprintf(&b, "Method execution: **%s** (%s/%s assessed; UNKNOWN and NOT_APPLICABLE excluded).\n\n", percent(dataset["methodExecutionPercent"]), str(dataset, "withHits"), str(dataset, "assessed"))
 		table(&b, []string{"Status", "Methods"}, countRows(field(dataset, "counts")))
 		methodRows := [][]string{}
 		for _, method := range objects(dataset["methods"]) {

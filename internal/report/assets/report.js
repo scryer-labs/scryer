@@ -98,8 +98,9 @@
     const metrics = [
       ['Not executed', current.counts.NOT_EXECUTED, 'Matched methods with no hits', 'not-executed', 'NOT_EXECUTED'],
       ['Partially executed', current.counts.PARTIALLY_EXECUTED, 'Missed instructions or branches', 'partial', 'PARTIALLY_EXECUTED'],
+      ['Not applicable', current.counts.NOT_APPLICABLE || 0, 'Compile-time functions and declaration nodes', 'unknown', 'NOT_APPLICABLE'],
       ['Unknown', current.counts.UNKNOWN, 'Evidence cannot be established', 'unknown', 'UNKNOWN'],
-      ['Method execution', percent(current.methodExecutionPercent), `${current.withHits}/${current.assessed} assessed · unknown excluded`, 'execution', 'ALL']
+      ['Method execution', percent(current.methodExecutionPercent), `${current.withHits}/${current.assessed} assessed · unknown and not applicable excluded`, 'execution', 'ALL']
     ];
     replace($('metrics'), metrics.map(([label, value, explanation, className, filter]) => {
       const card = node('button', null, `metric ${className}`); card.type = 'button';

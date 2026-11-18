@@ -10,7 +10,8 @@ The engine returns `schemaVersion`, `beforeSha`, `afterSha`, `before` and
 
 - `symbols[]` with opaque `id`, correspondence `key`, display `signature`,
   content `fingerprint`, source text, and `location`.
-- `calls[]` with `callSiteId`, optional `callerSymbolId`, `callee`,
+- `calls[]` with optional evidence `kind` (`call`, `declaration-reference`,
+  `type-reference`), `callSiteId`, optional `callerSymbolId`, `callee`,
   optional `candidateSymbolId`, `resolution`, and `site`.
 - `contexts[]` with source `path` and a fingerprint of tokens outside
   function definitions.
@@ -23,7 +24,14 @@ snapshots and remain internal to that engine's versioned observations.
 
 ## C++ source evidence
 
-C++ uses Tree-sitter function definitions. Named enclosing classes/namespaces
+C++ uses Tree-sitter function definitions and initialized variable-template
+declarations. Variable templates appear as `kind: "variable-template"` in the
+shared scan symbol table and can own compiler-instantiated expressions.
+Named function definitions have optional `executionKind: "compile-time"` only
+for an explicit `consteval` specifier. Variable-template nodes carry
+`executionKind: "declaration"`; `constexpr` functions remain runtime-capable.
+
+For function definitions, named enclosing classes/namespaces
 and declarator tokens contribute to a file-local correspondence key. Whole
 function token fingerprints identify body or declaration changes. Comments
 and whitespace do not change token fingerprints. A file rename or declarator
@@ -60,7 +68,19 @@ Missing compiler targets stay unresolved without textual candidate fallback.
 Resolution details are retained under the report's `extensions`.
 
 The shared scan joins cross-translation-unit declarations to definitions
-by libclang USR. Ambiguous definitions are left unresolved.
+by libclang USR. Ambiguous definitions are left unresolved. The shared scan
+adds local declaration/type references under `semantic.references[]`, separately
+from `semantic.edges[]` calls. Impact preserves them as
+`COMPILER_DECLARATION_REFERENCE` and `COMPILER_TYPE_REFERENCE` relations.
+A variable-template source node aggregates references from its observed
+instantiations. This conservative dependency union does not preserve a unique
+per-instantiation path or assert runtime execution. For example, a test can
+reference a variable template whose `decltype` expression references an
+immediate function. The graph preserves both steps even though no runtime
+profile exists for the immediate function. Types and other unprojected
+declarations remain explicit boundaries. Dependent expressions that libclang
+does not expose, and templates without observed instantiations, can still have
+unresolved dependencies.
 
 For dynamic impact Core reuses coverage collection on the after snapshot.
 It checks checkout HEAD and source status before and after collection.
@@ -76,7 +96,10 @@ Gap and count-less segments are excluded. Core intersects these source
 intervals with affected symbol locations. Matching is `EXECUTED` when all
 observed intervals have hits, `NOT_EXECUTED` when none have hits, and
 `PARTIALLY_EXECUTED` when both occur. Missing or unverified evidence stays
-`UNKNOWN`. These statuses describe source observations and do not prove
+`UNKNOWN`. Nodes with `executionKind: "compile-time"` or `"declaration"`
+receive `NOT_APPLICABLE`, excluded from the assessed count and execution
+percentage. Compilation and references do not prove constant evaluation.
+These statuses describe source observations and do not prove
 branch adequacy, causal test attribution or complete execution paths.
 
 `--skip-tests` is consistent with static impact and conflicts with test

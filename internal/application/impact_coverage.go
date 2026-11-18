@@ -95,14 +95,16 @@ func filterCoverageNotes(notes []string) []string {
 func matchImpactCoverage(nodes []contract.Symbol, symbols []contract.ImpactSymbol, evidence contract.CoverageEvidence, verified bool) contract.DatasetMatch {
 	dataset := contract.DatasetMatch{
 		Methods: []contract.SymbolEvidence{},
-		Counts:  map[string]int{"EXECUTED": 0, "NOT_EXECUTED": 0, "PARTIALLY_EXECUTED": 0, "UNKNOWN": 0},
+		Counts:  map[string]int{"EXECUTED": 0, "NOT_EXECUTED": 0, "PARTIALLY_EXECUTED": 0, "UNKNOWN": 0, "NOT_APPLICABLE": 0},
 	}
 	if evidence.Artifact != "" {
 		dataset.Artifact = &contract.Artifact{Source: evidence.Artifact, SHA256: evidence.SHA256}
 	}
 	ranges := map[string]contract.ImpactRange{}
+	executionKinds := map[string]string{}
 	for _, symbol := range symbols {
 		ranges[symbol.ID] = symbol.Location
+		executionKinds[symbol.ID] = symbol.ExecutionKind
 	}
 	files := map[string][]contract.CoverageRegion{}
 	for _, file := range evidence.Files {
@@ -114,7 +116,14 @@ func matchImpactCoverage(nodes []contract.Symbol, symbols []contract.ImpactSymbo
 			Role: node.Role, Impact: node.Impact, Status: "UNKNOWN",
 			Reason: "No verified source-region coverage for this symbol.", Routes: []contract.TestRoute{},
 		}
-		if location, ok := ranges[node.ID]; verified && ok {
+		kind := executionKinds[node.ID]
+		if kind == "compile-time" || kind == "declaration" {
+			match.Status = "NOT_APPLICABLE"
+			match.Reason = "Runtime function coverage does not apply to a declaration node; compiler references describe potential dependencies, not runtime execution."
+			if kind == "compile-time" {
+				match.Reason = "Immediate (consteval) function; runtime coverage does not apply. A compiler reference does not prove this function was evaluated."
+			}
+		} else if location, ok := ranges[node.ID]; verified && ok {
 			hits, misses := 0, 0
 			for _, region := range files[node.Path] {
 				if positionBefore(region.Start, location.End) && positionBefore(location.Start, region.End) {
@@ -138,7 +147,7 @@ func matchImpactCoverage(nodes []contract.Symbol, symbols []contract.ImpactSymbo
 			}
 		}
 		dataset.Counts[match.Status]++
-		if match.Status != "UNKNOWN" {
+		if match.Status != "UNKNOWN" && match.Status != "NOT_APPLICABLE" {
 			dataset.Assessed++
 		}
 		if match.Status == "EXECUTED" || match.Status == "PARTIALLY_EXECUTED" {

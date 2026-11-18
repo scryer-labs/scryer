@@ -169,6 +169,12 @@ func impactGraph(facts contract.ImpactSnapshot, changed map[string]bool, unresol
 		target, kind := call.Candidate, "NAME_CANDIDATE"
 		if call.Target != "" {
 			target, kind = call.Target, "COMPILER_RESOLVED"
+			switch call.Kind {
+			case "declaration-reference":
+				kind = "COMPILER_DECLARATION_REFERENCE"
+			case "type-reference":
+				kind = "COMPILER_TYPE_REFERENCE"
+			}
 		}
 		if ids[call.Caller] && ids[target] {
 			graph.Edges = append(graph.Edges, contract.Relation{Caller: call.Caller, Callee: target, Kind: kind, CallSiteID: call.ID, Path: call.Site.File, Line: call.Site.Start.Line})
@@ -202,7 +208,7 @@ func impactGraph(facts contract.ImpactSnapshot, changed map[string]bool, unresol
 		if impact != "" {
 			keep[symbol.ID] = true
 			graph.Nodes = append(graph.Nodes, contract.Symbol{
-				ID: symbol.ID, Signature: symbol.Signature, Path: symbol.Location.File,
+				ExecutionKind: symbol.ExecutionKind, ID: symbol.ID, Signature: symbol.Signature, Path: symbol.Location.File,
 				Line: symbol.Location.Start.Line, Role: "UNKNOWN", Impact: impact,
 			})
 		}

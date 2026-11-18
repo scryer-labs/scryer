@@ -28,3 +28,18 @@ func Test_should_keep_coverage_unknown_when_source_provenance_is_unverified(t *t
 		t.Fatal("exclusive end must exclude a neighboring region")
 	}
 }
+
+func Test_should_exclude_immediate_functions_and_declarations_from_runtime_coverage(t *testing.T) {
+	location := contract.ImpactRange{File: "traits.h", Start: contract.ImpactPosition{Line: 1, Column: 1}, End: contract.ImpactPosition{Line: 1, Column: 80}}
+	symbols := []contract.ImpactSymbol{
+		{ID: "immediate", ExecutionKind: "compile-time", Location: location},
+		{ID: "variable", ExecutionKind: "declaration", Location: location},
+		{ID: "constexpr", Location: location},
+	}
+	nodes := []contract.Symbol{{ID: "immediate", Path: "traits.h"}, {ID: "variable", Path: "traits.h"}, {ID: "constexpr", Path: "traits.h"}}
+	evidence := contract.CoverageEvidence{Files: []contract.CoverageFile{{Path: "traits.h", Regions: []contract.CoverageRegion{{Start: location.Start, End: location.End, Count: 1}}}}}
+	result := matchImpactCoverage(nodes, symbols, evidence, true)
+	if result.Counts["NOT_APPLICABLE"] != 2 || result.Counts["EXECUTED"] != 1 || result.Assessed != 1 || result.WithHits != 1 {
+		t.Fatalf("compile-time declarations contaminated runtime coverage: %#v", result)
+	}
+}

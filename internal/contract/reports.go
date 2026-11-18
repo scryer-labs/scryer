@@ -84,14 +84,15 @@ type Change struct {
 	After  *DeclarationVersion `json:"after"`
 }
 type Symbol struct {
-	ID         string                     `json:"id"`
-	Signature  string                     `json:"signature"`
-	Path       string                     `json:"path"`
-	Line       int                        `json:"line"`
-	Role       string                     `json:"role"`
-	Impact     string                     `json:"impact"`
-	Module     *string                    `json:"module"`
-	Extensions map[string]json.RawMessage `json:"extensions,omitempty"`
+	ExecutionKind string                     `json:"executionKind,omitempty"`
+	ID            string                     `json:"id"`
+	Signature     string                     `json:"signature"`
+	Path          string                     `json:"path"`
+	Line          int                        `json:"line"`
+	Role          string                     `json:"role"`
+	Impact        string                     `json:"impact"`
+	Module        *string                    `json:"module"`
+	Extensions    map[string]json.RawMessage `json:"extensions,omitempty"`
 }
 type Relation struct {
 	CallSiteID string `json:"callSiteId,omitempty"`

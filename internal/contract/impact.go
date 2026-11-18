@@ -26,15 +26,17 @@ type ImpactRange struct {
 }
 
 type ImpactSymbol struct {
-	ID          string      `json:"id"`
-	Key         string      `json:"key"`
-	Signature   string      `json:"signature"`
-	Fingerprint string      `json:"fingerprint"`
-	Source      string      `json:"source"`
-	Location    ImpactRange `json:"location"`
+	ExecutionKind string      `json:"executionKind,omitempty"`
+	ID            string      `json:"id"`
+	Key           string      `json:"key"`
+	Signature     string      `json:"signature"`
+	Fingerprint   string      `json:"fingerprint"`
+	Source        string      `json:"source"`
+	Location      ImpactRange `json:"location"`
 }
 
 type ImpactCall struct {
+	Kind       string      `json:"kind,omitempty"`
 	Target     string      `json:"targetSymbolId,omitempty"`
 	ID         string      `json:"callSiteId"`
 	Caller     string      `json:"callerSymbolId"`

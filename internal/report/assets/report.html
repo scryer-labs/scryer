@@ -20,7 +20,7 @@
   </section>
   <div class="revision-strip"><span class="muted">BEFORE</span><code id="before-sha"></code><span class="revision-arrow" aria-hidden="true">→</span><span class="muted">AFTER</span><code id="after-sha"></code><span id="change-count" class="revision-count"></span></div>
   <section class="metrics" aria-label="After method evidence summary" id="metrics"></section>
-  <div class="interpretation"><span aria-hidden="true">ⓘ</span><p><strong>Execution evidence, with its limits.</strong> Method hits do not prove a specific test or caller path. Static test routes are candidates. UNKNOWN is excluded from method execution percentages; percentages are not safety scores.</p></div>
+  <div class="interpretation"><span aria-hidden="true">ⓘ</span><p><strong>Execution evidence, with its limits.</strong> Method hits do not prove a specific test or caller path. Static test routes are candidates. UNKNOWN and NOT_APPLICABLE are excluded from method execution percentages; percentages are not safety scores.</p></div>
   <div class="workspace-heading"><div><span class="eyebrow">EXPLORE THE REPORT</span><h2>Changes, impact &amp; evidence</h2></div><label class="dataset-label">After coverage dataset<select id="dataset-select"></select></label></div>
   <nav class="tabs" role="tablist" aria-label="Report views">
     <button type="button" role="tab" id="tab-evidence" aria-controls="evidence-panel" aria-selected="true" data-panel="evidence">Evidence <span id="evidence-count"></span></button>
@@ -30,7 +30,7 @@
   </nav>
   <div id="filters" class="filters">
     <label class="search"><span aria-hidden="true">⌕</span><span class="sr-only">Search symbols or source paths</span><input id="search-input" type="search" aria-label="Search symbols or source paths" placeholder="Search symbols or source paths…" autocomplete="off"></label>
-    <label><span class="sr-only">Evidence status filter</span><select id="status-filter"><option value="ALL">All evidence</option><option value="GAPS">Evidence gaps</option><option value="EXECUTED">Executed</option><option value="PARTIALLY_EXECUTED">Partially executed</option><option value="NOT_EXECUTED">Not executed</option><option value="UNKNOWN">Unknown</option></select></label>
+    <label><span class="sr-only">Evidence status filter</span><select id="status-filter"><option value="ALL">All evidence</option><option value="GAPS">Evidence gaps</option><option value="EXECUTED">Executed</option><option value="PARTIALLY_EXECUTED">Partially executed</option><option value="NOT_EXECUTED">Not executed</option><option value="UNKNOWN">Unknown</option><option value="NOT_APPLICABLE">Runtime coverage not applicable</option></select></label>
     <label><span class="sr-only">Impact filter</span><select id="impact-filter"><option value="ALL">All impact</option><option value="CHANGED">Changed</option><option value="CALLER">Callers</option><option value="POTENTIAL_INDIRECT">Potential indirect</option></select></label>
     <label><span class="sr-only">Source role filter</span><select id="role-filter"><option value="ALL">All source roles</option><option value="PRODUCTION">Production</option><option value="TEST">Test</option><option value="UNKNOWN">Unknown role</option></select></label>
     <button id="reset-filters" type="button">Reset</button>
