@@ -55,7 +55,12 @@ including cycles and source boundaries.
 
 The report uses the current analyze envelope and JSON, Markdown and offline
 HTML renderers. Changed-file rows summarize declaration changes. Node roles
-remain `UNKNOWN` for C++.
+come from engine evidence, defaulting to `UNKNOWN`. Compiler-proven C++ test
+registrations supply `TEST` and their `testContext`; Core does not infer roles
+from source spelling. See the [classification contract](test-classification.md).
+The HTML graph groups evidence by ordered caller/callee pair and shows relation
+types and record counts. Selecting an edge or its label opens the original
+source records. Grouping changes presentation only; JSON retains all edges.
 
 ## Mode selection and after coverage
 

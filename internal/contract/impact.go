@@ -26,13 +26,15 @@ type ImpactRange struct {
 }
 
 type ImpactSymbol struct {
-	ExecutionKind string      `json:"executionKind,omitempty"`
-	ID            string      `json:"id"`
-	Key           string      `json:"key"`
-	Signature     string      `json:"signature"`
-	Fingerprint   string      `json:"fingerprint"`
-	Source        string      `json:"source"`
-	Location      ImpactRange `json:"location"`
+	Role          string          `json:"role,omitempty"`
+	TestContext   json.RawMessage `json:"testContext,omitempty"`
+	ExecutionKind string          `json:"executionKind,omitempty"`
+	ID            string          `json:"id"`
+	Key           string          `json:"key"`
+	Signature     string          `json:"signature"`
+	Fingerprint   string          `json:"fingerprint"`
+	Source        string          `json:"source"`
+	Location      ImpactRange     `json:"location"`
 }
 
 type ImpactCall struct {

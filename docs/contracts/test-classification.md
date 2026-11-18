@@ -73,10 +73,31 @@ See the [Go facts contract](https://github.com/scryer-labs/scryer-go-engine/blob
 
 ## C++ boundary
 
-The C++ IPC collector currently provides a path-based `sourceRole` hint.
-The strict classification contract applies to future C++ test-purpose
-facts, which will require build or framework evidence. Consumers should
-treat the current hint as IPC-specific.
+Resolved C++ call-graph symbols and impact nodes can carry `role: "TEST"`
+and `testContext: {"scope": "test-only", "evidence": [...]}`. Each registration
+evidence records `kind: "compiler-test-registration"`, `framework`, `symbolUsr`,
+`definitionFile`, and repository-relative `file`, `line`, `column`.
+
+The engine matches compiler-bound registration APIs against its isolated
+`internal/testclassification/registrations.json` rules. The initial rule covers
+GoogleTest's `MakeAndRegisterTestInfo` and its framework declaration. It does
+not depend on a source macro being spelled `TEST`: a wrapper macro can qualify
+when compiler expansion provides the same evidence at its definition's start.
+An ordinary function that calls a registration API is not itself a test body.
+Helpers, callees, linked libraries, filenames and framework dependencies do not
+inherit a test-only role. Missing evidence stays unknown. Static scanning alone
+currently does not emit this marker. Core preserves engine roles and evidence
+without containing framework recognition rules.
+
+Future independent evidence providers can read build-system test registrations
+or explicit user configuration. Their scope must stay precise: CTest registering
+an executable establishes that executable's purpose, not a test-only role for
+all production functions linked into it. Running an arbitrary executable as a
+selected coverage target does not establish test semantics. Rules/configuration
+for other registration APIs and build providers are not implemented by this change.
+
+The C++ IPC collector's older path-based `sourceRole` remains an IPC-specific
+hint and is not a substitute for these strict markers.
 
 ## Orrery behavior
 

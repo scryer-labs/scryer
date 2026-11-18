@@ -40,8 +40,8 @@
     return indexedMethods;
   };
   const statusFor = (symbol, snapshotName = state.snapshot) => {
-    if (snapshotName !== 'after' || symbol.role === 'TEST') return 'NOT_APPLICABLE';
-    return methodIndex().get(symbol.id)?.status || 'UNKNOWN';
+    if (snapshotName !== 'after') return 'NOT_APPLICABLE';
+    return methodIndex().get(symbol.id)?.status || (symbol.role === 'TEST' ? 'NOT_APPLICABLE' : 'UNKNOWN');
   };
   const matches = item => {
     const text = [item.symbol, item.id, item.signature, item.path].filter(Boolean).join(' ').toLowerCase();

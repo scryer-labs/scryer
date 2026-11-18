@@ -104,11 +104,31 @@
           : `M ${sx} ${sy} C ${(sx + tx) / 2} ${sy}, ${(sx + tx) / 2} ${ty}, ${tx} ${ty}`;
       return {curve, x: (sx + tx) / 2 + (backward ? 50 : 0), y: (sy + ty) / 2 - 7};
     }
-    visible.edges.forEach(edge => {
+    const connections = model.groupEdges(visible.edges);
+    const kindLabel = kind => ({DIRECT: 'call', COMPILER_RESOLVED: 'compiler call', COMPILER_DECLARATION_REFERENCE: 'reference', COMPILER_TYPE_REFERENCE: 'type reference'})[kind] || kind.toLowerCase().replaceAll('_', ' ');
+    const inspectConnection = edge => {
+      const inspector = document.getElementById('graph-inspector');
+      inspector.replaceChildren();
+      const name = id => app.snapshot().nodes.find(symbol => symbol.id === id)?.signature || id;
+      inspector.append(app.node('strong', `${name(edge.caller)} → ${name(edge.callee)}`));
+      const details = app.node('details'); details.open = true;
+      details.append(app.node('summary', `${edge.count} evidence records · ${edge.kinds.map(item => `${kindLabel(item.kind)}: ${item.count}`).join(' · ')}`));
+      const records = app.node('ul');
+      edge.evidence.forEach(record => records.append(app.node('li', `${kindLabel(record.kind)} · ${record.path || 'source unavailable'}${record.line ? ':' + record.line : ''} · ${record.callSiteId || 'site unavailable'}`)));
+      details.append(records); inspector.append(details);
+    };
+    connections.forEach(edge => {
       const position = geometry(edge);
       const path = svgNode('path', {d: position.curve, class: `graph-edge ${edge.kind === 'DIRECT' ? '' : 'potential'}`, 'marker-end': 'url(#call-arrow)', 'data-caller': edge.caller, 'data-callee': edge.callee});
-      path.append(svgNode('title', {}, `${edge.caller} → ${edge.callee} · ${edge.kind}`)); world.append(path);
-      const label = edge.kind !== 'DIRECT' ? svgNode('text', {x: position.x, y: position.y, class: 'edge-kind'}, edge.kind.toLowerCase().replaceAll('_', ' ')) : null;
+      path.setAttribute('tabindex', '0'); path.setAttribute('role', 'button');
+      path.setAttribute('aria-label', `Inspect ${edge.count} relation evidence records`);
+      path.append(svgNode('title', {}, edge.kinds.map(item => `${kindLabel(item.kind)}: ${item.count}`).join(' · '))); world.append(path);
+      const inspect = event => { event.stopPropagation(); inspectConnection(edge); };
+      path.addEventListener('click', inspect);
+      path.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); inspect(event); } });
+      const labelText = edge.kinds.map(item => kindLabel(item.kind)).join(' + ') + (edge.count > 1 ? ` · ${edge.count}` : '');
+      const label = svgNode('text', {x: position.x, y: position.y, class: 'edge-kind'}, labelText);
+      label.style.pointerEvents = 'auto'; label.style.cursor = 'pointer'; label.addEventListener('click', inspect);
       if (label) world.append(label);
       edgeElements.push({edge, path, label});
     });
@@ -125,7 +145,7 @@
       const title = symbol.signature.split('#').pop();
       const shorten = (text, limit) => text.length > limit ? `${text.slice(0, limit - 1)}…` : text;
       const status = app.statusFor(symbol);
-      const statusText = app.state.snapshot === 'before' ? 'BEFORE · static only' : symbol.role === 'TEST' ? 'TEST · attribution unknown' : status.replaceAll('_', ' ');
+      const statusText = app.state.snapshot === 'before' ? 'BEFORE · static only' : symbol.role === 'TEST' && status === 'NOT_APPLICABLE' ? 'TEST · attribution unknown' : status.replaceAll('_', ' ');
       group.append(svgNode('title', {}, `${symbol.signature}\n${symbol.path}:${symbol.line}\n${symbol.impact} · ${symbol.role}\n${statusText}`),
         svgNode('rect', {width: 260, height: 88, rx: 10}),
         svgNode('text', {x: 14, y: 22, class: 'node-title'}, shorten(title, 33)),
@@ -142,8 +162,8 @@
     });
     if (!visible.nodes.length) viewport.append(app.node('div', 'No visible scope symbols. Reset filters or restore the graph.', 'graph-empty'));
     const inspector = app.node('div', null, 'graph-inspector'); inspector.id = 'graph-inspector'; inspector.setAttribute('aria-live', 'polite'); host.append(inspector);
-    host.append(app.node('div', 'Drag background to pan; drag nodes to rearrange · wheel / + − to zoom · select a node, then Details or Enter · dashed edges are potential dispatch/reference/reflection calls', 'graph-help'));
-    document.getElementById('graph-count').textContent = `${visible.nodes.length}/${graph.nodes.length} symbols · ${visible.edges.length}/${graph.edges.length} edges visible (filters / collapsed calls)`;
+    host.append(app.node('div', 'Drag background to pan; drag nodes to rearrange · wheel / + − to zoom · select a node, then Details or Enter · select an edge label for evidence · dashed edges include references and potential calls', 'graph-help'));
+    document.getElementById('graph-count').textContent = `${visible.nodes.length}/${graph.nodes.length} symbols · ${connections.length} connections · ${visible.edges.length}/${graph.edges.length} evidence records visible`;
     let pointer = null;
     canvas.addEventListener('pointerdown', event => {
       if (event.button !== 0) return;

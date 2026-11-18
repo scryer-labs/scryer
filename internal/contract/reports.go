@@ -84,6 +84,7 @@ type Change struct {
 	After  *DeclarationVersion `json:"after"`
 }
 type Symbol struct {
+	TestContext   json.RawMessage            `json:"testContext,omitempty"`
 	ExecutionKind string                     `json:"executionKind,omitempty"`
 	ID            string                     `json:"id"`
 	Signature     string                     `json:"signature"`

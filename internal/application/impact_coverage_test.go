@@ -43,3 +43,12 @@ func Test_should_exclude_immediate_functions_and_declarations_from_runtime_cover
 		t.Fatalf("compile-time declarations contaminated runtime coverage: %#v", result)
 	}
 }
+
+func Test_should_preserve_engine_test_role_and_classification_evidence_in_impact_graph(t *testing.T) {
+	context := []byte(`{"scope":"test-only","evidence":[{"kind":"compiler-test-registration","framework":"example"}]}`)
+	facts := contract.ImpactSnapshot{Symbols: []contract.ImpactSymbol{{ID: "case", Role: "TEST", TestContext: context}, {ID: "helper"}}}
+	graph := impactGraph(facts, map[string]bool{"case": true, "helper": true}, nil)
+	if graph.Nodes[0].Role != "TEST" || string(graph.Nodes[0].TestContext) != string(context) || graph.Nodes[1].Role != "UNKNOWN" {
+		t.Fatalf("lost engine role or classified an unproven helper: %#v", graph.Nodes)
+	}
+}

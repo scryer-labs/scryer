@@ -207,9 +207,13 @@ func impactGraph(facts contract.ImpactSnapshot, changed map[string]bool, unresol
 		}
 		if impact != "" {
 			keep[symbol.ID] = true
+			role := symbol.Role
+			if role == "" {
+				role = "UNKNOWN"
+			}
 			graph.Nodes = append(graph.Nodes, contract.Symbol{
 				ExecutionKind: symbol.ExecutionKind, ID: symbol.ID, Signature: symbol.Signature, Path: symbol.Location.File,
-				Line: symbol.Location.Start.Line, Role: "UNKNOWN", Impact: impact,
+				Line: symbol.Location.Start.Line, Role: role, TestContext: symbol.TestContext, Impact: impact,
 			})
 		}
 	}

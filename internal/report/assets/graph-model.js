@@ -67,6 +67,23 @@
     }
     return {nodes: selected.filter(node => visible.has(node.id)), edges: selectedEdges.filter(edge => visible.has(edge.caller) && visible.has(edge.callee) && !collapsed.has(edge.caller))};
   }
+  // Group only the visual connections. Every original evidence record stays
+  // available for inspection and the input JSON is never changed.
+  function groupEdges(edges) {
+    const groups = new Map();
+    for (const edge of edges) {
+      const key = JSON.stringify([edge.caller, edge.callee]);
+      if (!groups.has(key)) groups.set(key, {caller: edge.caller, callee: edge.callee, evidence: [], kinds: new Map()});
+      const group = groups.get(key);
+      group.evidence.push(edge);
+      group.kinds.set(edge.kind, (group.kinds.get(edge.kind) || 0) + 1);
+    }
+    return [...groups.values()].map(group => ({...group,
+      count: group.evidence.length,
+      kind: group.kinds.size === 1 ? group.kinds.keys().next().value : 'MIXED',
+      kinds: [...group.kinds].map(([kind, count]) => ({kind, count}))
+    }));
+  }
   function layoutGraph(nodes, edges) {
     const model = components(nodes, edges);
     const indegree = [...model.indegree];
@@ -94,7 +111,7 @@
     });
     return {positions, width: nodes.length ? 356 * maxColumn + 356 : 356, height: Math.max(160, 116 * maxRows + 44), groups: model.groups};
   }
-  const api = {layoutGraph, visibleGraph};
+  const api = {layoutGraph, visibleGraph, groupEdges};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.ScryerGraphModel = api;
 })(typeof window !== 'undefined' ? window : this);

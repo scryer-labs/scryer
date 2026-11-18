@@ -64,3 +64,22 @@ test('deep chains use iterative traversal and preserve distinct edge kinds', () 
   assert.equal(visibleGraph(symbols, calls).edges.length, calls.length);
   assert.deepEqual(visibleGraph([], []).nodes, []);
 });
+
+test('parallel evidence becomes one connection while preserving kinds, directions and source records', () => {
+  const {groupEdges} = require('../internal/report/assets/graph-model.js');
+  const records = [
+    {caller: 'test', callee: 'variable', kind: 'COMPILER_DECLARATION_REFERENCE', callSiteId: 'first', path: 'test.cpp', line: 1},
+    {caller: 'variable', callee: 'operator', kind: 'COMPILER_RESOLVED', callSiteId: 'instance-1'},
+    {caller: 'variable', callee: 'operator', kind: 'COMPILER_RESOLVED', callSiteId: 'instance-2'},
+    {caller: 'variable', callee: 'operator', kind: 'COMPILER_DECLARATION_REFERENCE', callSiteId: 'reference'},
+    {caller: 'operator', callee: 'variable', kind: 'COMPILER_DECLARATION_REFERENCE', callSiteId: 'reverse'}
+  ];
+  const before = JSON.stringify(records);
+  const groups = groupEdges(records);
+  assert.equal(groups.length, 3);
+  assert.equal(groups[1].count, 3);
+  assert.deepEqual(groups[1].kinds, [{kind: 'COMPILER_RESOLVED', count: 2}, {kind: 'COMPILER_DECLARATION_REFERENCE', count: 1}]);
+  assert.deepEqual(groups[1].evidence.map(edge => edge.callSiteId), ['instance-1', 'instance-2', 'reference']);
+  assert.equal(groups[0].evidence[0], records[0]);
+  assert.equal(JSON.stringify(records), before);
+});
