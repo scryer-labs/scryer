@@ -14,7 +14,7 @@ The [contracts](contracts/README.md) describe the request and report formats.
 | `internal/engine`, `internal/engineabi` | Package inventory, stable releases, ABI loading, buffer ownership and cancellation |
 | `internal/analyzer/external`, `internal/contract` | Engine client and versioned request, response and report validation |
 | `internal/repository`, `internal/process` | Git refs, isolated checkouts and subprocess lifecycle |
-| `internal/report` | Terminal, JSON and Markdown output. Java analyze also owns an offline HTML view. |
+| `internal/report` | Terminal, JSON and Markdown output; analyze has offline HTML coverage and impact views. |
 
 A workspace scan uses explicitly configured members and collects each project's
 facts before resolving inter-project edges. The project and workspace may each
@@ -31,16 +31,19 @@ across processes. The default home on macOS is `~/.config/scryer`, and
 ## Project analyze operations
 
 CLI validates operation selection and the shared comparison flags.
-For C++ impact, the engine reuses scan collection and supplies per-snapshot source identities, token
+For modern C++, Go, Rust and TS/JS impact, each engine reuses scan collection and supplies per-snapshot source identities, token
 fingerprints and call candidates. Core compares declarations and traverses
 incoming and outgoing graph edges in `internal/application/impact.go`.
-The language-specific projection is owned by the engine. A test target or binary path enables compiler-resolved scan evidence for both
+The language-specific projection is owned by the engine. `--resolve` or a test target/binary path enables engine-resolved scan evidence for both
 snapshots and coverage on the after checkout. Dynamic failure stops analysis. The repository layer verifies the
 checkout stayed clean at that commit before Core associates normalized
 coverage regions with affected symbols. Git
 snapshot defaults belong to the repository layer. The application exposes
 coverage as a reusable use case and selects an installed engine with the
-coverage capability. The C++ engine imports LLVM evidence and returns JSON.
+coverage capability. Engines own native test execution and source normalization (LLVM, Go profiles,
+and JavaScript source coverage). `analysis_targets.go` selects engines and routes
+CMake selectors only to capable packages. `analysis_merge.go` qualifies graph IDs
+and preserves independent engine reports and coverage datasets.
 Core renders the result independently of the engine.
 
 ## Java analyze

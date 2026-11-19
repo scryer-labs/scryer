@@ -153,5 +153,5 @@ See also [toolchain-assisted scan facts](RESOLVE.md).
 
 See [runtime coverage](COVERAGE.md) for the standalone coverage operation.
 
-See [static impact projection](IMPACT.md) for the C++ source-evidence boundary
+See [impact projection](IMPACT.md) for the C++, Go, Rust and TS/JS source-evidence boundary
 and Core comparison and traversal.

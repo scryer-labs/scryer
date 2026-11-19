@@ -2,7 +2,9 @@
 
 Scryer collects source facts for repositories and workspaces. The Go CLI
 dispatches scans to installed C++, Rust, TS/JS, Go and Java engines and produces
-JSON and Markdown. Java also supports change analysis with test execution evidence.
+JSON and Markdown. Project analysis adds coverage and change-impact reports in
+JSON, Markdown and offline HTML for C++, Go, Rust and TS/JS; Java retains its
+legacy analysis path.
 Orrery can consume the JSON for interactive architecture.
 
 ## Build and run

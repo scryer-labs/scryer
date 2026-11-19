@@ -259,7 +259,8 @@ return an error identifying the stage. Coverage remains aggregate and its
 source revision is marked `unverified`. See the [coverage contract](contracts/COVERAGE.md).
 
 Impact selects an installed engine from the languages in both snapshots.
-Use `--stack cpp` or `--stack java` when more than one engine supports impact.
+By default all matching modern engines run; `--stack go` (or another engine ID)
+restricts selection. Multi-engine graphs and coverage datasets remain separate.
 
 ```sh
 scryer project analyze . --json -o impact.html
@@ -267,8 +268,8 @@ scryer project analyze . --before HEAD~2 --after HEAD --stack cpp -o impact.md
 ```
 
 C++ impact compares syntax-based declaration fingerprints and traverses
-candidate calls. Without a test selection it reuses the static scan path and
-does not build or run tests. `--test-target` or `--test-binary` selects dynamic
+candidate calls. Without `--resolve` or a test selection it reuses the static scan path and
+does not build or run tests. `--resolve`, `--test-target` or `--test-binary` selects dynamic
 impact, which reuses `scan --resolve` for both snapshots and collects after
 coverage. Compiler resolution, build, and test execution must all succeed.
 
@@ -283,12 +284,33 @@ commit is matched to symbols. Failed or partial compiler resolution,
 failed builds or tests, missing coverage, and source mutations produce an error
 and stop dynamic impact. No static replacement report is emitted.
 Use `--coverage-file` with standalone coverage to import existing artifacts. Matching statuses describe source-region observations
-within symbol ranges and retain aggregate profile granularity. Calls remain
-syntax candidates and symbol source roles remain unknown.
+within symbol ranges and retain aggregate profile granularity. Call binding strength and source roles are supplied by the selected engine;
+unknown roles and unresolved targets remain explicit.
 
 Selecting `impact,coverage` also emits `coverageReport` in JSON, appends its
 file tables in Markdown, and embeds a downloadable full coverage HTML in the
 impact HTML. See the [impact contract](contracts/IMPACT.md).
+
+Go, Rust and TS/JS use the same operations and report formats:
+
+```sh
+scryer project analyze --operations coverage -o coverage.html
+scryer project analyze --resolve --operations impact,coverage -o impact.html
+# A mixed project: CMake selection only goes to C++; other engines run defaults.
+scryer project analyze --resolve --test-target unit_tests -o impact.html
+scryer project analyze --stack go --resolve --json --compact
+```
+
+Go needs its Go toolchain and cached dependencies. Rust needs Cargo/rustc and
+matching LLVM coverage tools (`SCRYER_RUST_LLVM_BIN` can select them). TS/JS
+needs Node/npm, installed project dependencies and a supported test script:
+Vitest with its coverage provider, Jest, or untransformed native `node --test`.
+TS/JS dynamic impact also needs the scan TypeScript/Svelte toolchain.
+No supported test runner or usable coverage means an explicit failure for
+dynamic impact. Standalone coverage can report `partial` or `unavailable`.
+See [coverage](contracts/COVERAGE.md) and [impact](contracts/IMPACT.md) for
+source mapping, offline dependency preparation and binding limits. macOS is the
+native runtime acceptance target; Windows package validation is narrower.
 
 Java retains its analyze implementation, with tests enabled by an explicit
 `--run-tests` or `--test-command`.

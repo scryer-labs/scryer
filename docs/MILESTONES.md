@@ -51,7 +51,12 @@ Current macOS coverage can build instrumented CMake targets and run tests.
 The first C++ impact slice compares immutable function projections and traverses
 candidate calls in Core. Impact now reuses coverage on the after snapshot and verifies that the checkout
 stays at the requested commit before matching source regions to affected symbols.
-Continue with a shared execution-evidence contract:
+Go, Rust and TS/JS now expose the same separate `coverage` and `impact`
+operations, with native collection, scan reuse and multi-engine aggregation.
+macOS acceptance covers Go tests, Cargo tests, Node tests, React TSX/Vitest,
+Svelte/Vitest, Jest and a mixed C++/Go/Rust/JS fixture.
+Rust dynamic graphs remain Cargo-validated source candidates; per-test
+attribution and complete runtime dispatch remain open. Continue with:
 
 1. Bind test executions and coverage observations to a specific revision,
    build configuration and artifact. Keep test identity, observed file/line or

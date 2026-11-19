@@ -1,8 +1,9 @@
-# Static impact projection
+# Change impact projection
 
 Core prepares immutable before and after checkouts and passes their paths and
 commit identities to an engine declaring the `impact` operation. The JSON
-request uses `impact` with `before`, `after`, `beforeRoot`, and `afterRoot`.
+request uses `impact` with `before`, `after`, `beforeRoot`, `afterRoot`, `repository` (original checkout),
+and `resolve`.
 The C ABI and JSON protocol version remain 1.
 
 The engine returns `schemaVersion`, `beforeSha`, `afterSha`, `before` and
@@ -64,8 +65,8 @@ source records. Grouping changes presentation only; JSON retains all edges.
 
 ## Mode selection and after coverage
 
-Without test targets or binary paths, impact uses the static scan path.
-Selecting `--test-target` or `--test-binary` sets `impact.resolve: true`.
+Without `--resolve`, test targets or binary paths, impact uses the static scan path.
+Selecting `--resolve`, `--test-target` or `--test-binary` sets `impact.resolve: true`.
 The engine calls the same scan path with compiler resolution for each
 snapshot. A skipped or partial resolution is an error. Compiler-confirmed
 definitions use `targetSymbolId` and yield `COMPILER_RESOLVED` edges.
@@ -101,7 +102,7 @@ Gap and count-less segments are excluded. Core intersects these source
 intervals with affected symbol locations. Matching is `EXECUTED` when all
 observed intervals have hits, `NOT_EXECUTED` when none have hits, and
 `PARTIALLY_EXECUTED` when both occur. Missing or unverified evidence stays
-`UNKNOWN`. Nodes with `executionKind: "compile-time"` or `"declaration"`
+`UNKNOWN`. Nodes with `executionKind: "compile-time"`, `"declaration"` or `"test-harness"`
 receive `NOT_APPLICABLE`, excluded from the assessed count and execution
 percentage. Compilation and references do not prove constant evaluation.
 These statuses describe source observations and do not prove
@@ -111,3 +112,45 @@ branch adequacy, causal test attribution or complete execution paths.
 selection. `impact,coverage` adds a top-level
 `coverageReport` for the complete collection result. Impact alone includes
 the collection under `evidence.coverage[]` and its affected-symbol matching.
+
+## Go, Rust and TS/JS projections
+
+Each engine projects the same symbols/call sites used by its scan collector.
+Core owns fingerprint comparison, graph traversal, snapshot lifecycle and
+source-region coverage matching. `coverage` remains independently callable;
+dynamic `impact` reuses it on the after snapshot.
+
+- Go uses AST token identities and checkout-local bindings. `--resolve` validates
+  Go build selection via go-list; interface dispatch and external native symbols
+  remain boundaries. Go test-source nodes use `executionKind: "test-harness"`
+  because coverprofiles instrument production source, not `_test.go`.
+- Rust uses Tree-sitter identities and existing source call candidates. Dynamic
+  scan validates both snapshots with frozen Cargo check. `basis: "cargo-check"`
+  and `bindingBasis: "source-candidates"` expressly do **not** claim rustc
+  type-directed binding. Runtime coverage can still match observed source regions.
+- TS/JS uses shared source symbols; dynamic edges require TypeScript semantic
+  targets and successful diagnostics. React TSX and Svelte source mappings share
+  the scan resolver. Imported test registration evidence can classify callbacks;
+  names and test-runner globals alone do not prove a test role.
+
+Go/TS dynamic edges use `SCAN_RESOLVED`; this denotes each engine's documented
+binding strength, not necessarily compiler-complete runtime dispatch. Rust keeps
+`NAME_CANDIDATE` edges even after successful Cargo validation. Resolution metadata
+and limitations stay available under `extensions`.
+
+For TS/JS immutable snapshots, unchanged manifests and lockfiles permit reuse
+of the original installed `node_modules` via an ignored snapshot link. Otherwise
+npm lockfile projects attempt offline `npm ci --ignore-scripts` in the snapshot.
+Missing cached dependencies fail explicitly. Preparation notes record the choice;
+package/lock equality does not attest to the integrity of ambient dependencies.
+
+## Multi-engine aggregation
+
+Core selects all matching modern impact engines, with `--stack` as an optional
+restriction. Each engine's graph remains independent. Aggregated node and
+call-site IDs have an engine prefix, nodes and changes gain `engine`, and
+`matching.datasets[].engine` disambiguates coverage. Complete child reports
+remain at `extensions.engineReports[engineId]`; single-engine output is unchanged.
+No cross-language calls are invented from co-location or matching symbol names.
+Coverage datasets stay separate, with no combined percentage. Modern and legacy
+Java analysis are not silently mixed; Java remains explicitly selectable.
