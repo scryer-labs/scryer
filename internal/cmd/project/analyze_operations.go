@@ -16,21 +16,17 @@ type analyzeOperations struct {
 }
 
 func selectAnalyzeOperations(value string) (analyzeOperations, error) {
+	operations, err := contract.SelectAnalyzeOperations(value)
+	if err != nil {
+		return analyzeOperations{}, err
+	}
 	var selected analyzeOperations
-	for _, operation := range strings.Split(value, ",") {
-		var enabled *bool
-		switch strings.TrimSpace(operation) {
-		case "impact":
-			enabled = &selected.impact
-		case contract.CoverageOperation:
-			enabled = &selected.coverage
-		default:
-			return analyzeOperations{}, fmt.Errorf("unknown analysis operation %q", strings.TrimSpace(operation))
+	for _, operation := range operations {
+		if operation == contract.ImpactOperation {
+			selected.impact = true
+		} else {
+			selected.coverage = true
 		}
-		if *enabled {
-			return analyzeOperations{}, fmt.Errorf("duplicate analysis operation %q", strings.TrimSpace(operation))
-		}
-		*enabled = true
 	}
 	return selected, nil
 }

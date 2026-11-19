@@ -168,7 +168,7 @@ func (s *Service) analyzeSnapshotEngine(ctx context.Context, analyzer contract.A
 		}
 	} else {
 		if request.Resolve {
-			return document, fmt.Errorf("legacy analyze does not support --resolve; use its existing test lifecycle options")
+			return document, fmt.Errorf("legacy analyze does not support --resolve; use its existing test lifecycle options: %w", ErrAnalysisUnsupported)
 		}
 		if request.IncludeCoverage || request.Coverage.Artifact != "" || len(request.Coverage.TestTargets) != 0 || len(request.Coverage.TestBinaries) != 0 {
 			return document, fmt.Errorf("engine %q does not support separate impact coverage collection", analyzer.Stack())

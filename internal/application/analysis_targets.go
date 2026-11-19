@@ -63,7 +63,7 @@ func (s *Service) analysisTargets(ctx context.Context, stack, before, after, ope
 		}
 	}
 	if len(targets) == 0 {
-		return nil, notes, fmt.Errorf("no installed %s-capable engine matches this project or selected stack", operation)
+		return nil, notes, fmt.Errorf("no installed %s-capable engine matches this project or selected stack: %w", operation, ErrAnalysisUnsupported)
 	}
 	return targets, notes, nil
 }
