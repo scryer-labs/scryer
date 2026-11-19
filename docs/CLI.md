@@ -107,7 +107,10 @@ The language classifier uses filenames, shebangs and content heuristics.
 Default and explicitly selected stack/LOC facts run without installed engines.
 For an engine fact, Core matches the detected languages to installed package
 capabilities. `scryer engine list --json` exposes operations and scan facts for
-each installed package. Java declares `scan`, `analyze` and the selectable
+each installed package. Human-readable `engine list` highlights engine IDs,
+versions, status and operations, with subdued library paths. It supports
+`--color auto|always|never`; auto respects `NO_COLOR` and keeps redirected output
+plain. JSON is unaffected. Java declares `scan`, `analyze` and the selectable
 `dependencies` fact. Fact selection uses Java static dependency declarations.
 
 ```sh

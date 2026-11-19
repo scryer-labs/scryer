@@ -3,7 +3,6 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/engine"
 	"github.com/spf13/cobra"
@@ -32,6 +31,9 @@ func present(command *cobra.Command, jsonOutput bool, response result) error {
 		_, err := fmt.Fprintln(command.OutOrStdout(), "No engines installed.")
 		return err
 	}
+	if response.Operation == "list" {
+		return presentList(command, response.Engines)
+	}
 	for index, installed := range response.Engines {
 		status := response.Status
 		if index < len(response.engineStatuses) {
@@ -44,11 +46,7 @@ func present(command *cobra.Command, jsonOutput bool, response result) error {
 		if _, err := fmt.Fprintf(command.OutOrStdout(), "%s: %s %s (%s)\n", status, installed.Engine.ID, installed.Engine.Version, entrypoint); err != nil {
 			return err
 		}
-		if response.Operation == "list" && installed.Capabilities != nil {
-			if _, err := fmt.Fprintf(command.OutOrStdout(), "  Operations: %s\n  Scan facts: %s\n", strings.Join(installed.Capabilities.Operations, ", "), strings.Join(installed.Capabilities.ScanFacts, ", ")); err != nil {
-				return err
-			}
-		}
+
 	}
 	return nil
 }
