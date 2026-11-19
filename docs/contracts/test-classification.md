@@ -89,6 +89,11 @@ inherit a test-only role. Missing evidence stays unknown. Static scanning alone
 currently does not emit this marker. Core preserves engine roles and evidence
 without containing framework recognition rules.
 
+Catch2 and other C++ frameworks currently have no implemented registration rule.
+Their test role remains unknown; this does not prevent running selected test
+executables for coverage. Additional framework recognition belongs in the C++
+Engine. Rust's language-defined `#[test]` recognition belongs in the Rust Engine.
+
 Future independent evidence providers can read build-system test registrations
 or explicit user configuration. Their scope must stay precise: CTest registering
 an executable establishes that executable's purpose, not a test-only role for
