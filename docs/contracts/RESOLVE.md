@@ -10,8 +10,9 @@ platform, installed tooling and available dependency state.
 | C++ | `files`, `call-graph` | libclang adds translation-unit evidence and resolved targets when a usable compile database and toolchain are available. |
 | Java | `dependencies` | Maven or Gradle contributes dependency graph nodes, edges and resolution status. |
 | Rust | `dependencies` | `data.resolution` has `basis: "cargo-metadata"`, host `target`, and per-manifest results. A resolved manifest includes Cargo metadata v1, including the dependency graph. Fallback retains a diagnostic alongside the declarations. |
+| Rust | `files`, `call-graph` | `data.semantic` records `basis: "cargo-check"`, `bindingBasis: "source-candidates"` and status. Frozen Cargo check validates the build/test configuration but does not provide type-directed targets. |
 | Go | `files`, `call-graph` | `data.semantic` reports the outcome of the Go package model. The model refines `inBuild` and source-level package and call bindings. |
-| TS/JS | `files`, `call-graph`, `ipc` | `data.semantic` includes compiler version, program and diagnostic counts when available. `semanticTargetFile` and `semanticTargetSymbolId` carry confirmed local source targets alongside the static observations. The latter joins to the existing `symbols[]` table. Svelte template evidence uses original source locations. Tauri endpoints still use the common IPC shape. |
+| TS/JS | `files`, `call-graph`, `ipc` | `data.semantic` includes compiler version, program and diagnostic counts plus bounded `diagnosticMessages` when available. `semanticTargetFile` and `semanticTargetSymbolId` carry confirmed local source targets alongside the static observations. The latter joins to the existing `symbols[]` table. Svelte template evidence uses original source locations. Tauri endpoints still use the common IPC shape. |
 
 Toolchain-assisted facts can have `semantic.status` equal to `resolved`,
 `partial`, or `fallback`. The collected outcome can still contain useful
@@ -27,6 +28,10 @@ without a caller ID when its template site has no source function caller.
 Language tools provide evidence about the scanned project. Scryer's own
 installed engine inventory and matching ABI symbol names supply no project
 relationship evidence.
+
+Rust files/call-graph resolution runs `cargo check --frozen --tests` in a temporary
+target directory. It requires Cargo/rustc and offline dependencies and does not
+execute tests. Dynamic impact reuses this path before collecting runtime coverage.
 
 ## Remaining work
 
