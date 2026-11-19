@@ -7,56 +7,63 @@ import (
 	"path/filepath"
 
 	"github.com/edwardnoaland/scryer/internal/contract"
-	"github.com/edwardnoaland/scryer/internal/engine"
 	"github.com/edwardnoaland/scryer/internal/projectfacts"
 )
 
 // CollectCoverage is reusable by operations that need coverage evidence.
 func (s *Service) CollectCoverage(ctx context.Context, directory, stack string, request contract.CoverageRequest) (contract.Document, error) {
-	project, err := projectfacts.Collect(ctx, directory, stack == "", false)
+	project, err := projectfacts.Collect(ctx, directory, true, false)
 	if err != nil {
 		return contract.Document{}, err
 	}
-	request.Repository = project.Root
+	targets, notes, err := s.analysisTargets(ctx, stack, project.Root, project.Root, contract.CoverageOperation)
+	if err != nil {
+		return contract.Document{}, err
+	}
+	if err = validateTestSelection(targets, request); err != nil {
+		return contract.Document{}, err
+	}
+	if len(targets) > 1 && request.Artifact != "" {
+		return contract.Document{}, fmt.Errorf("--coverage-file requires --stack when multiple engines match; artifact formats are engine-specific")
+	}
+	children := []contract.CoverageReport{}
+	for _, target := range targets {
+		perEngine := selectEngineCoverage(target, request)
+		document, err := s.collectEngineCoverage(ctx, project.Root, target.analyzer.Stack(), target, perEngine)
+		if err != nil {
+			return document, fmt.Errorf("%s coverage failed: %w", target.analyzer.Stack(), err)
+		}
+		var result contract.CoverageReport
+		if err = json.Unmarshal(document.Data, &result); err != nil {
+			return document, err
+		}
+		children = append(children, result)
+	}
+	result := aggregateCoverage(children, project.Root)
+	for _, note := range notes {
+		result.Message += "; " + note
+	}
+	return contract.NewDocument(stack, contract.CoverageOperation, result)
+}
+func (s *Service) collectEngineCoverage(ctx context.Context, root, stack string, target analysisTarget, request contract.CoverageRequest) (contract.Document, error) {
+	request.Repository = root
 	if request.Artifact != "" {
-		request.Artifact, err = filepath.Abs(request.Artifact)
+		absolute, err := filepath.Abs(request.Artifact)
 		if err != nil {
 			return contract.Document{}, err
 		}
+		request.Artifact = absolute
 	}
-	store, err := engine.DefaultStore()
-	if err != nil {
-		return contract.Document{}, err
-	}
-	installed, err := store.List(ctx)
-	if err != nil {
-		return contract.Document{}, err
-	}
-	var selected *engine.Installation
-	for _, candidate := range installed {
-		if !candidate.Capabilities.Supports(contract.CoverageOperation) {
-			continue
-		}
-		if stack != "" && stack != candidate.Engine.ID || stack == "" && !matchesProject(candidate.Capabilities, project.Stack) {
-			continue
-		}
-		if selected != nil {
-			return contract.Document{}, fmt.Errorf("multiple engines support coverage for this project; select one with --stack")
-		}
-		selected = &candidate
-	}
-	if selected == nil {
-		return contract.Document{}, fmt.Errorf("no installed coverage-capable engine matches the project or selected stack")
-	}
-	if len(request.TestTargets) != 0 && !selected.Capabilities.CoverageTestTargets {
-		return contract.Document{}, fmt.Errorf("engine %q does not support --test-target; install a newer package or use --test-binary", selected.Engine.ID)
+	engineID := target.analyzer.Stack()
+	if len(request.TestTargets) != 0 && !target.capabilities.CoverageTestTargets {
+		return contract.Document{}, fmt.Errorf("engine %q does not support --test-target; install a newer package or use --test-binary", engineID)
 	}
 	if s.NewInstalledAnalyzer == nil {
 		return contract.Document{}, fmt.Errorf("coverage engine execution is unavailable")
 	}
-	collector, ok := s.NewInstalledAnalyzer(*selected).(contract.CoverageCollector)
+	collector, ok := target.analyzer.(contract.CoverageCollector)
 	if !ok {
-		return contract.Document{}, fmt.Errorf("engine %q has no coverage adapter", selected.Engine.ID)
+		return contract.Document{}, fmt.Errorf("engine %q has no coverage adapter", engineID)
 	}
 	document, err := collector.CollectCoverage(ctx, request)
 	if err != nil {
@@ -66,10 +73,10 @@ func (s *Service) CollectCoverage(ctx context.Context, directory, stack string, 
 	if err := json.Unmarshal(document.Data, &result); err != nil {
 		return contract.Document{}, err
 	}
-	if result.Root != project.Root {
+	if result.Root != root {
 		return contract.Document{}, fmt.Errorf("coverage response does not identify the requested project")
 	}
-	result.Engine = selected.Engine.ID
+	result.Engine = engineID
 	if len(result.Coverage) > 0 {
 		var evidence contract.CoverageEvidence
 		if err := json.Unmarshal(result.Coverage, &evidence); err != nil {
@@ -94,5 +101,5 @@ func (s *Service) CollectCoverage(ctx context.Context, directory, stack string, 
 	default:
 		return contract.Document{}, fmt.Errorf("invalid coverage status %q", result.Status)
 	}
-	return contract.NewDocument(selected.Engine.ID, contract.CoverageOperation, result)
+	return contract.NewDocument(engineID, contract.CoverageOperation, result)
 }

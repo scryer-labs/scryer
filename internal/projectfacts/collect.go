@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/boyter/scc/v3/processor"
@@ -84,6 +85,14 @@ func Collect(ctx context.Context, directory string, stack, loc bool) (contract.P
 			result.Stack.BuildTools = append(result.Stack.BuildTools, contract.BuildToolEvidence{Tool: tool, Path: filepath.ToSlash(path)})
 		}
 		candidates, _ := processor.DetectLanguage(filename)
+		if len(candidates) == 0 {
+			switch strings.ToLower(filepath.Ext(filename)) {
+			case ".cjs":
+				candidates = []string{"JavaScript"}
+			case ".mts", ".cts":
+				candidates = []string{"TypeScript"}
+			}
+		}
 		if len(candidates) == 0 {
 			result.Skipped.UnknownLanguage++
 			return nil

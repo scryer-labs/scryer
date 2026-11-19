@@ -41,6 +41,7 @@
   };
   const statusFor = (symbol, snapshotName = state.snapshot) => {
     if (snapshotName !== 'after') return 'NOT_APPLICABLE';
+    if (dataset().engine && symbol.engine && dataset().engine !== symbol.engine) return 'NOT_APPLICABLE';
     return methodIndex().get(symbol.id)?.status || (symbol.role === 'TEST' ? 'NOT_APPLICABLE' : 'UNKNOWN');
   };
   const matches = item => {
@@ -216,7 +217,7 @@
     if (calls.childElementCount === 1) calls.append(node('p', 'No resolved scope edges. Unresolved calls remain boundaries.'));
     const boundaries = graph.boundaries.filter(boundary => boundary.caller === id);
     if (boundaries.length) { const sectionNode = section('Call boundaries'); boundaries.forEach(boundary => sectionNode.append(node('p', `${boundary.reason} · ${boundary.path}:${boundary.line}`), node('pre', boundary.expression))); }
-    const change = report.changes.find(change => change.before?.signature === symbol.signature || change.after?.signature === symbol.signature);
+    const change = report.changes.find(change => (!symbol.engine || !change.engine || change.engine === symbol.engine) && (change.before?.signature === symbol.signature || change.after?.signature === symbol.signature));
     if (change) { const source = section('Changed declaration'); source.append(node('p', 'Before'), node('pre', change.before?.source || '(absent)'), node('p', 'After'), node('pre', change.after?.source || '(absent)')); }
     if (!$('symbol-dialog').open) $('symbol-dialog').showModal();
     window.ScryerReport?.highlightSymbol?.(id);

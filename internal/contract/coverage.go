@@ -19,20 +19,24 @@ type CoverageCollector interface {
 }
 
 type CoverageReport struct {
-	SchemaVersion int             `json:"schemaVersion"`
-	Root          string          `json:"root"`
-	Engine        string          `json:"engine,omitempty"`
-	Status        string          `json:"status"`
-	Message       string          `json:"message,omitempty"`
-	Runs          []CoverageRun   `json:"runs,omitempty"`
-	Coverage      json.RawMessage `json:"coverage,omitempty"`
+	EngineReports []CoverageReport `json:"engineReports,omitempty"`
+	SchemaVersion int              `json:"schemaVersion"`
+	Root          string           `json:"root"`
+	Engine        string           `json:"engine,omitempty"`
+	Status        string           `json:"status"`
+	Message       string           `json:"message,omitempty"`
+	Runs          []CoverageRun    `json:"runs,omitempty"`
+	Coverage      json.RawMessage  `json:"coverage,omitempty"`
 }
 
 type CoverageRun struct {
-	Name     string `json:"name"`
-	Status   string `json:"status"`
-	Profiles int    `json:"profiles"`
-	Message  string `json:"message,omitempty"`
+	Command       []string          `json:"command,omitempty"`
+	Directory     string            `json:"directory,omitempty"`
+	Configuration map[string]string `json:"configuration,omitempty"`
+	Name          string            `json:"name"`
+	Status        string            `json:"status"`
+	Profiles      int               `json:"profiles"`
+	Message       string            `json:"message,omitempty"`
 }
 
 type CoverageEvidence struct {

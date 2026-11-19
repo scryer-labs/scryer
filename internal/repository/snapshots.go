@@ -62,6 +62,12 @@ func Open(ctx context.Context, directory, before, after string) (*Snapshots, err
 	if err != nil {
 		return nil, err
 	}
+	canonical, err := filepath.EvalSymlinks(temporary)
+	if err != nil {
+		_ = os.RemoveAll(temporary)
+		return nil, err
+	}
+	temporary = canonical
 	snapshot := &Snapshots{Repository: root, Before: beforeSHA, After: afterSHA, BeforeRoot: filepath.Join(temporary, "before"), AfterRoot: filepath.Join(temporary, "after"), temporary: temporary}
 	complete := false
 	defer func() {

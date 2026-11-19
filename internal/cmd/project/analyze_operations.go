@@ -43,15 +43,21 @@ func (selected analyzeOperations) validate(cmd *cobra.Command, request contract.
 	if before && !selected.impact {
 		return fmt.Errorf("--before and --after require an operation that compares versions")
 	}
-	if selected.coverage && (cmd.Flags().Changed("run-tests") || cmd.Flags().Changed("skip-tests") ||
+	if selected.coverage && ((!selected.impact && cmd.Flags().Changed("run-tests")) || cmd.Flags().Changed("skip-tests") ||
 		cmd.Flags().Changed("test-command") || cmd.Flags().Changed("build-tool")) {
 		return fmt.Errorf("these test execution and build flags are for Java impact; coverage runs tests automatically unless importing an artifact")
 	}
 	if selected.impact && cmd.Flags().Changed("coverage-file") {
-		return fmt.Errorf("impact uses fresh after-snapshot coverage with --test-target or --test-binary; --coverage-file is for standalone coverage")
+		return fmt.Errorf("impact uses fresh after-snapshot coverage with --resolve, --test-target or --test-binary; --coverage-file is for standalone coverage")
 	}
 	if cmd.Flags().Changed("coverage-file") && (!(selected.coverage || selected.impact) || strings.TrimSpace(artifact) == "") {
 		return fmt.Errorf("--coverage-file requires a nonempty path")
+	}
+	if cmd.Flags().Changed("resolve") && !selected.impact {
+		return fmt.Errorf("--resolve requires impact; coverage already collects runtime evidence")
+	}
+	if request.Resolve && request.SkipTests {
+		return fmt.Errorf("--resolve and --skip-tests are mutually exclusive")
 	}
 	if runTests && request.SkipTests {
 		return fmt.Errorf("--run-tests and --skip-tests are mutually exclusive")

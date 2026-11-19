@@ -79,11 +79,13 @@ type DeclarationVersion struct {
 	Source    string    `json:"source"`
 }
 type Change struct {
+	Engine string              `json:"engine,omitempty"`
 	Kind   string              `json:"kind"`
 	Before *DeclarationVersion `json:"before"`
 	After  *DeclarationVersion `json:"after"`
 }
 type Symbol struct {
+	Engine        string                     `json:"engine,omitempty"`
 	TestContext   json.RawMessage            `json:"testContext,omitempty"`
 	ExecutionKind string                     `json:"executionKind,omitempty"`
 	ID            string                     `json:"id"`
@@ -156,6 +158,7 @@ type SymbolEvidence struct {
 	Routes       []TestRoute `json:"routes"`
 }
 type DatasetMatch struct {
+	Engine                 string           `json:"engine,omitempty"`
 	Artifact               *Artifact        `json:"artifact"`
 	Methods                []SymbolEvidence `json:"methods"`
 	Counts                 map[string]int   `json:"counts"`

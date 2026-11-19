@@ -79,19 +79,74 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 	request.ComparisonRepository = snapshots.ComparisonRepository
 	request.BeforeRoot = snapshots.BeforeRoot
 	request.AfterRoot = snapshots.AfterRoot
-	analyzer, projection, err := s.impactAnalyzer(ctx, stack, snapshots.BeforeRoot, snapshots.AfterRoot)
+	var targets []analysisTarget
+	notes := []string{}
+	if s.NewInstalledAnalyzer == nil {
+		if err = s.selectStack(stack); err != nil {
+			return document, err
+		}
+		targets = []analysisTarget{{analyzer: s.Analyzer}}
+	} else {
+		targets, notes, err = s.analysisTargets(ctx, stack, snapshots.BeforeRoot, snapshots.AfterRoot, contract.ImpactOperation)
+		if err != nil {
+			return document, err
+		}
+		if err = validateTestSelection(targets, request.Coverage); err != nil {
+			return document, err
+		}
+	}
+	dynamic := request.Resolve || request.RunTests || len(request.Coverage.TestTargets) > 0 || len(request.Coverage.TestBinaries) > 0
+	documents := []contract.Document{}
+	for _, target := range targets {
+		perEngine := request
+		if target.projection {
+			perEngine.Resolve = dynamic
+			perEngine.Coverage = selectEngineCoverage(target, request.Coverage)
+		}
+		child, failure := s.analyzeSnapshotEngine(ctx, target.analyzer, target.projection, perEngine)
+		if failure != nil {
+			return document, fmt.Errorf("%s analysis failed: %w", target.analyzer.Stack(), failure)
+		}
+		documents = append(documents, child)
+	}
+	document, err = mergeImpactDocuments(documents, notes)
+
+	if err != nil || snapshots.WorkingBase == "" {
+		return document, err
+	}
+	var data map[string]json.RawMessage
+	if err = json.Unmarshal(document.Data, &data); err != nil {
+		return document, err
+	}
+	data["afterSource"], err = json.Marshal(map[string]string{
+		"kind": "WORKING_TREE", "ref": ".", "baseHead": snapshots.WorkingBase, "snapshotSha": snapshots.After,
+	})
 	if err != nil {
 		return document, err
 	}
+	var snapshotNotes []string
+	if err = json.Unmarshal(data["notes"], &snapshotNotes); err != nil {
+		return document, err
+	}
+	snapshotNotes = append(snapshotNotes, "After is an isolated working-tree snapshot (staged, unstaged and non-ignored untracked files); its SHA is a private snapshot commit, not a commit in the original repository. Ignored untracked files are excluded.")
+	data["notes"], err = json.Marshal(snapshotNotes)
+	if err != nil {
+		return document, err
+	}
+	document.Data, err = json.Marshal(data)
+	return document, err
+}
+
+func (s *Service) analyzeSnapshotEngine(ctx context.Context, analyzer contract.Analyzer, projection bool, request contract.AnalyzeRequest) (document contract.Document, err error) {
 	if projection {
 		collector, ok := analyzer.(contract.ImpactCollector)
 		if !ok {
 			return document, fmt.Errorf("engine %q has no impact projection adapter", analyzer.Stack())
 		}
-		if request.TestCommand != "" || request.BuildTool != "" || request.RunTests {
-			return document, fmt.Errorf("engine %q supplies static impact evidence; test execution and build options are not supported in this slice", analyzer.Stack())
+		if request.TestCommand != "" || request.BuildTool != "" {
+			return document, fmt.Errorf("engine %q uses native tests; --test-command and --build-tool belong to legacy analyze", analyzer.Stack())
 		}
-		request.Resolve = len(request.Coverage.TestTargets) != 0 || len(request.Coverage.TestBinaries) != 0
+		request.Resolve = request.Resolve || request.RunTests || len(request.Coverage.TestTargets) != 0 || len(request.Coverage.TestBinaries) != 0
 		var raw contract.Document
 		raw, err = collector.CollectImpact(ctx, request)
 		if err == nil {
@@ -112,34 +167,14 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 			}
 		}
 	} else {
+		if request.Resolve {
+			return document, fmt.Errorf("legacy analyze does not support --resolve; use its existing test lifecycle options")
+		}
 		if request.IncludeCoverage || request.Coverage.Artifact != "" || len(request.Coverage.TestTargets) != 0 || len(request.Coverage.TestBinaries) != 0 {
 			return document, fmt.Errorf("engine %q does not support separate impact coverage collection", analyzer.Stack())
 		}
 		request.SkipTests = request.SkipTests || (!request.RunTests && request.TestCommand == "")
 		document, err = analyzer.Analyze(ctx, request)
 	}
-	if err != nil || snapshots.WorkingBase == "" {
-		return document, err
-	}
-	var data map[string]json.RawMessage
-	if err = json.Unmarshal(document.Data, &data); err != nil {
-		return document, err
-	}
-	data["afterSource"], err = json.Marshal(map[string]string{
-		"kind": "WORKING_TREE", "ref": ".", "baseHead": snapshots.WorkingBase, "snapshotSha": snapshots.After,
-	})
-	if err != nil {
-		return document, err
-	}
-	var notes []string
-	if err = json.Unmarshal(data["notes"], &notes); err != nil {
-		return document, err
-	}
-	notes = append(notes, "After is an isolated working-tree snapshot (staged, unstaged and non-ignored untracked files); its SHA is a private snapshot commit, not a commit in the original repository. Ignored untracked files are excluded.")
-	data["notes"], err = json.Marshal(notes)
-	if err != nil {
-		return document, err
-	}
-	document.Data, err = json.Marshal(data)
 	return document, err
 }

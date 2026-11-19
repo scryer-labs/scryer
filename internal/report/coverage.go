@@ -13,8 +13,9 @@ import (
 
 type coverageView struct {
 	contract.CoverageReport
-	Evidence *contract.CoverageEvidence
-	Rows     [][]string
+	Evidence  *contract.CoverageEvidence
+	ChildJSON []string
+	Rows      [][]string
 }
 
 func coverageFor(document contract.Document) (coverageView, error) {
@@ -24,6 +25,22 @@ func coverageFor(document contract.Document) (coverageView, error) {
 	}
 	if err := json.Unmarshal(document.Data, &view.CoverageReport); err != nil {
 		return view, err
+	}
+	if len(view.EngineReports) > 0 {
+		for _, child := range view.EngineReports {
+			data, _ := json.Marshal(child)
+			nested, err := coverageFor(contract.Document{Operation: contract.CoverageOperation, Data: data})
+			if err != nil {
+				return view, err
+			}
+			for _, row := range nested.Rows {
+				row[0] = child.Engine + ": " + row[0]
+				view.Rows = append(view.Rows, row)
+			}
+			pretty, _ := json.MarshalIndent(child, "", "  ")
+			view.ChildJSON = append(view.ChildJSON, string(pretty))
+		}
+		return view, nil
 	}
 	if len(view.Coverage) == 0 {
 		return view, nil
@@ -61,6 +78,14 @@ func writeCoverage(out io.Writer, document contract.Document) error {
 			fmt.Fprintln(&output, run.Message)
 		}
 	}
+	if len(view.EngineReports) > 0 {
+		for _, child := range view.EngineReports {
+			data, _ := json.Marshal(child)
+			if err := writeCoverage(&output, contract.Document{Operation: contract.CoverageOperation, Data: data}); err != nil {
+				return err
+			}
+		}
+	}
 	if evidence := view.Evidence; evidence != nil {
 		fmt.Fprintf(&output, "Source match: %s (%s)\n", evidence.SourceMatch, evidence.Granularity)
 		for _, row := range view.Rows {
@@ -92,6 +117,12 @@ func coverageMarkdown(document contract.Document) ([]byte, error) {
 			rows = append(rows, []string{run.Name, run.Status, fmt.Sprint(run.Profiles), run.Message})
 		}
 		table(&output, []string{"Test", "Status", "Profiles", "Diagnostic"}, rows)
+	}
+	if len(view.EngineReports) > 0 {
+		table(&output, []string{"Engine / File", "Lines", "Functions", "Regions"}, view.Rows)
+		for _, raw := range view.ChildJSON {
+			fmt.Fprintf(&output, "\n```json\n%s\n```\n", raw)
+		}
 	}
 	if evidence := view.Evidence; evidence != nil {
 		fmt.Fprintf(&output, "**Artifact** %s\n\n**Source match** %s (%s)\n\n",
@@ -129,6 +160,7 @@ input { font: inherit; margin: .5rem 0; max-width: 90% }
 <details><summary>Artifact and evidence notes</summary><p>{{.Artifact}}</p><p>SHA-256 {{.SHA256}}</p>
 <ul>{{range .Notes}}<li>{{.}}</li>{{end}}</ul></details>
 {{end}}
+{{range .ChildJSON}}<details><summary>Engine coverage dataset</summary><pre>{{.}}</pre></details>{{end}}
 {{if .Rows}}
 <label>Filter files <input id="filter" type="search"></label>
 <table><thead><tr><th scope="col">File</th><th scope="col">Lines</th><th scope="col">Functions</th><th scope="col">Regions</th></tr></thead>

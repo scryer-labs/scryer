@@ -151,7 +151,7 @@
       group.append(svgNode('title', {}, `${symbol.signature}\n${symbol.path}:${symbol.line}\n${symbol.impact} · ${symbol.role}\n${statusText}`),
         svgNode('rect', {width: 260, height: 88, rx: 10}),
         svgNode('text', {x: 14, y: 22, class: 'node-title'}, shorten(title, 33)),
-        svgNode('text', {x: 14, y: 40, class: 'node-owner'}, shorten(app.label(symbol.signature).split('#')[0], 38)),
+        svgNode('text', {x: 14, y: 40, class: 'node-owner'}, shorten(symbol.engine ? `${symbol.engine} · ${symbol.path}` : app.label(symbol.signature).split('#')[0], 38)),
         svgNode('text', {x: 14, y: 61, class: 'node-role'}, `${symbol.impact.replaceAll('_', ' ')} · ${symbol.role}`),
         svgNode('circle', {cx: 18, cy: 76, r: 3, class: `node-status ${status.toLowerCase().replaceAll('_', '-')}`}),
         svgNode('text', {x: 27, y: 79, class: 'node-evidence'}, `${graphState.collapsed.has(symbol.id) ? '⊕ ' : ''}${statusText}`));

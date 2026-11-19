@@ -29,6 +29,18 @@ func (d Document) Validate() error {
 		}
 	case CoverageOperation:
 		required = map[string]string{"root": "string"}
+		if children, ok := report["engineReports"]; ok {
+			var reports []json.RawMessage
+			if err := json.Unmarshal(children, &reports); err != nil || len(reports) == 0 {
+				return fmt.Errorf("invalid engine coverage reports")
+			}
+			for _, child := range reports {
+				if err := (Document{Operation: CoverageOperation, Data: child}).Validate(); err != nil {
+					return err
+				}
+			}
+			return validateFields(d.Data, map[string]string{"root": "string"})
+		}
 		if _, ok := report["runs"]; ok {
 			required["runs"] = "array"
 		}

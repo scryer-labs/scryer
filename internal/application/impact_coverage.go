@@ -58,18 +58,19 @@ func (s *Service) attachImpactCoverage(ctx context.Context, stack string, reques
 	report.Execution.Status = executionStatus
 	report.Execution.Notes = []string{collection.Message}
 	report.Evidence.CommandStatus = executionStatus
-	report.Evidence.Notes = []string{"Aggregate LLVM source-region evidence; individual test attribution and branch adequacy are unknown."}
+	report.Evidence.Notes = []string{"Aggregate engine-normalized source coverage; individual test attribution and branch adequacy are unknown."}
 	report.Matching.Notes = []string{"Status refers to observed source regions, not proof of a caller path or assertion effectiveness."}
 	if !verified {
 		report.Matching.Notes = append(report.Matching.Notes, "Coverage is not verified against the after snapshot.")
 	}
-	report.Notes = []string{report.Notes[0], "Impact reuses compiler scan evidence and coverage from the after checkout. Dynamic failures stop analysis."}
+	report.Notes = []string{report.Notes[0], "Impact reuses engine-resolved scan evidence and coverage from the after checkout. Dynamic failures stop analysis."}
 	rawCollection, err := json.Marshal(collection)
 	if err != nil {
 		return document, err
 	}
 	report.Evidence.Coverage = []json.RawMessage{rawCollection}
 	dataset := matchImpactCoverage(report.After.Nodes, facts.After.Symbols, evidence, verified)
+	dataset.Engine = stack
 	report.Matching.Datasets = []contract.DatasetMatch{dataset}
 	for _, change := range report.Changes {
 		if change.Kind == "DELETED" && change.Before != nil {
@@ -117,9 +118,12 @@ func matchImpactCoverage(nodes []contract.Symbol, symbols []contract.ImpactSymbo
 			Reason: "No verified source-region coverage for this symbol.", Routes: []contract.TestRoute{},
 		}
 		kind := executionKinds[node.ID]
-		if kind == "compile-time" || kind == "declaration" {
+		if kind == "compile-time" || kind == "declaration" || kind == "test-harness" {
 			match.Status = "NOT_APPLICABLE"
 			match.Reason = "Runtime function coverage does not apply to a declaration node; compiler references describe potential dependencies, not runtime execution."
+			if kind == "test-harness" {
+				match.Reason = "This collector does not instrument test-harness source; runtime function coverage is not applicable. Test execution and per-test coverage attribution remain separate evidence."
+			}
 			if kind == "compile-time" {
 				match.Reason = "Immediate (consteval) function; runtime coverage does not apply. A compiler reference does not prove this function was evaluated."
 			}

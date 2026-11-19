@@ -1,64 +1,13 @@
 package application
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
 	"time"
 
 	"github.com/edwardnoaland/scryer/internal/contract"
-	"github.com/edwardnoaland/scryer/internal/engine"
-	"github.com/edwardnoaland/scryer/internal/projectfacts"
 )
-
-func (s *Service) impactAnalyzer(ctx context.Context, stack, beforeRoot, afterRoot string) (contract.Analyzer, bool, error) {
-	if s.NewInstalledAnalyzer == nil {
-		if err := s.selectStack(stack); err != nil {
-			return nil, false, err
-		}
-		return s.Analyzer, false, nil
-	}
-	store, err := engine.DefaultStore()
-	if err != nil {
-		return nil, false, err
-	}
-	installed, err := store.List(ctx)
-	if err != nil {
-		return nil, false, err
-	}
-	before, err := projectfacts.Collect(ctx, beforeRoot, true, false)
-	if err != nil {
-		return nil, false, err
-	}
-	after, err := projectfacts.Collect(ctx, afterRoot, true, false)
-	if err != nil {
-		return nil, false, err
-	}
-	var selected *engine.Installation
-	for _, candidate := range installed {
-		if stack != "" && candidate.Engine.ID != stack {
-			continue
-		}
-		if candidate.Capabilities == nil {
-			continue
-		}
-		if stack == "" && !matchesProject(candidate.Capabilities, before.Stack) && !matchesProject(candidate.Capabilities, after.Stack) {
-			continue
-		}
-		if !candidate.Capabilities.Supports(contract.ImpactOperation) && !candidate.Capabilities.Supports("analyze") {
-			continue
-		}
-		if selected != nil {
-			return nil, false, fmt.Errorf("multiple engines support project impact; select one with --stack")
-		}
-		selected = &candidate
-	}
-	if selected == nil {
-		return nil, false, fmt.Errorf("no installed impact-capable engine matches the project; upgrade its engine or select --stack")
-	}
-	return s.NewInstalledAnalyzer(*selected), selected.Capabilities.Supports(contract.ImpactOperation), nil
-}
 
 // compareImpact uses engine-provided correspondence keys and candidate edges.
 func compareImpact(stack string, request contract.AnalyzeRequest, facts contract.ImpactFacts) (contract.Document, error) {
@@ -119,7 +68,7 @@ func compareImpact(stack string, request contract.AnalyzeRequest, facts contract
 		report.CoverageReport = &contract.CoverageReport{SchemaVersion: 1, Root: request.Repository, Engine: stack, Status: "unavailable", Message: "Static impact does not run tests; supply --test-target or --test-binary for dynamic analysis."}
 	}
 	if request.Resolve {
-		report.Notes[0] = "Impact uses compiler-resolved scan edges. Missing compiler targets remain boundaries without syntax fallback."
+		report.Notes[0] = "Impact uses the engine's resolved scan evidence. Binding strength and unresolved boundaries follow that engine's scan contract."
 		report.Extensions = map[string]json.RawMessage{"beforeResolution": facts.Before.Resolution, "afterResolution": facts.After.Resolution}
 	}
 	return contract.NewDocument(stack, "analyze", report)
@@ -174,6 +123,8 @@ func impactGraph(facts contract.ImpactSnapshot, changed map[string]bool, unresol
 				kind = "COMPILER_DECLARATION_REFERENCE"
 			case "type-reference":
 				kind = "COMPILER_TYPE_REFERENCE"
+			case "scan-resolved":
+				kind = "SCAN_RESOLVED"
 			}
 		}
 		if ids[call.Caller] && ids[target] {
