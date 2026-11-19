@@ -119,8 +119,8 @@ Help for `project`, `project scan`, `project analyze`, `workspace` and
 `workspace scan` appends the corresponding installed capability summary. This
 reads local inventory without loading engines or scanning the current project.
 It reflects installed versions rather than available remote releases. Inventory
-errors do not prevent ordinary help from displaying. Workspace currently
-aggregates scan facts only; it does not expose an analyze command.
+errors do not prevent ordinary help from displaying. Workspace analysis uses the same installed capability summary and aggregates
+independent project reports.
 
 ```sh
 scryer project scan --facts loc,dependencies,ownership --json
@@ -592,3 +592,38 @@ Official releases are available for macOS arm64 and Windows amd64. Java also
 publishes a Linux amd64 package. These packages support static scanning after
 installation. Resolve and analysis operations may require the target project's
 toolchain.
+
+## Workspace analyze
+
+```sh
+scryer workspace analyze
+scryer workspace analyze /path/to/workspace --json --compact
+scryer workspace analyze --resolve -o impact.html
+scryer workspace analyze --resolve --operations impact,coverage -o impact.md
+scryer workspace analyze --operations coverage -o coverage.html
+```
+
+The command reads the same `.scryer/workspace.yaml` member list as workspace scan.
+It calls the existing project use cases with their native engine defaults; no
+separate workspace engine configuration or analysis algorithm is introduced.
+The default operation is static `impact`. `--resolve` enables resolved project
+scan evidence, native tests and after-snapshot coverage. `coverage` alone collects
+current-tree runtime coverage and does not accept `--resolve`. Selecting both
+`impact,coverage` requires `--resolve` so requested coverage is not silently omitted.
+
+Each repo uses its own comparison defaults: clean means `HEAD^1` to `HEAD`; dirty
+means `HEAD` to an isolated working-tree snapshot. A clean repo with only an
+initial commit has no baseline and is reported as failed. Workspace does not
+accept `--before` or `--after`, or a shared test target/binary selection.
+
+Members are analyzed sequentially in configuration order. Failed and unsupported
+members retain diagnostics while remaining members continue. Complete results
+exit 0; incomplete results exit 1 **after** emitting JSON or saving the requested
+report. Invalid flags/configuration and cancellation stop the command.
+
+JSON retains full per-project reports and separate coverage datasets. Terminal
+output summarizes statuses and comparison SHAs; `--verbose` adds full project
+output. `-o` accepts Markdown or offline HTML. HTML provides isolated expandable
+project reports with their existing interactive graphs and a complete JSON
+download. No cross-project impact propagation or combined coverage percentage
+is inferred. See the [workspace analysis contract](contracts/WORKSPACE-ANALYSIS.md).

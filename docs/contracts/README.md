@@ -155,3 +155,6 @@ See [runtime coverage](COVERAGE.md) for the standalone coverage operation.
 
 See [impact projection](IMPACT.md) for the C++, Go, Rust and TS/JS source-evidence boundary
 and Core comparison and traversal.
+
+See [workspace analysis](WORKSPACE-ANALYSIS.md) for member-level orchestration,
+independent baselines, partial failures and complete project report preservation.

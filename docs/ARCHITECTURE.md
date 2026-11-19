@@ -46,6 +46,12 @@ CMake selectors only to capable packages. `analysis_merge.go` qualifies graph ID
 and preserves independent engine reports and coverage datasets.
 Core renders the result independently of the engine.
 
+Workspace analysis reuses the workspace member loader and calls project use
+cases in configuration order. `workspace_analysis.go` preserves raw child
+reports, classifies member failures and summarizes completion. Reporting reuses
+existing project renderers; HTML isolates each interactive report in a sandboxed
+frame. It does not infer cross-project impact from library/IPC relationships.
+
 ## Java analyze
 
 Core resolves refs to immutable SHAs and creates isolated checkouts. The Java
