@@ -30,6 +30,7 @@ func NewRoot(service *application.Service, out, errOut io.Writer) *cobra.Command
 	root.AddCommand(projectcmd.New(service), workspacecmd.New(service), enginecmd.New())
 
 	root.SetFlagErrorFunc(func(_ *cobra.Command, err error) error { return usageError{err} })
+	installCapabilityHelp(root)
 	wrapCommandValidation(root)
 	return root
 }

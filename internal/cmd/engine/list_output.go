@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/edwardnoaland/scryer/internal/cmd/capabilities"
 	"github.com/edwardnoaland/scryer/internal/cmd/terminal"
 	"github.com/edwardnoaland/scryer/internal/engine"
 	"github.com/spf13/cobra"
@@ -33,8 +34,13 @@ func presentList(command *cobra.Command, installations []engine.Installation) er
 			fmt.Fprintf(&output, "  %s\n", paint("33", "Capabilities unavailable"))
 			continue
 		}
-		fmt.Fprintf(&output, "  %s %s\n", paint("2", "Operations:"), paint("36", strings.Join(installed.Capabilities.Operations, ", ")))
 		fmt.Fprintf(&output, "  %s %s\n", paint("2", "Scan facts:"), strings.Join(installed.Capabilities.ScanFacts, ", "))
+		analysis := capabilities.AnalyzeOperations(installed.Capabilities)
+		analysisLabel := strings.Join(analysis, ", ")
+		if len(analysis) == 0 {
+			analysisLabel = "none"
+		}
+		fmt.Fprintf(&output, "  %s %s\n", paint("2", "Analyze operations:"), paint("36", analysisLabel))
 	}
 	_, err := fmt.Fprint(command.OutOrStdout(), output.String())
 	return err

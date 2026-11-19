@@ -108,10 +108,19 @@ Default and explicitly selected stack/LOC facts run without installed engines.
 For an engine fact, Core matches the detected languages to installed package
 capabilities. `scryer engine list --json` exposes operations and scan facts for
 each installed package. Human-readable `engine list` highlights engine IDs,
-versions, status and operations, with subdued library paths. It supports
+versions and status, with subdued library paths. It groups capabilities as
+`Scan facts` and `Analyze operations`; Java's older operation is labeled
+`legacy analyze`, and engines without analysis support show `none`. It supports
 `--color auto|always|never`; auto respects `NO_COLOR` and keeps redirected output
 plain. JSON is unaffected. Java declares `scan`, `analyze` and the selectable
 `dependencies` fact. Fact selection uses Java static dependency declarations.
+
+Help for `project`, `project scan`, `project analyze`, `workspace` and
+`workspace scan` appends the corresponding installed capability summary. This
+reads local inventory without loading engines or scanning the current project.
+It reflects installed versions rather than available remote releases. Inventory
+errors do not prevent ordinary help from displaying. Workspace currently
+aggregates scan facts only; it does not expose an analyze command.
 
 ```sh
 scryer project scan --facts loc,dependencies,ownership --json
