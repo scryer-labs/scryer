@@ -42,7 +42,7 @@ func installCapabilityHelp(root *cobra.Command) {
 			return
 		}
 		scan := command == scope || command.Name() == "scan"
-		analyze := scope.Name() == "project" && (command == scope || command.Name() == "analyze")
+		analyze := command == scope || command.Name() == "analyze"
 		if scan {
 			fmt.Fprintln(output, "  Core scan facts: stack, loc (no engine required)")
 		}
@@ -76,7 +76,7 @@ func installCapabilityHelp(root *cobra.Command) {
 			}
 		}
 		if scope.Name() == "workspace" {
-			fmt.Fprintln(output, "  Workspace aggregates scan facts; workspace analyze is not implemented.")
+			fmt.Fprintln(output, "  Workspace analyzes projects independently; reports are aggregated without cross-project impact propagation.")
 		}
 		fmt.Fprintln(output, "  Capabilities reflect installed versions. Use scryer engine upgrade <id> to update.")
 	})

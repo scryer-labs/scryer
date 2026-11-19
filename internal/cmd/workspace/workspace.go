@@ -8,6 +8,6 @@ import (
 
 func New(service *application.Service) *cobra.Command {
 	command := &cobra.Command{Use: "workspace", Short: "Work with workspace facts"}
-	command.AddCommand(newScanCommand(service))
+	command.AddCommand(newScanCommand(service), newAnalyzeCommand(service))
 	return command
 }
