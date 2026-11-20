@@ -51,6 +51,28 @@ unsupported conditions and unresolved references. Keep C++ source collection
 and CMake build declarations modular. Validate the JSON before handing its
 architecture and test evidence to Orrery for interactive rendering.
 
+### Current C++ delivery order
+
+After the delivered Core/C++ project include/exclude slice, prioritize:
+
+1. CMake target and source membership completeness: bounded variable expansion
+   and concrete build-declaration gaps, with unsupported expressions retained.
+2. Large-repository acceptance: explicit scope, measured time/memory/JSON size,
+   and checked architecture, includes and cross-file call relationships.
+3. Completeness diagnostics: distinguish missing compile commands, failed
+   translation units and unbound references while preserving usable partial facts.
+4. Additional deterministic test-framework registration rules, with Catch2 driven
+   by real fixtures. User-defined groups are separate follow-up metadata, not
+   automatic production/test/third-party identities.
+
+Keep CMake and C/C++ collectors modular. Function-body control/data flow and
+execution-order modeling wait until ownership/lifetime work needs them. Function
+implementation similarity for external test consumers is not a current requirement.
+Test effectiveness and stronger per-test coverage attribution remain deferred.
+Continue macOS acceptance first; Windows dynamic acceptance and test-target pattern
+matching remain later work. Legitimate compact reports can exceed consumer limits;
+Orrery owns artifact storage/loading capacity independently of scan selection.
+
 ## M3 — Runtime coverage and change impact
 
 Status: baseline delivered; stronger execution attribution remains follow-up work.
@@ -100,7 +122,9 @@ present coverage percentages as assertion effectiveness or safety scores.
 
 ## M5 — C++ ownership and lifetime
 
-Status: deferred. Resume priority relative to M4 is not decided.
+Status: deferred. Resume priority relative to M4 is not decided. Function-internal
+control/data-flow collection is deferred to this work rather than required by
+current architecture/call-graph scanning.
 
 Start with observable ownership, borrowing, lifetime and transfer facts in the
 C++ Engine. Establish evidence and diagnostics for uncertain aliasing or
