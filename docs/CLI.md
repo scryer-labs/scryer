@@ -634,3 +634,8 @@ and `engineOutcomes[].stages[]` independently of test execution status. TypeScri
 semantic diagnostics can leave usable partial graphs; configuration/tool/syntax
 failures are still explicit. Incomplete coverage is never treated as zero or
 verified hits. Complete comparisons with no changed symbols say so explicitly.
+
+Workspace HTML lists show `collected · no changed code symbols` when a completed
+impact comparison has no changed symbols. The label is visible in the collapsed
+project heading and status table; it does not claim that every source/context
+change has no effect. Partial, failed and coverage-only results omit the label.

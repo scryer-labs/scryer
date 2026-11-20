@@ -97,7 +97,18 @@ type workspaceAnalysisPage struct {
 	JSON     template.URL
 	Projects []workspaceAnalysisFrame
 }
-type workspaceAnalysisFrame struct{ Path, Status, Error, HTML string }
+type workspaceAnalysisFrame struct{ Path, Status, Error, HTML, ChangeSummary string }
+
+func workspaceChangeSummary(project contract.ProjectAnalysis) string {
+	if project.Status != "collected" || project.ReportOperation != "analyze" {
+		return ""
+	}
+	var report struct{ Changes []json.RawMessage }
+	if json.Unmarshal(project.Report, &report) != nil || report.Changes == nil || len(report.Changes) > 0 {
+		return ""
+	}
+	return "no changed code symbols"
+}
 
 func WorkspaceAnalysisHTML(result contract.WorkspaceAnalysis) ([]byte, error) {
 	raw, err := json.Marshal(result)
@@ -106,7 +117,7 @@ func WorkspaceAnalysisHTML(result contract.WorkspaceAnalysis) ([]byte, error) {
 	}
 	page := workspaceAnalysisPage{Result: result, JSON: template.URL("data:application/json;base64," + base64.StdEncoding.EncodeToString(raw))}
 	for _, project := range result.Projects {
-		frame := workspaceAnalysisFrame{Path: project.Path, Status: project.Status, Error: project.Error}
+		frame := workspaceAnalysisFrame{Path: project.Path, Status: project.Status, Error: project.Error, ChangeSummary: workspaceChangeSummary(project)}
 		if len(project.Report) > 0 {
 			child, err := HTML(project.Document())
 			if err != nil {
@@ -127,6 +138,6 @@ var workspaceAnalysisTemplate = template.Must(template.New("workspace-analysis")
 <body><main><h1>Workspace analysis</h1><p>{{.Result.Root}}</p><p class="status">{{.Result.Status}} · {{index .Result.Counts "collected"}} collected · {{index .Result.Counts "partial"}} partial · {{index .Result.Counts "failed"}} failed · {{index .Result.Counts "unsupported"}} unsupported</p>
 <a href="{{.JSON}}" download="workspace-analysis.json">Download complete JSON</a>
 {{range .Result.Notes}}<p>{{.}}</p>{{end}}
-<table><thead><tr><th>Project</th><th>Status</th><th>Diagnostic</th></tr></thead><tbody>{{range .Projects}}<tr><td>{{.Path}}</td><td>{{.Status}}</td><td>{{.Error}}</td></tr>{{end}}</tbody></table>
-{{range .Projects}}<details><summary>{{.Path}} · {{.Status}}</summary>{{if .Error}}<p class="diagnostic">{{.Error}}</p>{{end}}{{if .HTML}}<iframe title="{{.Path}} project report" loading="lazy" sandbox="allow-scripts allow-downloads" srcdoc="{{.HTML}}"></iframe>{{end}}</details>{{end}}
+<table><thead><tr><th>Project</th><th>Status</th><th>Diagnostic</th></tr></thead><tbody>{{range .Projects}}<tr><td>{{.Path}}</td><td>{{.Status}}{{if .ChangeSummary}} · {{.ChangeSummary}}{{end}}</td><td>{{.Error}}</td></tr>{{end}}</tbody></table>
+{{range .Projects}}<details><summary>{{.Path}} · {{.Status}}{{if .ChangeSummary}} · {{.ChangeSummary}}{{end}}</summary>{{if .Error}}<p class="diagnostic">{{.Error}}</p>{{end}}{{if .HTML}}<iframe title="{{.Path}} project report" loading="lazy" sandbox="allow-scripts allow-downloads" srcdoc="{{.HTML}}"></iframe>{{end}}</details>{{end}}
 </main></body></html>`))
