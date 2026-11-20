@@ -10,6 +10,7 @@ import (
 	"github.com/edwardnoaland/scryer/internal/contract"
 	"github.com/edwardnoaland/scryer/internal/engine"
 	"github.com/edwardnoaland/scryer/internal/projectfacts"
+	"github.com/edwardnoaland/scryer/internal/projectscope"
 )
 
 func (s *Service) ScanFacts(ctx context.Context, directory string, stack, loc bool, requested []string, resolve bool, compileCommands string) (contract.Document, error) {
@@ -49,6 +50,15 @@ func (s *Service) collectEngineFacts(ctx context.Context, project contract.Proje
 	if err != nil {
 		return nil, err
 	}
+	var selection *contract.FileSelectionRef
+	if project.Scope != nil {
+		var cleanup func()
+		selection, cleanup, err = projectscope.CreateManifest(project.Root, project.SourceFiles)
+		if err != nil {
+			return nil, err
+		}
+		defer cleanup()
+	}
 	var outcomes []contract.FactOutcome
 	supported := map[string]bool{}
 	relevant := false
@@ -69,7 +79,13 @@ func (s *Service) collectEngineFacts(ctx context.Context, project contract.Proje
 		if len(selected) == 0 {
 			continue
 		}
-		results := s.scanInstalled(ctx, item, project.Root, selected, resolveFacts, compileCommands)
+		if selection != nil && !item.Capabilities.ScanFileSelection {
+			for _, fact := range selected {
+				outcomes = append(outcomes, contract.FactOutcome{Fact: fact, Engine: item.Engine.ID, Status: "unsupported", Message: "installed engine does not support project file selection; upgrade to a scope-aware package"})
+			}
+			continue
+		}
+		results := s.scanSelected(ctx, item, project.Root, selected, resolveFacts, compileCommands, selection)
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
@@ -98,6 +114,9 @@ func matchesProject(capabilities *engine.Capabilities, stack *contract.ProjectSt
 }
 
 func (s *Service) scanInstalled(ctx context.Context, installed engine.Installation, root string, selected, resolveFacts []string, compileCommands string) []contract.FactOutcome {
+	return s.scanSelected(ctx, installed, root, selected, resolveFacts, compileCommands, nil)
+}
+func (s *Service) scanSelected(ctx context.Context, installed engine.Installation, root string, selected, resolveFacts []string, compileCommands string, selection *contract.FileSelectionRef) []contract.FactOutcome {
 	resolveSelected := slices.ContainsFunc(selected, func(fact string) bool {
 		return slices.Contains(resolveFacts, fact) && installed.Capabilities.ResolvesFact(fact)
 	})
@@ -109,17 +128,21 @@ func (s *Service) scanInstalled(ctx context.Context, installed engine.Installati
 		analyzer = s.NewInstalledAnalyzer(installed)
 	}
 	var data struct {
-		Root  string                     `json:"root"`
-		Facts map[string]json.RawMessage `json:"facts"`
+		Root      string                         `json:"root"`
+		Selection *contract.FileSelectionReceipt `json:"selection,omitempty"`
+		Facts     map[string]json.RawMessage     `json:"facts"`
 	}
 	var err error
 	if analyzer == nil {
 		err = fmt.Errorf("engine execution is unavailable")
 	} else {
 		var document contract.Document
-		document, err = analyzer.Scan(ctx, contract.ScanRequest{Repository: root, Static: !resolveSelected, Facts: selected, CompileCommands: compileCommands})
+		document, err = analyzer.Scan(ctx, contract.ScanRequest{FileSelection: selection, Repository: root, Static: !resolveSelected, Facts: selected, CompileCommands: compileCommands})
 		if err == nil {
 			err = json.Unmarshal(document.Data, &data)
+		}
+		if err == nil && selection != nil && (data.Selection == nil || data.Selection.SHA256 != selection.SHA256 || data.Selection.FileCount != selection.FileCount) {
+			err = fmt.Errorf("engine did not acknowledge the requested file selection")
 		}
 		if err == nil && data.Root != root {
 			err = fmt.Errorf("engine report root does not match project")

@@ -190,6 +190,12 @@ a deliberate migration; exact generic override flags remain open.
 
 ## Project engine configuration lifecycle
 
+Update 2026-11-20: the initial no-project.yaml decision below is superseded only
+for generic file selection. Optional `.scryer/project.yaml` now owns `scan.include`
+and `scan.exclude`, independently of Engine-specific YAML and CLI facts selection.
+See [the current project scope contract](../contracts/PROJECT-SCOPE.md). The
+remaining paragraphs record the earlier decision and its rationale.
+
 Use YAML for the initial configuration layout. Workspace has only
 `.scryer/workspace.yaml`, owning explicit project members and shared scan defaults.
 Project has `.scryer/engines/<engine-id>.yaml` files, owning only each engine's

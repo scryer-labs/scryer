@@ -12,6 +12,7 @@ import (
 
 	"github.com/edwardnoaland/scryer/internal/contract"
 	"github.com/edwardnoaland/scryer/internal/engine"
+	"github.com/edwardnoaland/scryer/internal/projectscope"
 	"github.com/edwardnoaland/scryer/internal/repository"
 )
 
@@ -48,6 +49,13 @@ func (s *Service) Scan(ctx context.Context, stack string, request contract.ScanR
 	if !info.IsDir() {
 		return contract.Document{}, fmt.Errorf("not a directory: %s", absolute)
 	}
+	config, err := projectscope.ReadConfig(absolute)
+	if err != nil {
+		return contract.Document{}, err
+	}
+	if config != nil {
+		return contract.Document{}, fmt.Errorf("legacy scan does not support project file selection; use --facts with a scope-aware engine")
+	}
 	request.Repository = absolute
 	document, err := s.Analyzer.Scan(ctx, request)
 	if err != nil {
@@ -80,6 +88,32 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 	request.ComparisonRepository = snapshots.ComparisonRepository
 	request.BeforeRoot = snapshots.BeforeRoot
 	request.AfterRoot = snapshots.AfterRoot
+	config, err := projectscope.ReadConfig(request.Repository)
+	if err != nil {
+		return document, err
+	}
+	if config != nil {
+		before, err := projectscope.Build(ctx, request.BeforeRoot, config)
+		if err != nil {
+			return document, err
+		}
+		after, err := projectscope.Build(ctx, request.AfterRoot, config)
+		if err != nil {
+			return document, err
+		}
+		var cleanup func()
+		request.BeforeSelection, cleanup, err = projectscope.CreateManifest(request.BeforeRoot, before.Files)
+		if err != nil {
+			return document, err
+		}
+		defer cleanup()
+		request.AfterSelection, cleanup, err = projectscope.CreateManifest(request.AfterRoot, after.Files)
+		if err != nil {
+			return document, err
+		}
+		defer cleanup()
+		request.Scope = &contract.ComparisonScope{Policy: "current-project-config", Before: before.Scope, After: after.Scope}
+	}
 	var targets []analysisTarget
 	notes := []string{}
 	if s.NewInstalledAnalyzer == nil {
@@ -88,7 +122,7 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 		}
 		targets = []analysisTarget{{analyzer: s.Analyzer}}
 	} else {
-		targets, notes, err = s.analysisTargets(ctx, stack, snapshots.BeforeRoot, snapshots.AfterRoot, contract.ImpactOperation)
+		targets, notes, err = s.analysisTargets(ctx, stack, snapshots.BeforeRoot, snapshots.AfterRoot, contract.ImpactOperation, config)
 		if err != nil {
 			return document, err
 		}
@@ -104,6 +138,10 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 		if target.projection {
 			perEngine.Resolve = dynamic
 			perEngine.Coverage = selectEngineCoverage(target, request.Coverage)
+		}
+		if request.Scope != nil && (!target.projection || target.capabilities == nil || !target.capabilities.ScanFileSelection) {
+			outcomes = append(outcomes, contract.EngineAnalysisOutcome{Engine: target.analyzer.Stack(), Status: "unsupported", Stages: []contract.AnalysisStage{{Name: "impact", Status: "unsupported", Message: "installed engine does not support project file selection"}}})
+			continue
 		}
 		child, failure := s.analyzeSnapshotEngine(ctx, target.analyzer, target.projection, perEngine)
 		if ctx.Err() != nil {
@@ -173,6 +211,14 @@ func (s *Service) analyzeSnapshotEngine(ctx context.Context, analyzer contract.A
 		if err == nil {
 			var facts contract.ImpactFacts
 			if err = json.Unmarshal(raw.Data, &facts); err == nil {
+				for _, selected := range []struct {
+					ref     *contract.FileSelectionRef
+					receipt *contract.FileSelectionReceipt
+				}{{request.BeforeSelection, facts.Before.Selection}, {request.AfterSelection, facts.After.Selection}} {
+					if selected.ref != nil && (selected.receipt == nil || selected.receipt.SHA256 != selected.ref.SHA256 || selected.receipt.FileCount != selected.ref.FileCount) {
+						return document, fmt.Errorf("engine did not acknowledge the impact file selection")
+					}
+				}
 				if request.Resolve {
 					for _, snapshot := range []contract.ImpactSnapshot{facts.Before, facts.After} {
 						var resolution struct {

@@ -21,7 +21,7 @@ func newScanCommand(service *application.Service) *cobra.Command {
 	var useCore, collectStack, collectLOC bool
 	var engineFacts []string
 	command := &cobra.Command{Use: "scan [path]", Short: "Collect project facts",
-		Long: "Collect stack and line counts by default. Select facts with --facts. Explicit Java scan options select the Java engine. Path defaults to the current directory.", Args: cobra.MaximumNArgs(1)}
+		Long: "Collect stack and line counts by default. Select facts with --facts. Explicit Java scan options select the Java engine. Path defaults to the current directory. Optional .scryer/project.yaml scan.include and scan.exclude select files for stack, LOC and scope-aware engines.", Args: cobra.MaximumNArgs(1)}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
 		javaFlag := ""
 		for _, flag := range []string{"static", "remote-list", "build-tool"} {

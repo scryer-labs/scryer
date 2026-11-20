@@ -75,3 +75,12 @@ its own module, such as the Java view and C++ Markdown projection.
 Keep one root `go.mod` for Core. Prefer named operations, readable collection
 transformations, and explicit side-effect and error handling. See
 [contributor instructions](../AGENTS.md) for acceptance and commits.
+
+## Project scope boundary
+
+`internal/projectscope` owns project YAML, glob validation and the common regular-file
+inventory. `projectfacts` uses it for stack/LOC; application dispatch serializes a
+temporary manifest for scope-aware Engines and validates their receipts. Engines
+interpret only a selected path list, not Core configuration or Git policy. Impact
+pins the current policy across snapshots; native builds/tests/coverage remain
+independent. See [the contract](contracts/PROJECT-SCOPE.md).

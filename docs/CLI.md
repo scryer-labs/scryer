@@ -639,3 +639,12 @@ Workspace HTML lists show `collected · no changed code symbols` when a complete
 impact comparison has no changed symbols. The label is visible in the collapsed
 project heading and status table; it does not claim that every source/context
 change has no effect. Partial, failed and coverage-only results omit the label.
+
+## Project file selection
+
+Optional `.scryer/project.yaml` selects files for stack, LOC and scope-aware Engine
+facts without additional flags. Include/exclude patterns and JSON evidence are
+defined in [Project scope](contracts/PROJECT-SCOPE.md). Current Engine support is
+C++; others report unsupported for configured scans. Workspace delegates to each
+project. Impact pins the current configuration across both snapshots; native
+coverage/build/test execution is not narrowed by scan patterns.

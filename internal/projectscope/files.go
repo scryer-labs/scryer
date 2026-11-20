@@ -1,4 +1,4 @@
-package projectfacts
+package projectscope
 
 import (
 	"bytes"
@@ -12,7 +12,7 @@ import (
 	"github.com/edwardnoaland/scryer/internal/process"
 )
 
-func visitFiles(ctx context.Context, root *os.Root, visit func(string) error) error {
+func VisitFiles(ctx context.Context, root *os.Root, visit func(string) error) error {
 	inGit, err := hasGitAncestor(root.Name())
 	if err != nil {
 		return err
@@ -28,6 +28,9 @@ func visitFiles(ctx context.Context, root *os.Root, visit func(string) error) er
 		}
 		seen := make(map[string]bool)
 		for _, entry := range bytes.Split(output, []byte{0}) {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
 			path := string(entry)
 			if path == "" || seen[path] {
 				continue

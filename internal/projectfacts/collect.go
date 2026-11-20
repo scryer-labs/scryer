@@ -16,6 +16,7 @@ import (
 
 	"github.com/boyter/scc/v3/processor"
 	"github.com/edwardnoaland/scryer/internal/contract"
+	"github.com/edwardnoaland/scryer/internal/projectscope"
 	"github.com/edwardnoaland/scryer/internal/repository"
 )
 
@@ -38,6 +39,12 @@ var buildTools = map[string]string{
 }
 
 func Collect(ctx context.Context, directory string, stack, loc bool) (contract.ProjectFacts, error) {
+	return collect(ctx, directory, stack, loc, nil, true)
+}
+func CollectWithConfig(ctx context.Context, directory string, stack, loc bool, config *projectscope.Config) (contract.ProjectFacts, error) {
+	return collect(ctx, directory, stack, loc, config, false)
+}
+func collect(ctx context.Context, directory string, stack, loc bool, config *projectscope.Config, loadConfig bool) (contract.ProjectFacts, error) {
 	var result contract.ProjectFacts
 	absolute, err := filepath.Abs(directory)
 	if err != nil {
@@ -47,6 +54,17 @@ func Collect(ctx context.Context, directory string, stack, loc bool) (contract.P
 	if err != nil {
 		return result, err
 	}
+	if loadConfig {
+		config, err = projectscope.ReadConfig(absolute)
+		if err != nil {
+			return result, err
+		}
+	}
+	inventory, err := projectscope.Build(ctx, absolute, config)
+	if err != nil {
+		return result, err
+	}
+	result.Scope, result.SourceFiles = inventory.Scope, inventory.Files
 	root, err := os.OpenRoot(absolute)
 	if err != nil {
 		return result, err
@@ -65,7 +83,7 @@ func Collect(ctx context.Context, directory string, stack, loc bool) (contract.P
 	initCounter.Do(processor.ProcessConstants)
 	totals := map[string]contract.LineCounts{}
 
-	err = visitFiles(ctx, root, func(path string) error {
+	visit := func(path string) error {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -138,7 +156,12 @@ func Collect(ctx context.Context, directory string, stack, loc bool) (contract.P
 		}
 		totals[language] = counts
 		return nil
-	})
+	}
+	for _, file := range inventory.Files {
+		if err = visit(file); err != nil {
+			break
+		}
+	}
 	if err != nil {
 		return result, fmt.Errorf("collect project facts: %w", err)
 	}

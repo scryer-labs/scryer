@@ -4,6 +4,7 @@ import "slices"
 
 // Capabilities belong to an installed package version.
 type Capabilities struct {
+	ScanFileSelection   bool     `json:"scanFileSelection,omitempty"`
 	CoverageTestTargets bool     `json:"coverageTestTargets,omitempty"`
 	ResolveFacts        []string `json:"resolveFacts,omitempty"`
 	ResolveDependencies bool     `json:"resolveDependencies,omitempty"`

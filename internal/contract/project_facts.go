@@ -31,6 +31,8 @@ type RepositoryIdentity struct {
 }
 
 type ProjectFacts struct {
+	Scope         *ScanScope         `json:"scope,omitempty"`
+	SourceFiles   []string           `json:"-"`
 	Communication *Communication     `json:"communication,omitempty"`
 	EngineFacts   []FactOutcome      `json:"engineFacts,omitempty"`
 	SchemaVersion int                `json:"schemaVersion"`

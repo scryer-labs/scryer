@@ -54,7 +54,7 @@ func compareImpact(stack string, request contract.AnalyzeRequest, facts contract
 		"Coverage is unknown in this static impact slice. No test execution or matched coverage dataset was collected.",
 	}
 	report := contract.AnalyzeReport{
-		SchemaVersion: 1, GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		Scope: request.Scope, SchemaVersion: 1, GeneratedAt: time.Now().UTC().Format(time.RFC3339),
 		Repository: request.Repository, BeforeSHA: request.Before, AfterSHA: request.After,
 		Files: impactFiles(changes), Changes: changes,
 		Before:    impactGraph(facts.Before, beforeSeeds, unresolved),

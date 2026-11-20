@@ -194,6 +194,7 @@ type EngineAnalysisOutcome struct {
 	Stages []AnalysisStage `json:"stages"`
 }
 type AnalyzeReport struct {
+	Scope          *ComparisonScope           `json:"scope,omitempty"`
 	Status         string                     `json:"status,omitempty"`
 	EngineOutcomes []EngineAnalysisOutcome    `json:"engineOutcomes,omitempty"`
 	CoverageReport *CoverageReport            `json:"coverageReport,omitempty"`

@@ -32,8 +32,10 @@ to a project. Files record component membership where observed. Symbols and
 call sites have source locations. Identity and source evidence let consumers
 follow the relationships without merging unrelated candidates.
 
-Workspace membership uses `.scryer/workspace.yaml`. The agreed future
-project-local configuration is `.scryer/engines/<engine-id>.yaml`. Engines
+Workspace membership uses `.scryer/workspace.yaml`. Optional
+[`.scryer/project.yaml`](contracts/PROJECT-SCOPE.md) selects project files through
+Core-owned include/exclude patterns; initial Engine support is C++. Future
+engine-local configuration is `.scryer/engines/<engine-id>.yaml`. Engines
 would supply minimal defaults and Core would initialize missing files.
 Ordinary scanning and engine-free stack/LOC discovery leave installation
 to an explicit engine command.

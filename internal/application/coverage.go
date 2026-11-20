@@ -12,11 +12,11 @@ import (
 
 // CollectCoverage is reusable by operations that need coverage evidence.
 func (s *Service) CollectCoverage(ctx context.Context, directory, stack string, request contract.CoverageRequest) (contract.Document, error) {
-	project, err := projectfacts.Collect(ctx, directory, true, false)
+	project, err := projectfacts.CollectWithConfig(ctx, directory, true, false, nil)
 	if err != nil {
 		return contract.Document{}, err
 	}
-	targets, notes, err := s.analysisTargets(ctx, stack, project.Root, project.Root, contract.CoverageOperation)
+	targets, notes, err := s.analysisTargets(ctx, stack, project.Root, project.Root, contract.CoverageOperation, nil)
 	if err != nil {
 		return contract.Document{}, err
 	}

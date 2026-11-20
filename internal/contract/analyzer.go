@@ -10,27 +10,31 @@ const ProtocolVersion = 1
 const ReportVersion = 1
 
 type ScanRequest struct {
-	CompileCommands string   `json:"compileCommands,omitempty"`
-	Facts           []string `json:"facts,omitempty"`
-	Repository      string   `json:"repository"`
-	Static          bool     `json:"static"`
-	RemoteList      bool     `json:"remoteList"`
-	BuildTool       string   `json:"buildTool,omitempty"`
+	FileSelection   *FileSelectionRef `json:"fileSelection,omitempty"`
+	CompileCommands string            `json:"compileCommands,omitempty"`
+	Facts           []string          `json:"facts,omitempty"`
+	Repository      string            `json:"repository"`
+	Static          bool              `json:"static"`
+	RemoteList      bool              `json:"remoteList"`
+	BuildTool       string            `json:"buildTool,omitempty"`
 }
 type AnalyzeRequest struct {
-	Resolve              bool            `json:"resolve,omitempty"`
-	Coverage             CoverageRequest `json:"-"`
-	IncludeCoverage      bool            `json:"-"`
-	RunTests             bool            `json:"-"`
-	Repository           string          `json:"repository"`
-	Before               string          `json:"before"`
-	After                string          `json:"after"`
-	ComparisonRepository string          `json:"comparisonRepository,omitempty"`
-	BeforeRoot           string          `json:"beforeRoot"`
-	AfterRoot            string          `json:"afterRoot"`
-	SkipTests            bool            `json:"skipTests"`
-	TestCommand          string          `json:"testCommand,omitempty"`
-	BuildTool            string          `json:"buildTool,omitempty"`
+	BeforeSelection      *FileSelectionRef `json:"beforeSelection,omitempty"`
+	AfterSelection       *FileSelectionRef `json:"afterSelection,omitempty"`
+	Scope                *ComparisonScope  `json:"-"`
+	Resolve              bool              `json:"resolve,omitempty"`
+	Coverage             CoverageRequest   `json:"-"`
+	IncludeCoverage      bool              `json:"-"`
+	RunTests             bool              `json:"-"`
+	Repository           string            `json:"repository"`
+	Before               string            `json:"before"`
+	After                string            `json:"after"`
+	ComparisonRepository string            `json:"comparisonRepository,omitempty"`
+	BeforeRoot           string            `json:"beforeRoot"`
+	AfterRoot            string            `json:"afterRoot"`
+	SkipTests            bool              `json:"skipTests"`
+	TestCommand          string            `json:"testCommand,omitempty"`
+	BuildTool            string            `json:"buildTool,omitempty"`
 }
 
 // Analyzer implementations supply facts; presentation is owned by Go.

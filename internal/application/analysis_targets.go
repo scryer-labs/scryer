@@ -7,6 +7,7 @@ import (
 	"github.com/edwardnoaland/scryer/internal/contract"
 	"github.com/edwardnoaland/scryer/internal/engine"
 	"github.com/edwardnoaland/scryer/internal/projectfacts"
+	"github.com/edwardnoaland/scryer/internal/projectscope"
 )
 
 type analysisTarget struct {
@@ -15,7 +16,7 @@ type analysisTarget struct {
 	projection   bool
 }
 
-func (s *Service) analysisTargets(ctx context.Context, stack, before, after, operation string) ([]analysisTarget, []string, error) {
+func (s *Service) analysisTargets(ctx context.Context, stack, before, after, operation string, config *projectscope.Config) ([]analysisTarget, []string, error) {
 	store, err := engine.DefaultStore()
 	if err != nil {
 		return nil, nil, err
@@ -24,11 +25,11 @@ func (s *Service) analysisTargets(ctx context.Context, stack, before, after, ope
 	if err != nil {
 		return nil, nil, err
 	}
-	left, err := projectfacts.Collect(ctx, before, true, false)
+	left, err := projectfacts.CollectWithConfig(ctx, before, true, false, config)
 	if err != nil {
 		return nil, nil, err
 	}
-	right, err := projectfacts.Collect(ctx, after, true, false)
+	right, err := projectfacts.CollectWithConfig(ctx, after, true, false, config)
 	if err != nil {
 		return nil, nil, err
 	}

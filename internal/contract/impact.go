@@ -54,11 +54,12 @@ type ImpactContext struct {
 }
 
 type ImpactSnapshot struct {
-	Resolution json.RawMessage `json:"resolution,omitempty"`
-	Contexts   []ImpactContext `json:"contexts"`
-	Symbols    []ImpactSymbol  `json:"symbols"`
-	Calls      []ImpactCall    `json:"calls"`
-	Notes      []string        `json:"notes"`
+	Selection  *FileSelectionReceipt `json:"selection,omitempty"`
+	Resolution json.RawMessage       `json:"resolution,omitempty"`
+	Contexts   []ImpactContext       `json:"contexts"`
+	Symbols    []ImpactSymbol        `json:"symbols"`
+	Calls      []ImpactCall          `json:"calls"`
+	Notes      []string              `json:"notes"`
 }
 
 type ImpactFacts struct {

@@ -158,3 +158,9 @@ and Core comparison and traversal.
 
 See [workspace analysis](WORKSPACE-ANALYSIS.md) for member-level orchestration,
 independent baselines, partial failures and complete project report preservation.
+
+## Project scope
+
+[Project file selection](PROJECT-SCOPE.md) defines `.scryer/project.yaml`, the optional
+consumer `scope` metadata and Core/Engine selection receipts. Initial Engine support
+is C++; other Engines explicitly reject configured selection until implemented.

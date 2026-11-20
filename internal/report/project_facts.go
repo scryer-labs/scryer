@@ -12,6 +12,9 @@ func writeProjectFacts(out io.Writer, data Object, color bool) error {
 	fmt.Fprintf(&b, "Project: %s\n", projectName(data))
 	fmt.Fprintf(&b, "Root: %s\n", str(data, "root"))
 	fmt.Fprintf(&b, "Repository: %s\n", projectRepository(data))
+	if scope := field(data, "scope"); scope != nil {
+		fmt.Fprintf(&b, "Scope: %s — %s included, %s excluded (%s)\n", str(scope, "config"), str(scope, "included"), str(scope, "excluded"), str(scope, "base"))
+	}
 	if stack := field(data, "stack"); stack != nil {
 		fmt.Fprintln(&b, "\nStack")
 		for _, language := range objects(stack["languages"]) {
@@ -64,6 +67,11 @@ func projectFactsMarkdown(data Object) string {
 		[]string{"Root", str(data, "root")},
 		[]string{"Repository", projectRepository(data)},
 	))
+	if scope := field(data, "scope"); scope != nil {
+		section(&b, 2, "Scan scope")
+		fmt.Fprintf(&b, "%s included, %s excluded from %s candidates.\n\n", str(scope, "included"), str(scope, "excluded"), str(scope, "considered"))
+		block(&b, "json", jsonText(scope))
+	}
 	if stack := field(data, "stack"); stack != nil {
 		section(&b, 2, "Stack")
 		rows := [][]string{}

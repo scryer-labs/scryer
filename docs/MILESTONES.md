@@ -39,6 +39,12 @@ Verify product and test targets across architecture, file membership and
 includes, call graph, and IPC. Use Scriptorium for workspace communication
 regressions. Cover project-local shared-memory matching with focused fixtures.
 
+Project-level include/exclude selection is implemented for Core and C++ with
+shared file inventory, scan scope metadata and pinned impact scope. See
+[project scope](contracts/PROJECT-SCOPE.md). User-defined source/test groups and
+other Engine adoption remain follow-up work; scope selection does not establish
+third-party, generated or test classifications.
+
 Compare static and `--resolve` outputs where the target toolchain and compile
 database are available. Fix concrete false links and missing facts, and retain
 unsupported conditions and unresolved references. Keep C++ source collection
