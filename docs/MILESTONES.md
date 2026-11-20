@@ -1,9 +1,9 @@
 # Product milestones
 
 See [product direction](PRODUCT-DIRECTION.md) for scope and
-[technical debt](TECH-DEBT.md) for maintenance. The items below are in delivery
-order. Coverage is an input to impact analysis, and C++ ownership can proceed
-independently once its source evidence is available.
+[technical debt](TECH-DEBT.md) for maintenance. Milestone IDs identify work rather than a fixed delivery
+order. Coverage is an input to impact analysis. The deferred M4/M5 extensions
+do not block consumers from using the existing facts, coverage and impact APIs.
 
 ## Delivered
 
@@ -47,6 +47,8 @@ architecture and test evidence to Orrery for interactive rendering.
 
 ## M3 — Runtime coverage and change impact
 
+Status: baseline delivered; stronger execution attribution remains follow-up work.
+
 Current macOS coverage can build instrumented CMake targets and run tests.
 The first C++ impact slice compares immutable function projections and traverses
 candidate calls in Core. Impact now reuses coverage on the after snapshot and verifies that the checkout
@@ -61,7 +63,8 @@ compiler observations without static retry.
 Workspace analyze orchestrates configured project analyses with independent
 baselines, complete child reports and explicit partial failures.
 Rust dynamic graphs remain Cargo-validated source candidates; per-test
-attribution and complete runtime dispatch remain open. Continue with:
+attribution and complete runtime dispatch remain open. The baseline uses these
+evidence principles; stronger per-test attribution is follow-up work:
 
 1. Bind test executions and coverage observations to a specific revision,
    build configuration and artifact. Keep test identity, observed file/line or
@@ -77,16 +80,26 @@ Java's existing analyze path supplies prior experience with evidence freshness,
 provenance and failure outcomes. Its Maven/Gradle and JaCoCo payload remains
 Java-specific.
 
-## M4 — Test effectiveness and C++ ownership
+## M4 — Test effectiveness
 
-- **Test effectiveness.** Design bounded checks for whether tests detect
-  behavior changes. Coverage establishes execution evidence. Effectiveness
-  needs stronger evidence, such as detection of selected controlled changes.
-  Keep reproducible findings and raw facts independently inspectable.
-- **C++ ownership and lifetime.** Start with observable ownership, borrowing,
-  lifetime and transfer facts. Establish evidence and diagnostics for uncertain
-  aliasing or lifetimes. Decide separately whether to cover atomic operations,
-  memory ordering and concurrency.
+Status: deferred. Resume priority relative to M5 is not decided. Existing scan,
+coverage and impact facts can support consumers without completing this milestone.
+
+Design bounded, reproducible checks for whether tests detect behavior changes.
+Define rule-file inputs, Engine interpretation and the evidence contract when
+this milestone resumes. Coverage establishes observed execution; effectiveness
+needs stronger evidence, such as detection of selected controlled changes.
+Keep findings, diagnostics and raw facts independently inspectable. Do not
+present coverage percentages as assertion effectiveness or safety scores.
+
+## M5 — C++ ownership and lifetime
+
+Status: deferred. Resume priority relative to M4 is not decided.
+
+Start with observable ownership, borrowing, lifetime and transfer facts in the
+C++ Engine. Establish evidence and diagnostics for uncertain aliasing or
+lifetimes. Decide separately whether to cover atomic operations, memory ordering
+and concurrency. Keep unresolved observations explicit and reusable by consumers.
 
 ## Deferred
 
