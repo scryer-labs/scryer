@@ -65,6 +65,12 @@ with tempfile.TemporaryDirectory(prefix='scryer-native-analysis-') as folder:
  elif 'rust' in engines:write('src/lib.rs',(root/'src/lib.rs').read_text().replace('observed>0','observed<0'))
  elif 'ts-js' in engines:write('tests/value.test.js',(root/'tests/value.test.js').read_text().replace('caller()>0','caller()<0'))
  failure=subprocess.run([str(cli),'project','analyze',str(root),'--json',*options,'-o',str(out/'must-not-exist.html')],text=True,capture_output=True)
- assert failure.returncode!=0 and not failure.stdout and not (out/'must-not-exist.html').exists(),failure
+ assert failure.returncode!=0 and (out/'must-not-exist.html').exists(),failure
+ partial=json.loads(failure.stdout)
+ assert partial['status']=='partial' and partial['after']['nodes'],partial
+ failed_engine='go' if 'go' in engines else 'rust' if 'rust' in engines else 'ts-js'
+ child=partial.get('extensions',{}).get('engineReports',{}).get(failed_engine,partial)
+ assert child['execution']['status']=='FAILED',child
+ assert all(m['status'] in ('UNKNOWN','NOT_APPLICABLE') for d in child['matching']['datasets'] for m in d['methods']),child['matching']
  (out/'failure.txt').write_text(failure.stderr)
  print(json.dumps({'engines':engines,'static':'passed','dynamic':'passed','coverage':'passed','failure':'passed'}))

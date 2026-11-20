@@ -100,6 +100,7 @@ func Terminal(document contract.Document, out io.Writer, verbose, color bool) er
 	if document.Operation == "scan" {
 		viewFor(document.Stack).scanTerminal(data, out, color)
 	} else {
+		writeAnalysisProgress(out, data)
 		analyzeTerminal(data, out, verbose, color, viewFor(document.Stack).analysis)
 		if coverage := data["coverageReport"]; coverage != nil {
 			coverageDocument, err := contract.NewDocument(document.Stack, contract.CoverageOperation, coverage)
@@ -125,7 +126,7 @@ func Markdown(document contract.Document) ([]byte, error) {
 	if document.Operation == "scan" {
 		return []byte(viewFor(document.Stack).scanMarkdown(data)), nil
 	}
-	output := []byte(analyzeMarkdown(data, viewFor(document.Stack).analysis))
+	output := append([]byte(analysisProgressMarkdown(data)), []byte(analyzeMarkdown(data, viewFor(document.Stack).analysis))...)
 	if coverage := data["coverageReport"]; coverage != nil {
 		coverageDocument, err := contract.NewDocument(document.Stack, contract.CoverageOperation, coverage)
 		if err != nil {

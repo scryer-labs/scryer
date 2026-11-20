@@ -25,7 +25,8 @@
     return element;
   };
   const replace = (element, children) => element.replaceChildren(...children);
-  const dataset = () => report.matching.datasets[state.dataset];
+  const emptyDataset = {counts: {NOT_EXECUTED:0, PARTIALLY_EXECUTED:0, NOT_APPLICABLE:0, UNKNOWN:0}, methods:[], assessed:0, withHits:0, methodExecutionPercent:null};
+  const dataset = () => report.matching.datasets[state.dataset] || emptyDataset;
   const snapshot = () => report[state.snapshot];
   const percent = value => value === null ? 'Unknown' : `${value.toFixed(1)}%`;
   const badge = (value, type) => node('span', words(value), `tag ${type || words(value).replaceAll(' ', '-')}`);
@@ -177,6 +178,18 @@
       block.append(simpleTable(['Class', 'Test record', 'Status', 'Seconds'], test.cases.map(record => [record.className, record.name, record.status, record.seconds]))); return block;
     }) : [node('div', 'No fresh usable test XML reports. Test counts are unknown.', 'empty')]);
     replace($('coverage-reports'), report.evidence.coverage.length ? report.evidence.coverage.map(coverage => {
+      if (coverage.root && coverage.status) {
+        const block = node('details', null, 'report-block');
+        block.append(node('summary', `${coverage.engine || 'engine'} · ${coverage.status}`));
+        if (coverage.message) block.append(node('p', coverage.message));
+        const evidence = coverage.coverage;
+        if (evidence) {
+          block.append(node('p', `${evidence.format} · source: ${evidence.sourceMatch}`));
+          block.append(simpleTable(['Source file', 'Observed regions'], (evidence.files || []).map(file => [file.path, file.regions?.length || 0])));
+        }
+        const raw = node('details'); raw.append(node('summary', 'Complete engine coverage evidence'), node('pre', JSON.stringify(coverage, null, 2))); block.append(raw);
+        return block;
+      }
       const block = node('details', null, 'report-block'); block.append(node('summary', `${coverage.format} · ${coverage.artifact.source} · ${coverage.classes.length} classes`));
       block.append(simpleTable(['Class', 'Match', 'Class ID', 'Compiled output'], coverage.classes.map(owner => [owner.name, owner.match, owner.classId, owner.compiledFile])));
       coverage.classes.forEach(owner => {
@@ -238,8 +251,8 @@
     $('after-sha').title = `Private snapshot ${report.afterSha}; base HEAD ${report.afterSource.baseHead}`;
   }
   $('change-count').textContent = `${report.files.length} changed files · ${report.changes.length} changed methods`;
-  $('run-status').textContent = `Command ${words(report.execution.status)}`;
-  $('run-status').className = `badge ${report.execution.status === 'SUCCEEDED' ? 'good' : report.execution.status === 'SKIPPED' ? 'unknown' : 'bad'}`;
+  $('run-status').textContent = report.status ? `Analysis ${words(report.status)} · command ${words(report.execution.status)}` : `Command ${words(report.execution.status)}`;
+  $('run-status').className = `badge ${report.status && report.status !== 'collected' ? 'bad' : report.execution.status === 'SUCCEEDED' ? 'good' : report.execution.status === 'SKIPPED' ? 'unknown' : 'bad'}`;
   $('generated-at').textContent = report.generatedAt;
   $('schema-version').textContent = report.schemaVersion;
   $('evidence-count').textContent = dataset().methods.length;
@@ -269,5 +282,16 @@
     const link = node('a'); link.href = url; link.download = 'scryer-analysis.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
   window.ScryerReport = {report, state, node, label, dataset, snapshot, filteredNodes, statusFor, selectSymbol, render, graphRenderer: null};
+  const completion = $('analysis-outcomes');
+  if (completion) {
+    completion.append(node('h3', `Analysis: ${report.status || 'legacy report'}`));
+    for (const outcome of report.engineOutcomes || []) {
+      const block = node('details'); block.open = outcome.status !== 'collected';
+      block.append(node('summary', `${outcome.engine} · ${outcome.status}`));
+      for (const stage of outcome.stages) block.append(node('p', `${stage.name}: ${stage.status} ${stage.message || ''}`));
+      completion.append(block);
+    }
+    if (report.status === 'collected' && !report.changes.length) completion.append(node('p', 'No changed code symbols detected. Documentation-only changes can produce this result.'));
+  }
   renderChanges(); renderExecution(); render();
 })();

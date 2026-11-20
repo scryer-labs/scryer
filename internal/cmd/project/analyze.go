@@ -25,7 +25,7 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 	var selected analyzeOperations
 	command := &cobra.Command{
 		Use: "analyze [path]", Short: "Analyze change impact or collect coverage evidence",
-		Long: "Analyze one project. The default operation is impact. A clean worktree compares HEAD^1 to HEAD; a changed worktree compares HEAD to an isolated snapshot. Pass both --before and --after to override the comparison. Impact uses static scan facts by default. --resolve enables engine-resolved scan facts and native tests; --test-target or --test-binary implies it. Multi-stack projects dispatch to all matching capable engines. CMake selections are sent only to supporting engines; other engines use their native defaults. Failures stop dynamic impact. Coverage alone builds and tests the current project. Use --test-target for CMake targets, --test-binary for paths relative to the temporary build directory, or --coverage-file to import existing evidence.",
+		Long: "Analyze one project. The default operation is impact. A clean worktree compares HEAD^1 to HEAD; a changed worktree compares HEAD to an isolated snapshot. Pass both --before and --after to override the comparison. Impact uses static scan facts by default. --resolve enables engine-resolved scan facts and native tests; --test-target or --test-binary implies it. Multi-stack projects dispatch to all matching capable engines. CMake selections are sent only to supporting engines; other engines use their native defaults. Incomplete engines/stages retain collected facts, expose diagnostics and exit nonzero. Coverage alone builds and tests the current project. Use --test-target for CMake targets, --test-binary for paths relative to the temporary build directory, or --coverage-file to import existing evidence.",
 		Args: cobra.MaximumNArgs(1),
 	}
 	command.PreRunE = func(cmd *cobra.Command, args []string) error {
@@ -148,12 +148,16 @@ func presentAnalysis(cmd *cobra.Command, document contract.Document, output, col
 		return nil
 	}
 	var result struct {
+		Status    string `json:"status"`
 		Execution struct {
 			Status string `json:"status"`
 		} `json:"execution"`
 	}
 	if err = json.Unmarshal(document.Data, &result); err != nil {
 		return err
+	}
+	if result.Status == "partial" || result.Status == "failed" {
+		return fmt.Errorf("analysis %s; inspect engine and stage outcomes", result.Status)
 	}
 	if result.Execution.Status != "SUCCEEDED" && result.Execution.Status != "SKIPPED" {
 		return ExecutionError{result.Execution.Status}

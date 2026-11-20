@@ -85,7 +85,7 @@ func newAnalyzeCommand(service *application.Service) *cobra.Command {
 			return err
 		}
 		if result.Status != "collected" {
-			return fmt.Errorf("workspace analysis %s: %d failed, %d unsupported; inspect project results", result.Status, result.Counts["failed"], result.Counts["unsupported"])
+			return fmt.Errorf("workspace analysis %s: %d partial, %d failed, %d unsupported; inspect project results", result.Status, result.Counts["partial"], result.Counts["failed"], result.Counts["unsupported"])
 		}
 		return nil
 	}

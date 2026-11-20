@@ -107,7 +107,7 @@ with tempfile.TemporaryDirectory(prefix='scryer-workspace-analysis-') as directo
     (root / 'missing-git').mkdir()
     members(['unsupported', 'missing-git', 'clean', 'dirty'])
     partial = analyze('partial', '-o', out / 'partial.md', expected=1)
-    assert partial['status'] == 'partial' and partial['counts'] == {'collected': 2, 'failed': 1, 'unsupported': 1}, partial
+    assert partial['status'] == 'partial' and partial['counts'] == {'collected': 2, 'partial': 0, 'failed': 1, 'unsupported': 1}, partial
     assert [p['status'] for p in partial['projects']] == ['unsupported', 'failed', 'collected', 'collected']
     assert all(p.get('error') for p in partial['projects'][:2])
     assert (out / 'partial.md').exists()
@@ -119,7 +119,7 @@ with tempfile.TemporaryDirectory(prefix='scryer-workspace-analysis-') as directo
     status = git(dirty, 'status', '--porcelain')
     failed = analyze('failed-dynamic', '--resolve', '-o', out / 'failed.html', expected=1)
     assert failed['status'] == 'partial' and failed['projects'][0]['status'] == 'collected'
-    assert failed['projects'][1]['status'] == 'failed' and 'report' not in failed['projects'][1]
+    assert failed['projects'][1]['status'] == 'partial' and failed['projects'][1]['report']['after']['nodes'] and failed['projects'][1]['report']['execution']['status']=='FAILED'
     assert git(dirty, 'status', '--porcelain') == status
 
     existing = out / 'preserved.html'

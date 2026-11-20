@@ -13,7 +13,7 @@ import (
 )
 
 func WorkspaceAnalysisTerminal(result contract.WorkspaceAnalysis, out io.Writer, verbose, color bool) error {
-	fmt.Fprintf(out, "Workspace analysis: %s\nRoot: %s\n%d collected, %d failed, %d unsupported\n", result.Status, result.Root, result.Counts["collected"], result.Counts["failed"], result.Counts["unsupported"])
+	fmt.Fprintf(out, "Workspace analysis: %s\nRoot: %s\n%d collected, %d partial, %d failed, %d unsupported\n", result.Status, result.Root, result.Counts["collected"], result.Counts["partial"], result.Counts["failed"], result.Counts["unsupported"])
 	for _, project := range result.Projects {
 		fmt.Fprintf(out, "\n%s [%s]\n", project.Path, project.Status)
 		if project.Error != "" {
@@ -124,7 +124,7 @@ func WorkspaceAnalysisHTML(result contract.WorkspaceAnalysis) ([]byte, error) {
 var workspaceAnalysisTemplate = template.Must(template.New("workspace-analysis").Parse(`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Scryer workspace analysis</title>
 <style>body{margin:0;background:#101827;color:#e4eaf4;font:16px system-ui,sans-serif}main{max-width:1500px;margin:auto;padding:32px}h1{margin-bottom:8px}p{overflow-wrap:anywhere}a{color:#9fc4ff}table{width:100%;border-collapse:collapse;margin:24px 0}th,td{text-align:left;padding:12px;border-bottom:1px solid #334155}details{border:1px solid #334155;border-radius:12px;margin:18px 0;overflow:hidden}summary{padding:18px;cursor:pointer}iframe{display:block;width:100%;height:900px;border:0;background:#101827}.diagnostic{padding:0 18px;color:#fbbf24}.status{color:#9fc4ff}</style></head>
-<body><main><h1>Workspace analysis</h1><p>{{.Result.Root}}</p><p class="status">{{.Result.Status}} · {{index .Result.Counts "collected"}} collected · {{index .Result.Counts "failed"}} failed · {{index .Result.Counts "unsupported"}} unsupported</p>
+<body><main><h1>Workspace analysis</h1><p>{{.Result.Root}}</p><p class="status">{{.Result.Status}} · {{index .Result.Counts "collected"}} collected · {{index .Result.Counts "partial"}} partial · {{index .Result.Counts "failed"}} failed · {{index .Result.Counts "unsupported"}} unsupported</p>
 <a href="{{.JSON}}" download="workspace-analysis.json">Download complete JSON</a>
 {{range .Result.Notes}}<p>{{.}}</p>{{end}}
 <table><thead><tr><th>Project</th><th>Status</th><th>Diagnostic</th></tr></thead><tbody>{{range .Projects}}<tr><td>{{.Path}}</td><td>{{.Status}}</td><td>{{.Error}}</td></tr>{{end}}</tbody></table>
