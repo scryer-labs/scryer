@@ -68,7 +68,8 @@ source records. Grouping changes presentation only; JSON retains all edges.
 Without `--resolve`, test targets or binary paths, impact uses the static scan path.
 Selecting `--resolve`, `--test-target` or `--test-binary` sets `impact.resolve: true`.
 The engine calls the same scan path with compiler resolution for each
-snapshot. A skipped or partial resolution is an error. Compiler-confirmed
+snapshot. Skipped/unusable resolution fails that engine. TS/JS can return usable partial
+semantic evidence as described below. Compiler-confirmed
 definitions use `targetSymbolId` and yield `COMPILER_RESOLVED` edges.
 Missing compiler targets stay unresolved without textual candidate fallback.
 Resolution details are retained under the report's `extensions`.
@@ -92,8 +93,10 @@ For dynamic impact Core reuses coverage collection on the after snapshot.
 It checks checkout HEAD and source status before and after collection.
 Generated evidence on an unchanged snapshot gains
 `sourceMatch: "verified-snapshot"` and `sourceSha: afterSha`.
-Source mutation, failed builds or tests, and missing profiles stop analysis
-with an error. Core does not emit an impact report for failed dynamic analysis.
+Source mutation, failed builds/tests and missing profiles remain incomplete
+stages. Core retains already-collected impact facts and independent Engine
+results, marks partial/failed completion, and exits nonzero after emitting the
+report. Incomplete coverage is never matched as verified execution.
 Existing coverage artifacts can be imported through standalone coverage.
 
 The engine normalizes LLVM segments into `files[].regions[]` with
@@ -154,3 +157,37 @@ remain at `extensions.engineReports[engineId]`; single-engine output is unchange
 No cross-language calls are invented from co-location or matching symbol names.
 Coverage datasets stay separate, with no combined percentage. Modern and legacy
 Java analysis are not silently mixed; Java remains explicitly selectable.
+
+## Partial completion and stage outcomes
+
+The analyze envelope adds `status` (`collected`, `partial`, `failed`) and
+`engineOutcomes[]`. Each outcome has `engine`, `status`, and `stages[]` with
+`name`, `status`, and optional `message`. Current stages include `impact`,
+`resolution.before`, `resolution.after`, and `coverage`. Collected and partial
+outcomes preserve usable project facts; failed outcomes identify missing parts.
+Complete raw usable child reports remain in `extensions.engineReports` for
+multi-engine attempts, including when only one engine supplied a report.
+
+A failing Engine does not discard other Engine reports. A failing/unavailable
+coverage stage does not discard completed symbol comparison or graph evidence.
+Tests and graph completion are separate: execution can succeed while analysis
+is partial. Missing tests/profiles are unavailable, not zero execution. Failed
+runs and invalidated snapshots can retain unverified raw evidence, but matching
+stays UNKNOWN (or NOT_APPLICABLE), with no assessed execution percentage.
+No source-matched claim is made from incomplete evidence.
+
+TS/JS returns `resolution.usableForImpact: true` for a loaded compiler program
+with no blocking configuration/options/global/syntax or Svelte adapter failure.
+Semantic type diagnostics leave the graph partial. Call expressions overlapping
+compiler diagnostics do not receive semantic targets; remaining compiler source
+observations and all diagnostics are retained. No static retry supplies missing
+semantic edges. This is partial evidence, not a guarantee that other bindings
+are unaffected by every type-environment error. Unusable resolution still fails
+that Engine while other Engines can complete.
+
+Project impact CLI emits/saves partial or failed reports then exits 1.
+Standalone coverage retains its existing exit behavior; inspect its status. If no Engine
+supplies usable facts, status is failed with explicit outcomes; empty graphs
+are not interpreted as zero impact. Cancellation still stops the operation.
+A complete comparison with no changed symbols is labeled accordingly, rather
+than presenting zero counts as evidence that all changes are safe.

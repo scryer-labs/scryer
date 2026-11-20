@@ -55,4 +55,7 @@ configuration retains its diagnostics and options.
 
 This adds resolution, not automatic test discovery for bare script collections.
 Dynamic impact still requires executable tests and mapped runtime coverage.
-Historical before-snapshot type errors continue to stop dynamic impact.
+Semantic type diagnostics in either snapshot can yield usable partial impact
+evidence. `usableForImpact` distinguishes this from blocking options/config,
+global, syntax or adapter failures; `blockingDiagnostics` records their count.
+Call expressions overlapping diagnostics are excluded from semantic bindings.

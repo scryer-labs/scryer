@@ -35,7 +35,7 @@ For modern C++, Go, Rust and TS/JS impact, each engine reuses scan collection an
 fingerprints and call candidates. Core compares declarations and traverses
 incoming and outgoing graph edges in `internal/application/impact.go`.
 The language-specific projection is owned by the engine. `--resolve` or a test target/binary path enables engine-resolved scan evidence for both
-snapshots and coverage on the after checkout. Dynamic failure stops analysis. The repository layer verifies the
+snapshots and coverage on the after checkout. Incomplete stages retain collected facts and expose Engine/stage outcomes. The repository layer verifies the
 checkout stayed clean at that commit before Core associates normalized
 coverage regions with affected symbols. Git
 snapshot defaults belong to the repository layer. The application exposes

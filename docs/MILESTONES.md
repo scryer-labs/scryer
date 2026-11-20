@@ -55,6 +55,9 @@ Go, Rust and TS/JS now expose the same separate `coverage` and `impact`
 operations, with native collection, scan reuse and multi-engine aggregation.
 macOS acceptance covers Go tests, Cargo tests, Node tests, React TSX/Vitest,
 Svelte/Vitest, Jest and a mixed C++/Go/Rust/JS fixture.
+Engine/stage partial completion retains usable graphs and independent evidence;
+coverage gaps remain unknown, and TS/JS semantic diagnostics preserve partial
+compiler observations without static retry.
 Workspace analyze orchestrates configured project analyses with independent
 baselines, complete child reports and explicit partial failures.
 Rust dynamic graphs remain Cargo-validated source candidates; per-test

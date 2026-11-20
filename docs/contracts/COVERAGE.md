@@ -34,7 +34,8 @@ The project report adds `engine` and retains the JSON evidence:
 
 No usable profiles or no mapped files yields `status: "unavailable"`.
 Partial test execution with collected evidence yields `status: "partial"`.
-Invalid inputs and failed configure/build/export stages return an error. CLI
+Invalid inputs and failed configure/build/export stages are reported as failed
+or unavailable Engine results. Other Engine coverage remains available. CLI
 JSON, Markdown and HTML use the same project report. Impact reuses this operation on the after snapshot and verifies checkout identity
 before associating evidence with affected symbols.
 
@@ -72,3 +73,8 @@ Tests execute with the user's environment. Temporary output directories isolate
 collector files, not arbitrary side effects of project scripts. Native runtime
 acceptance currently targets macOS; Windows packages have ABI/build checks,
 not equivalent runtime coverage acceptance.
+
+Incomplete impact coverage does not invalidate an already-collected impact
+graph. The project exposes the coverage stage status and retains independent
+Engine results. Partial/failed-run evidence is kept unverified and never
+attributed as observed execution for changed symbols. See the impact contract.

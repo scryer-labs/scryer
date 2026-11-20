@@ -7,19 +7,20 @@ validation for duplicates, traversal and symlink escapes is reused.
 
 The result has `schemaVersion: 1`, canonical `root`, `operations[]`, `resolve`,
 `status`, `counts`, `projects[]` and `notes[]`. Status is `collected` when every
-member succeeds, `partial` when some succeed, and `failed` when none succeed.
-Counts always include `collected`, `failed` and `unsupported`.
+member succeeds, `partial` when some usable results remain, and `failed` when none succeed.
+Counts always include `collected`, `partial`, `failed` and `unsupported`.
 
 Each project has:
 
 - `path`: configured member path, normalized relative to the workspace.
-- `status`: collected, failed or unsupported.
+- `status`: collected, partial, failed or unsupported.
 - `error`: diagnostic for failed/unsupported results.
 - `engine`: report dispatch identity when available (possibly `multiple`).
 - `reportOperation`: `analyze` for impact envelopes or `coverage` for standalone
   coverage envelopes; this selects the existing project renderer.
 - `report`: complete validated project JSON, including unknown engine fields.
-  Failed dynamic analysis does not attach a static replacement. A valid legacy
+  Partial dynamic reports preserve collected facts and Engine/stage outcomes,
+  without attaching a static replacement. A valid legacy
   execution-failure or partial coverage report can be retained with failed status.
 
 No matching installed capability yields unsupported. Invalid repos/baselines,
@@ -43,3 +44,9 @@ well as rendered project sections; HTML embeds independently rendered project
 reports in sandboxed frames and includes a complete JSON download. Symbol IDs
 and coverage percentages stay scoped to their project report. Library/IPC
 relationships are not evidence of inter-project change impact propagation.
+
+A project with usable facts and incomplete Engines/stages is `partial`; workspace
+remains partial even when every project is partial and none are complete. Full
+child reports, diagnostics and per-Engine coverage remain visible in all output
+formats. Failed projects can retain a structured failed report, explicitly
+showing that no Engine supplied usable impact evidence.

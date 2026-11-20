@@ -292,9 +292,10 @@ scryer project analyze . --skip-tests --json
 ```
 
 Only coverage collected while the after checkout remains at its requested
-commit is matched to symbols. Failed or partial compiler resolution,
-failed builds or tests, missing coverage, and source mutations produce an error
-and stop dynamic impact. No static replacement report is emitted.
+commit is matched to symbols. Failed/unusable compiler resolution, failed builds/tests, missing coverage and
+source mutations are recorded per Engine/stage. Collected facts remain visible
+in partial reports; no static replacement is inserted. Incomplete project
+analysis exits 1 after printing/saving its report.
 Use `--coverage-file` with standalone coverage to import existing artifacts. Matching statuses describe source-region observations
 within symbol ranges and retain aggregate profile granularity. Call binding strength and source roles are supplied by the selected engine;
 unknown roles and unresolved targets remain explicit.
@@ -318,8 +319,8 @@ matching LLVM coverage tools (`SCRYER_RUST_LLVM_BIN` can select them). TS/JS
 needs Node/npm, installed project dependencies and a supported test script:
 Vitest with its coverage provider, Jest, or untransformed native `node --test`.
 TS/JS dynamic impact also needs the scan TypeScript/Svelte toolchain.
-No supported test runner or usable coverage means an explicit failure for
-dynamic impact. Standalone coverage can report `partial` or `unavailable`.
+No supported test runner or usable coverage makes the coverage stage incomplete;
+previously collected impact facts remain visible. Standalone coverage can report `partial` or `unavailable`.
 See [coverage](contracts/COVERAGE.md) and [impact](contracts/IMPACT.md) for
 source mapping, offline dependency preparation and binding limits. macOS is the
 native runtime acceptance target; Windows package validation is narrower.
@@ -616,7 +617,7 @@ means `HEAD` to an isolated working-tree snapshot. A clean repo with only an
 initial commit has no baseline and is reported as failed. Workspace does not
 accept `--before` or `--after`, or a shared test target/binary selection.
 
-Members are analyzed sequentially in configuration order. Failed and unsupported
+Members are analyzed sequentially in configuration order. Partial, failed and unsupported
 members retain diagnostics while remaining members continue. Complete results
 exit 0; incomplete results exit 1 **after** emitting JSON or saving the requested
 report. Invalid flags/configuration and cancellation stop the command.
@@ -627,3 +628,9 @@ output. `-o` accepts Markdown or offline HTML. HTML provides isolated expandable
 project reports with their existing interactive graphs and a complete JSON
 download. No cross-project impact propagation or combined coverage percentage
 is inferred. See the [workspace analysis contract](contracts/WORKSPACE-ANALYSIS.md).
+
+Project and workspace analysis now preserve partial completion. Inspect `status`
+and `engineOutcomes[].stages[]` independently of test execution status. TypeScript
+semantic diagnostics can leave usable partial graphs; configuration/tool/syntax
+failures are still explicit. Incomplete coverage is never treated as zero or
+verified hits. Complete comparisons with no changed symbols say so explicitly.
