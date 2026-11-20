@@ -41,3 +41,18 @@ dependencies can limit evidence. Svelte remains partial for custom configuration
 cross-component bindings and richer IPC data flow. Go uses `go list` for the
 effective build and checkout-local bindings; repository-external targets and
 runtime interface dispatch need separate evidence.
+
+## JavaScript without project configuration
+
+TS/JS recognizes explicit `tsconfig.json` and `jsconfig.json`. A JavaScript-only
+source set without either uses in-memory NodeNext/ES2022 modules, allowJs,
+checkJs=false, noEmit, preserved JSX, forced module scope and no ambient @types.
+`semantic.configurationBasis` records `inferred-javascript` or `project-config`;
+`message` records inferred defaults. No project config file is created. Syntax
+errors remain diagnostics, external/dynamic targets remain boundaries, and
+unconfigured TypeScript/Svelte is not silently accepted. Explicit project
+configuration retains its diagnostics and options.
+
+This adds resolution, not automatic test discovery for bare script collections.
+Dynamic impact still requires executable tests and mapped runtime coverage.
+Historical before-snapshot type errors continue to stop dynamic impact.
