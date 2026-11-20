@@ -45,7 +45,7 @@ func (s *Service) AnalyzeWorkspace(ctx context.Context, directory string, operat
 	}
 	result := contract.WorkspaceAnalysis{
 		SchemaVersion: contract.ReportVersion, Root: root, Operations: selected, Resolve: resolve, Status: "collected",
-		Counts: map[string]int{"collected": 0, "failed": 0, "unsupported": 0}, Projects: []contract.ProjectAnalysis{},
+		Counts: map[string]int{"collected": 0, "partial": 0, "failed": 0, "unsupported": 0}, Projects: []contract.ProjectAnalysis{},
 		Notes: []string{"Projects use independent comparison baselines and retain complete project reports. No cross-project impact propagation or combined coverage percentage is inferred."},
 	}
 	for _, member := range members {
@@ -74,12 +74,36 @@ func (s *Service) AnalyzeWorkspace(ctx context.Context, directory string, operat
 		} else {
 			project.Engine, project.ReportOperation, project.Report = document.Stack, document.Operation, document.Data
 			var state struct {
-				Status    string
-				Message   string
-				Execution struct{ Status string }
+				Status         string
+				EngineOutcomes []contract.EngineAnalysisOutcome
+				Message        string
+				Execution      struct{ Status string }
 			}
 			if err = json.Unmarshal(document.Data, &state); err != nil {
 				project.Status, project.Error = "failed", err.Error()
+			} else if impact && (state.Status == "partial" || state.Status == "failed") {
+				project.Status = state.Status
+				if state.Status == "failed" && len(state.EngineOutcomes) > 0 {
+					unsupported := true
+					for _, outcome := range state.EngineOutcomes {
+						unsupported = unsupported && outcome.Status == "unsupported"
+					}
+					if unsupported {
+						project.Status = "unsupported"
+					}
+				}
+				var messages []string
+				for _, outcome := range state.EngineOutcomes {
+					for _, stage := range outcome.Stages {
+						if stage.Status != "collected" {
+							messages = append(messages, outcome.Engine+" / "+stage.Name+" ["+stage.Status+"]: "+stage.Message)
+						}
+					}
+				}
+				project.Error = strings.Join(messages, "\n")
+			} else if !impact && state.Status == "partial" {
+				project.Status = "partial"
+				project.Error = state.Message
 			} else if impact && state.Execution.Status != "SUCCEEDED" && state.Execution.Status != "SKIPPED" {
 				project.Status, project.Error = "failed", "project execution: "+state.Execution.Status
 			} else if !impact && state.Status != "collected" {
@@ -91,7 +115,7 @@ func (s *Service) AnalyzeWorkspace(ctx context.Context, directory string, operat
 	}
 	if result.Counts["collected"] != len(result.Projects) {
 		result.Status = "partial"
-		if result.Counts["collected"] == 0 {
+		if result.Counts["collected"] == 0 && result.Counts["partial"] == 0 {
 			result.Status = "failed"
 		}
 	}

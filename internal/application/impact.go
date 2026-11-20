@@ -59,7 +59,7 @@ func compareImpact(stack string, request contract.AnalyzeRequest, facts contract
 		Files: impactFiles(changes), Changes: changes,
 		Before:    impactGraph(facts.Before, beforeSeeds, unresolved),
 		After:     impactGraph(facts.After, afterSeeds, unresolved),
-		Execution: contract.Execution{AfterSHA: request.After, Status: "SKIPPED", Command: []string{}, Notes: []string{"Static C++ impact only."}},
+		Execution: contract.Execution{AfterSHA: request.After, Status: "SKIPPED", Command: []string{}, Notes: []string{"Static impact only."}},
 		Evidence:  contract.Evidence{AfterSHA: request.After, CommandStatus: "SKIPPED", TestRecords: map[string]int{}, Tests: []json.RawMessage{}, Coverage: []json.RawMessage{}, Artifacts: []contract.Artifact{}, Notes: []string{"Coverage remains unknown."}},
 		Matching:  contract.Matching{AfterSHA: request.After, Datasets: []contract.DatasetMatch{}, Removed: []string{}, UnresolvedChanges: unresolved, Notes: []string{"No revision-verified coverage."}},
 		Notes:     notes,
@@ -68,6 +68,8 @@ func compareImpact(stack string, request contract.AnalyzeRequest, facts contract
 		report.CoverageReport = &contract.CoverageReport{SchemaVersion: 1, Root: request.Repository, Engine: stack, Status: "unavailable", Message: "Static impact does not run tests; supply --test-target or --test-binary for dynamic analysis."}
 	}
 	if request.Resolve {
+		report.Notes[1] = "Coverage has not yet been verified; collection completion is reported separately."
+		report.Execution.Notes = []string{"Dynamic scan projection collected; native execution evidence is a separate stage."}
 		report.Notes[0] = "Impact uses the engine's resolved scan evidence. Binding strength and unresolved boundaries follow that engine's scan contract."
 		report.Extensions = map[string]json.RawMessage{"beforeResolution": facts.Before.Resolution, "afterResolution": facts.After.Resolution}
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/edwardnoaland/scryer/internal/contract"
 	"github.com/edwardnoaland/scryer/internal/engine"
@@ -97,6 +98,7 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 	}
 	dynamic := request.Resolve || request.RunTests || len(request.Coverage.TestTargets) > 0 || len(request.Coverage.TestBinaries) > 0
 	documents := []contract.Document{}
+	outcomes := []contract.EngineAnalysisOutcome{}
 	for _, target := range targets {
 		perEngine := request
 		if target.projection {
@@ -104,12 +106,31 @@ func (s *Service) Analyze(ctx context.Context, stack, directory string, request 
 			perEngine.Coverage = selectEngineCoverage(target, request.Coverage)
 		}
 		child, failure := s.analyzeSnapshotEngine(ctx, target.analyzer, target.projection, perEngine)
-		if failure != nil {
-			return document, fmt.Errorf("%s analysis failed: %w", target.analyzer.Stack(), failure)
+		if ctx.Err() != nil {
+			return document, ctx.Err()
 		}
+		if failure != nil {
+			status := "failed"
+			if errors.Is(failure, ErrAnalysisUnsupported) {
+				status = "unsupported"
+			}
+			outcomes = append(outcomes, contract.EngineAnalysisOutcome{Engine: target.analyzer.Stack(), Status: status, Stages: []contract.AnalysisStage{{Name: "impact", Status: status, Message: failure.Error()}}})
+			continue
+		}
+		childOutcomes := analysisOutcomes(child)
+		if len(childOutcomes) == 0 {
+			childOutcomes = []contract.EngineAnalysisOutcome{{Engine: target.analyzer.Stack(), Status: "collected", Stages: []contract.AnalysisStage{{Name: "impact", Status: "collected"}}}}
+		}
+		var execution struct{ Execution struct{ Status string } }
+		_ = json.Unmarshal(child.Data, &execution)
+		if len(analysisOutcomes(child)) == 0 && execution.Execution.Status != "SUCCEEDED" && execution.Execution.Status != "SKIPPED" {
+			childOutcomes[0].Status = "partial"
+			childOutcomes[0].Stages = append(childOutcomes[0].Stages, contract.AnalysisStage{Name: "execution", Status: "failed", Message: execution.Execution.Status})
+		}
+		outcomes = append(outcomes, childOutcomes...)
 		documents = append(documents, child)
 	}
-	document, err = mergeImpactDocuments(documents, notes)
+	document, err = mergeProjectAnalysis(documents, outcomes, notes, request)
 
 	if err != nil || snapshots.WorkingBase == "" {
 		return document, err
@@ -154,13 +175,41 @@ func (s *Service) analyzeSnapshotEngine(ctx context.Context, analyzer contract.A
 			if err = json.Unmarshal(raw.Data, &facts); err == nil {
 				if request.Resolve {
 					for _, snapshot := range []contract.ImpactSnapshot{facts.Before, facts.After} {
-						var resolution struct{ Status string }
-						if json.Unmarshal(snapshot.Resolution, &resolution) != nil || resolution.Status != "resolved" {
+						var resolution struct {
+							Status          string
+							UsableForImpact bool
+						}
+						if json.Unmarshal(snapshot.Resolution, &resolution) != nil || (resolution.Status != "resolved" && !(resolution.Status == "partial" && resolution.UsableForImpact)) {
 							return document, fmt.Errorf("engine %q did not return resolved scan evidence for dynamic impact; upgrade the engine", analyzer.Stack())
 						}
 					}
 				}
 				document, err = compareImpact(analyzer.Stack(), request, facts)
+				if err == nil {
+					document, err = recordAnalysisStage(document, analyzer.Stack(), "impact", "collected", "Engine scan facts retained; no static retry was performed.")
+				}
+				if err == nil && request.Resolve {
+					for _, item := range []struct {
+						name     string
+						snapshot contract.ImpactSnapshot
+					}{{"resolution.before", facts.Before}, {"resolution.after", facts.After}} {
+						name, snapshot := item.name, item.snapshot
+						var resolution struct {
+							Status             string
+							Message            string
+							DiagnosticMessages []string
+						}
+						_ = json.Unmarshal(snapshot.Resolution, &resolution)
+						status := "collected"
+						if resolution.Status == "partial" {
+							status = "partial"
+						}
+						document, err = recordAnalysisStage(document, analyzer.Stack(), name, status, resolution.Message+strings.Join(resolution.DiagnosticMessages, "\n"))
+						if err != nil {
+							return document, err
+						}
+					}
+				}
 				if err == nil && request.Resolve {
 					document, err = s.attachImpactCoverage(ctx, analyzer.Stack(), request, facts, document)
 				}

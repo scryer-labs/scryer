@@ -11,18 +11,23 @@ import (
 )
 
 // attachImpactCoverage reuses coverage collection against the immutable after checkout.
-func (s *Service) attachImpactCoverage(ctx context.Context, stack string, request contract.AnalyzeRequest, facts contract.ImpactFacts, document contract.Document) (contract.Document, error) {
+func (s *Service) attachImpactCoverage(ctx context.Context, stack string, request contract.AnalyzeRequest, facts contract.ImpactFacts, document contract.Document) (result contract.Document, failure error) {
 	var report contract.AnalyzeReport
 	if err := json.Unmarshal(document.Data, &report); err != nil {
 		return document, err
 	}
 	collection := contract.CoverageReport{SchemaVersion: 1, Root: request.Repository, Engine: stack}
+	defer func() {
+		if failure != nil && ctx.Err() == nil {
+			result, failure = retainIncompleteCoverage(document, stack, request, facts, collection, failure)
+		}
+	}()
 	if err := repository.CheckSnapshot(ctx, request.AfterRoot, request.After); err != nil {
 		return document, err
 	}
 	raw, err := s.CollectCoverage(ctx, request.AfterRoot, stack, request.Coverage)
 	if err != nil {
-		return document, fmt.Errorf("impact coverage failed; analysis stopped: %w", err)
+		return document, fmt.Errorf("impact coverage collection failed: %w", err)
 	}
 	if err := json.Unmarshal(raw.Data, &collection); err != nil {
 		return document, err
@@ -32,7 +37,7 @@ func (s *Service) attachImpactCoverage(ctx context.Context, stack string, reques
 		return document, fmt.Errorf("impact tests or coverage did not complete (%s): %s; runs: %s", collection.Status, collection.Message, details)
 	}
 	if err := repository.CheckSnapshot(ctx, request.AfterRoot, request.After); err != nil {
-		return document, fmt.Errorf("impact stopped: %w", err)
+		return document, fmt.Errorf("coverage source validation failed: %w", err)
 	}
 	collection.Root = request.Repository
 	evidence := contract.CoverageEvidence{}
@@ -63,7 +68,7 @@ func (s *Service) attachImpactCoverage(ctx context.Context, stack string, reques
 	if !verified {
 		report.Matching.Notes = append(report.Matching.Notes, "Coverage is not verified against the after snapshot.")
 	}
-	report.Notes = []string{report.Notes[0], "Impact reuses engine-resolved scan evidence and coverage from the after checkout. Dynamic failures stop analysis."}
+	report.Notes = []string{report.Notes[0], "Impact reuses engine-resolved scan evidence and coverage from the after checkout. Incomplete stages are retained with explicit status."}
 	rawCollection, err := json.Marshal(collection)
 	if err != nil {
 		return document, err
@@ -80,7 +85,11 @@ func (s *Service) attachImpactCoverage(ctx context.Context, stack string, reques
 	if request.IncludeCoverage {
 		report.CoverageReport = &collection
 	}
-	return contract.NewDocument(stack, "analyze", report)
+	result, err = contract.NewDocument(stack, "analyze", report)
+	if err != nil {
+		return result, err
+	}
+	return recordAnalysisStage(result, stack, "coverage", "collected", "After-snapshot coverage verified.")
 }
 
 func filterCoverageNotes(notes []string) []string {
@@ -168,4 +177,54 @@ func matchImpactCoverage(nodes []contract.Symbol, symbols []contract.ImpactSymbo
 
 func positionBefore(left, right contract.ImpactPosition) bool {
 	return left.Line < right.Line || left.Line == right.Line && left.Column < right.Column
+}
+
+func retainIncompleteCoverage(document contract.Document, engine string, request contract.AnalyzeRequest, facts contract.ImpactFacts, collection contract.CoverageReport, cause error) (contract.Document, error) {
+	var report contract.AnalyzeReport
+	if err := json.Unmarshal(document.Data, &report); err != nil {
+		return document, err
+	}
+	collection.Root = request.Repository
+	collection.Message = cause.Error()
+	if collection.Status == "" {
+		collection.Status = "unavailable"
+	}
+	if collection.Status == "collected" {
+		collection.Status = "partial"
+	}
+	evidence := contract.CoverageEvidence{}
+	if len(collection.Coverage) > 0 {
+		if err := json.Unmarshal(collection.Coverage, &evidence); err != nil {
+			return document, err
+		}
+		evidence.SourceMatch = "unverified"
+		evidence.SourceSHA = ""
+		evidence.Notes = append(evidence.Notes, "Collection was incomplete or snapshot validation failed. No execution attribution was made from this dataset.")
+		collection.Coverage, _ = json.Marshal(evidence)
+	}
+	report.Execution.Status = "UNAVAILABLE"
+	if len(collection.Runs) > 0 {
+		report.Execution.Status = "PARTIAL"
+	}
+	for _, run := range collection.Runs {
+		if run.Status == "failed" {
+			report.Execution.Status = "FAILED"
+		}
+	}
+	report.Execution.Notes = []string{cause.Error()}
+	report.Evidence.CommandStatus = report.Execution.Status
+	raw, _ := json.Marshal(collection)
+	report.Evidence.Coverage = []json.RawMessage{raw}
+	dataset := matchImpactCoverage(report.After.Nodes, facts.After.Symbols, evidence, false)
+	dataset.Engine = engine
+	report.Matching.Datasets = []contract.DatasetMatch{dataset}
+	report.Notes = append(report.Notes, "Impact facts remain available; incomplete coverage is not treated as zero coverage or verified execution.")
+	if request.IncludeCoverage {
+		report.CoverageReport = &collection
+	}
+	result, err := contract.NewDocument(engine, "analyze", report)
+	if err != nil {
+		return result, err
+	}
+	return recordAnalysisStage(result, engine, "coverage", collection.Status, cause.Error())
 }

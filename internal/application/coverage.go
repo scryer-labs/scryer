@@ -30,8 +30,12 @@ func (s *Service) CollectCoverage(ctx context.Context, directory, stack string, 
 	for _, target := range targets {
 		perEngine := selectEngineCoverage(target, request)
 		document, err := s.collectEngineCoverage(ctx, project.Root, target.analyzer.Stack(), target, perEngine)
+		if ctx.Err() != nil {
+			return document, ctx.Err()
+		}
 		if err != nil {
-			return document, fmt.Errorf("%s coverage failed: %w", target.analyzer.Stack(), err)
+			children = append(children, contract.CoverageReport{SchemaVersion: 1, Root: project.Root, Engine: target.analyzer.Stack(), Status: "unavailable", Message: err.Error()})
+			continue
 		}
 		var result contract.CoverageReport
 		if err = json.Unmarshal(document.Data, &result); err != nil {

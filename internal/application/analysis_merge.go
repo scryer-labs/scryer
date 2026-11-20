@@ -124,7 +124,9 @@ func aggregateCoverage(children []contract.CoverageReport, root string) contract
 		return children[0]
 	}
 	result := contract.CoverageReport{SchemaVersion: 1, Root: root, Status: "collected", EngineReports: children, Runs: []contract.CoverageRun{}, Message: "Independent engine coverage datasets; percentages are not merged."}
+	usable := false
 	for _, child := range children {
+		usable = usable || child.Status == "collected" || (child.Status == "partial" && len(child.Coverage) > 0)
 		if child.Status != "collected" {
 			result.Status = "partial"
 		}
@@ -132,6 +134,9 @@ func aggregateCoverage(children []contract.CoverageReport, root string) contract
 			run.Name = child.Engine + ": " + run.Name
 			result.Runs = append(result.Runs, run)
 		}
+	}
+	if !usable {
+		result.Status = "unavailable"
 	}
 	return result
 }

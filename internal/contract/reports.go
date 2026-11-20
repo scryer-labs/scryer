@@ -183,7 +183,19 @@ type Evidence struct {
 	Manifest      *string           `json:"manifest"`
 	Notes         []string          `json:"notes"`
 }
+type AnalysisStage struct {
+	Name    string `json:"name"`
+	Status  string `json:"status"`
+	Message string `json:"message,omitempty"`
+}
+type EngineAnalysisOutcome struct {
+	Engine string          `json:"engine"`
+	Status string          `json:"status"`
+	Stages []AnalysisStage `json:"stages"`
+}
 type AnalyzeReport struct {
+	Status         string                     `json:"status,omitempty"`
+	EngineOutcomes []EngineAnalysisOutcome    `json:"engineOutcomes,omitempty"`
 	CoverageReport *CoverageReport            `json:"coverageReport,omitempty"`
 	SchemaVersion  int                        `json:"schemaVersion"`
 	GeneratedAt    string                     `json:"generatedAt"`
