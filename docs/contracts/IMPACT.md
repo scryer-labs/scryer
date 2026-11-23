@@ -191,3 +191,14 @@ supplies usable facts, status is failed with explicit outcomes; empty graphs
 are not interpreted as zero impact. Cancellation still stops the operation.
 A complete comparison with no changed symbols is labeled accordingly, rather
 than presenting zero counts as evidence that all changes are safe.
+
+## Additive indirect candidate evidence
+
+Snapshot calls may carry `candidateSymbolIds[]` and `candidateBasis` alongside
+legacy `candidateSymbolId`. One source call retains one `callSiteId`; multiple
+candidate targets are not multiple runtime invocations. Core projects
+`macro-forwarding` as `MACRO_FORWARD_CANDIDATE` and
+`struct-field-initializer` as `FIELD_POINTER_CANDIDATE`. These participate in
+potential impact reachability without claiming compiler binding, concrete object
+identity or observed execution. A `targetSymbolId` remains stronger evidence and
+supersedes candidate targets for that call. Schema version and C ABI are unchanged.

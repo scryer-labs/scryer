@@ -46,3 +46,16 @@ func Test_should_report_source_context_changes_when_no_function_body_changed(t *
 		t.Fatal("source context change was hidden")
 	}
 }
+
+func Test_should_preserve_multiple_indirect_candidates_without_compiler_binding(t *testing.T) {
+	snapshot := contract.ImpactSnapshot{Symbols: []contract.ImpactSymbol{{ID: "caller"}, {ID: "a"}, {ID: "b"}}, Calls: []contract.ImpactCall{{ID: "site", Caller: "caller", Candidates: []string{"a", "b"}, CandidateBasis: "struct-field-initializer"}}}
+	graph := impactGraph(snapshot, map[string]bool{"caller": true}, nil)
+	if len(graph.Edges) != 2 {
+		t.Fatal(graph)
+	}
+	for _, edge := range graph.Edges {
+		if edge.Kind != "FIELD_POINTER_CANDIDATE" || edge.CallSiteID != "site" {
+			t.Fatal(edge)
+		}
+	}
+}

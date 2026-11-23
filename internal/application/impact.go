@@ -117,9 +117,18 @@ func impactGraph(facts contract.ImpactSnapshot, changed map[string]bool, unresol
 	}
 	incoming, outgoing := map[string][]string{}, map[string][]string{}
 	for _, call := range facts.Calls {
-		target, kind := call.Candidate, "NAME_CANDIDATE"
+		targets, kind := append([]string{}, call.Candidates...), "NAME_CANDIDATE"
+		if call.Candidate != "" && !slices.Contains(targets, call.Candidate) {
+			targets = append(targets, call.Candidate)
+		}
+		switch call.CandidateBasis {
+		case "macro-forwarding":
+			kind = "MACRO_FORWARD_CANDIDATE"
+		case "struct-field-initializer":
+			kind = "FIELD_POINTER_CANDIDATE"
+		}
 		if call.Target != "" {
-			target, kind = call.Target, "COMPILER_RESOLVED"
+			targets, kind = []string{call.Target}, "COMPILER_RESOLVED"
 			switch call.Kind {
 			case "declaration-reference":
 				kind = "COMPILER_DECLARATION_REFERENCE"
@@ -129,11 +138,16 @@ func impactGraph(facts contract.ImpactSnapshot, changed map[string]bool, unresol
 				kind = "SCAN_RESOLVED"
 			}
 		}
-		if ids[call.Caller] && ids[target] {
-			graph.Edges = append(graph.Edges, contract.Relation{Caller: call.Caller, Callee: target, Kind: kind, CallSiteID: call.ID, Path: call.Site.File, Line: call.Site.Start.Line})
-			incoming[target] = append(incoming[target], call.Caller)
-			outgoing[call.Caller] = append(outgoing[call.Caller], target)
-		} else {
+		projected := false
+		for _, target := range targets {
+			if ids[call.Caller] && ids[target] {
+				projected = true
+				graph.Edges = append(graph.Edges, contract.Relation{Caller: call.Caller, Callee: target, Kind: kind, CallSiteID: call.ID, Path: call.Site.File, Line: call.Site.Start.Line})
+				incoming[target] = append(incoming[target], call.Caller)
+				outgoing[call.Caller] = append(outgoing[call.Caller], target)
+			}
+		}
+		if !projected {
 			var caller *string
 			if ids[call.Caller] {
 				caller = &call.Caller
