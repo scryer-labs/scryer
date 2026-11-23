@@ -44,6 +44,7 @@ func pipeKey(name string) string {
 }
 
 func matchIPCScope(ipc *contract.IPC, participant func(contract.IPCEndpoint) string) {
+	matchPOSIXScope(ipc, participant)
 	pipes := &ipc.Windows.NamedPipe
 	for _, match := range matchIPCEndpoints(pipes.Endpoints, "client", "server", pipeKey, participant) {
 		link := contract.PipeLink{IPCLink: match.link, ClientEndpointID: match.source.ID, Direction: "unknown"}

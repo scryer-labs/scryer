@@ -49,6 +49,7 @@ func aggregateWorkspaceIPC(projects []WorkspaceProject, libraries []WorkspaceRef
 		if ipc == nil {
 			continue
 		}
+		addWorkspacePOSIX(result, ipc, project.Path)
 		type callKey struct{ engine, observation string }
 		localCalls := map[callKey]bool{}
 		for _, endpoint := range ipc.Windows.NamedPipe.Endpoints {

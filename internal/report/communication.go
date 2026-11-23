@@ -56,10 +56,14 @@ type ipcReport struct {
 }
 
 func ipcReports(data Object) []ipcReport {
-	windows := field(field(field(data, "communication"), "ipc"), "windows")
+	ipc := field(field(data, "communication"), "ipc")
+	windows := field(ipc, "windows")
+	posix := field(ipc, "posix")
 	return []ipcReport{
 		{"IPC (Windows named pipes)", field(windows, "namedPipe"), []string{"Client", "Server", "Pipe", "Status"}, true},
 		{"IPC (Windows shared memory)", field(windows, "sharedMemory"), []string{"Opener", "Creator", "Mapping", "Status"}, false},
+		{"IPC (POSIX Unix datagrams)", field(posix, "unixSocket"), []string{"Sender", "Bound receiver", "Socket path", "Status"}, true},
+		{"IPC (POSIX shared memory)", field(posix, "sharedMemory"), []string{"Opener", "Creator", "Resource", "Status"}, false},
 	}
 }
 

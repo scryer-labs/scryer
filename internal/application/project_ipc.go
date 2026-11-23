@@ -10,6 +10,10 @@ import (
 )
 
 type ipcInput struct {
+	Posix *struct {
+		UnixSocket   posixResourceInput `json:"unixSocket"`
+		SharedMemory posixResourceInput `json:"sharedMemory"`
+	} `json:"posix"`
 	engine  string
 	Calls   []json.RawMessage `json:"calls"`
 	Windows struct {
@@ -90,6 +94,7 @@ func aggregateProjectIPC(outcomes []contract.FactOutcome) *contract.IPC {
 	pipes := &result.Windows.NamedPipe
 	localParameters := map[string]map[string][]json.RawMessage{"": collectPipeParameters(inputs)}
 	for _, input := range inputs {
+		addProjectPOSIX(result, input)
 		for _, raw := range input.Windows.NamedPipe.Endpoints {
 			endpoint, entries, ok := ipcObservation(input.engine, raw)
 			if ok {
@@ -126,6 +131,7 @@ func aggregateProjectIPC(outcomes []contract.FactOutcome) *contract.IPC {
 
 func ipcObservation(engine string, raw json.RawMessage) (contract.IPCEndpoint, ipcEntrypoints, bool) {
 	var observation struct {
+		Transport   string         `json:"transport"`
 		Name        string         `json:"name"`
 		Role        string         `json:"role"`
 		Operation   string         `json:"operation"`
@@ -141,7 +147,7 @@ func ipcObservation(engine string, raw json.RawMessage) (contract.IPCEndpoint, i
 		observation.Role = observation.Operation
 	}
 	return contract.IPCEndpoint{
-		Name: observation.Name, Role: observation.Role, Engine: engine, SourceRole: observation.SourceRole,
+		Transport: observation.Transport, Name: observation.Name, Role: observation.Role, Engine: engine, SourceRole: observation.SourceRole,
 		AccessMode: observation.AccessMode, AccessFlags: observation.AccessFlags, Observation: raw,
 	}, observation.Entrypoints, true
 }

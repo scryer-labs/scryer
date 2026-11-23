@@ -7,6 +7,7 @@ type Communication struct {
 }
 
 type IPC struct {
+	Posix   *POSIXIPC `json:"posix,omitempty"`
 	Tauri   *TauriIPC `json:"tauri,omitempty"`
 	Windows struct {
 		NamedPipe    NamedPipes    `json:"namedPipe"`
@@ -25,6 +26,7 @@ type SharedMemory struct {
 }
 
 type IPCEndpoint struct {
+	Transport         string          `json:"transport,omitempty"`
 	ID                string          `json:"id"`
 	Project           string          `json:"project,omitempty"`
 	ProjectEndpointID string          `json:"projectEndpointId,omitempty"`
@@ -104,4 +106,27 @@ type TauriLink struct {
 	From         TauriEndpoint  `json:"from"`
 	To           TauriEndpoint  `json:"to"`
 	Registration *TauriEndpoint `json:"registration,omitempty"`
+}
+
+// POSIX endpoints are language-neutral native-resource observations.
+type POSIXIPC struct {
+	UnixSocket   RuntimeResources `json:"unixSocket"`
+	SharedMemory RuntimeResources `json:"sharedMemory"`
+}
+type RuntimeObservation struct {
+	Engine  string          `json:"engine"`
+	Project string          `json:"project,omitempty"`
+	Data    json.RawMessage `json:"data"`
+}
+type RuntimeResources struct {
+	Endpoints    []IPCEndpoint         `json:"endpoints"`
+	Links        []RuntimeResourceLink `json:"links"`
+	Observations []RuntimeObservation  `json:"observations"`
+}
+type RuntimeResourceLink struct {
+	IPCLink
+	SourceEndpointID string   `json:"sourceEndpointId"`
+	PeerEndpointIDs  []string `json:"peerEndpointIds,omitempty"`
+	Basis            string   `json:"basis"`
+	Direction        string   `json:"direction"`
 }

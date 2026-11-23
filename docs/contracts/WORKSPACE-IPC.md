@@ -110,3 +110,43 @@ parameter evidence, and project-local shared-memory associations.
 
 See the [CLI reference](../CLI.md), [Workspace report type](../../internal/application/workspace_scan.go)
 and [IPC types and matcher](../../internal/application/workspace_ipc.go).
+
+## POSIX resources (additive source-development contract)
+
+Both scopes may additionally publish `communication.ipc.posix.unixSocket` and
+`communication.ipc.posix.sharedMemory`. Each has `endpoints[]`, `links[]` and
+`observations[]`. The engine identity records provenance only: this shape does
+not depend on C++ and can be supplied by another engine. C ABI v1 and report
+schemaVersion 1 are unchanged. A missing POSIX branch means unavailable evidence.
+
+- Endpoints reuse `IPCEndpoint`: ID, original resource name, role, engine,
+  applicable executable component ID, project/projectEndpointId at workspace
+  scope, and the original observation. Unix sockets also carry `transport`
+  (`datagram` or `stream` when known).
+- Observations retain `{engine, data}` plus `project` at workspace scope. They
+  include unresolved native calls and must remain available even if there are no
+  endpoints or links. Do not interpret an empty endpoint array as proof of no IPC.
+- Links reuse `from`, `to`, `name`, `status` and optional candidate participants.
+  `sourceEndpointId` and `peerEndpointIds[]` join observations;
+  `basis: "resource-name-candidate"` explicitly limits the evidence. `matched`
+  means one compatible participant, not established traffic or deployment.
+- Initial pairing covers Unix datagram `send` to `bind` with the exact absolute
+  socket path (or abstract-namespace name), and POSIX shared-memory `open` to
+  `create` with the exact absolute resource name. Names are case-sensitive.
+  Datagram links have `direction: "sender-to-bound-receiver"`; memory links have
+  `direction: "unknown"`. Relative socket paths, unknown/different transports,
+  unresolved names and missing project-level executable ownership do not produce
+  confirmed peer matches. Stream connect/listen/accept is not paired yet.
+- Project links connect distinct recovered executable components. Workspace
+  imports project endpoint identities and matches across member projects, keeping
+  internal project links under member facts. Workspace-level project association
+  remains possible even when executable ownership is unknown; it never assigns
+  a library as an executable. Known test observations are excluded from workspace
+  pairing by the existing sourceRole rule. Unknown roles remain unknown.
+
+The matcher assumes compatible local resource namespaces; runtime deployment,
+containers, mount namespaces and actual resource existence are not proven.
+Source value propagation across arbitrary wrappers and global arrays is not
+complete. Consumers must show unresolved observations and candidate relationships
+separately from runtime measurements. Markdown has basic POSIX link tables and
+retains complete JSON; interactive rendering belongs to consumers.

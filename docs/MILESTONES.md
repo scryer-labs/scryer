@@ -53,17 +53,26 @@ architecture and test evidence to Orrery for interactive rendering.
 
 ### Current C++ delivery order
 
-After the delivered Core/C++ project include/exclude slice, prioritize:
+The source-development slice after v0.3.0 now includes bounded CMake variables
+and source lists, evidence-based header provider candidates, macro-body source
+scopes, macro/typed-callback candidate links, and POSIX/native-loader observations.
+See the Engine [fact extensions](https://github.com/scryer-labs/scryer-cpp-engine/blob/main/docs/FACTS.md)
+and [communication contract](contracts/WORKSPACE-IPC.md). Candidates do not become
+confirmed ownership or runtime dispatch. Existing release packages need a later
+release before these additions are available through remote upgrade.
 
-1. CMake target and source membership completeness: bounded variable expansion
-   and concrete build-declaration gaps, with unsupported expressions retained.
-2. Large-repository acceptance: explicit scope, measured time/memory/JSON size,
-   and checked architecture, includes and cross-file call relationships.
-3. Completeness diagnostics: distinguish missing compile commands, failed
-   translation units and unbound references while preserving usable partial facts.
-4. Additional deterministic test-framework registration rules, with Catch2 driven
-   by real fixtures. User-defined groups are separate follow-up metadata, not
-   automatic production/test/third-party identities.
+Next priorities:
+
+1. Stronger header/provider binding and unsupported CMake constructs, driven by
+   concrete fixtures; preserve ambiguous ownership and conditional declarations.
+2. Large-repository acceptance: explicit scope and measured time/memory/JSON size,
+   with regressions for source parser recovery and indirect callbacks.
+3. Completeness diagnostics and stronger value propagation: unresolved compiler
+   inputs, typedefs/macros, callback mutation, indirect/global resource names,
+   POSIX stream endpoints and loader replacement remain explicit boundaries.
+4. Additional deterministic test-framework registration fixtures. GoogleTest and
+   Catch2 registration evidence are supported; a matching macro name alone is
+   never a test identity. User-defined groups remain separate follow-up metadata.
 
 Keep CMake and C/C++ collectors modular. Function-body control/data flow and
 execution-order modeling wait until ownership/lifetime work needs them. Function

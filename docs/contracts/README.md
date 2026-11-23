@@ -164,3 +164,15 @@ independent baselines, partial failures and complete project report preservation
 [Project file selection](PROJECT-SCOPE.md) defines `.scryer/project.yaml`, the optional
 consumer `scope` metadata and Core/Engine selection receipts. Initial Engine support
 is C++; other Engines explicitly reject configured selection until implemented.
+
+
+## C++ source-development evidence extensions
+
+The Engine [fact extensions](https://github.com/scryer-labs/scryer-cpp-engine/blob/main/docs/FACTS.md)
+now document file ownership candidates, macro-body source scopes/completeness,
+function-valued reference and macro-forwarding candidates, POSIX observations
+and dynamic loader declarations. The [Impact](IMPACT.md) and
+[communication](WORKSPACE-IPC.md) contracts describe Core projections and
+language-independent aggregation. These additive v1 fields do not turn source
+candidates into compiler binding or runtime execution. Release availability is
+independent of the source contract.
