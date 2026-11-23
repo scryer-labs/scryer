@@ -6,9 +6,12 @@ See [milestones](MILESTONES.md) for planned work.
 ## Current command layout
 
 ```text
+scryer project init [path]
 scryer project scan [path]
 scryer project analyze [path] [--operations impact|coverage]
+scryer workspace init [path]
 scryer workspace scan [path]
+scryer workspace analyze [path] [--operations impact|coverage]
 scryer engine list
 scryer engine install <engine> [engines...]
 scryer engine upgrade <engine> [engines...]
@@ -20,6 +23,39 @@ default to `stack,loc` and support `--facts`, `--json` and `--compact`.
 Use `--resolve` to request supported toolchain evidence. The legacy Java scan
 options select the Java engine, and `--static` on that path skips build-model
 resolution. Manage workspace membership in YAML.
+
+## Initialize configuration
+
+```sh
+scryer project init [path]
+scryer workspace init [path]
+```
+
+Both commands default to the current directory, which must already exist. They
+share Core's initialization logic and use different embedded, English-commented
+YAML templates: `.scryer/project.yaml` and `.scryer/workspace.yaml`. Existing paths
+are preserved, including customized or malformed files; init does not validate or
+rewrite them. No force/overwrite mode is provided. Both files can coexist in a
+directory serving as a project and a workspace.
+
+Project configuration adds no exclusion patterns by default. Comments explain
+include/exclude precedence, `*`/`**`, Git candidate inventory and the separation
+between scan selection and build/test/coverage execution. Workspace configuration
+starts with `projects: []`; edit it to list project directories relative to the
+workspace before scanning. No project discovery, Git initialization, engine
+installation, engine configuration generation or scan runs as part of init.
+
+Initialization is independent of language and Engine availability. Subsequent
+scans retain the [existing file-selection contract](contracts/PROJECT-SCOPE.md):
+creating project.yaml enables Core-managed selection; Engine facts require the
+installed Engine to support that protocol. Init does not add that support to
+older or unsupported packages. Built-in stack/LOC remain Engine-independent.
+
+Use `--json` for machine-readable results and `--compact` to omit indentation.
+Results contain `operation: "init"`, `scope`, `status` (`created` or `exists`),
+canonical `root` and absolute configuration `path`. Both successful creation and
+preserving an existing path exit with status zero. Missing/unwritable directories
+and other filesystem errors fail without overwriting existing configuration.
 
 ## Workspace scan
 

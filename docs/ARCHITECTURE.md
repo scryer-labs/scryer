@@ -84,3 +84,12 @@ temporary manifest for scope-aware Engines and validates their receipts. Engines
 interpret only a selected path list, not Core configuration or Git policy. Impact
 pins the current policy across snapshots; native builds/tests/coverage remain
 independent. See [the contract](contracts/PROJECT-SCOPE.md).
+
+## Configuration initialization
+
+`internal/configinit` creates Core-owned project/workspace configuration with
+embedded English YAML templates and exclusive file creation. The shared
+`internal/cmd/configinit` factory supplies both scope CLI entries and JSON/text
+output. Only the scope/template differs; initialization has no language discovery,
+Engine calls or dependency on engine-specific settings. Project file-selection
+semantics and workspace membership validation remain with their existing readers.

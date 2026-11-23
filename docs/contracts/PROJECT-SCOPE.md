@@ -7,6 +7,11 @@ classify code as production, tests, generated or third-party.
 
 ## Project configuration
 
+Use `scryer project init [path]` to create a language-independent, commented
+configuration without overwriting an existing file. `scryer workspace init [path]`
+creates an empty membership template. Initialization does not call Engines;
+subsequent scans still require file-selection capability as described below.
+
 Optional `.scryer/project.yaml`, relative to the project root:
 
 ```yaml

@@ -1,0 +1,10 @@
+# Workspace configuration. Core manages membership independently of engines.
+# Replace [] with a YAML list of project directories before scanning.
+# Each item is relative to this workspace; use one directory per list item.
+# Members must stay within the workspace and must not name the same path twice.
+projects: []
+
+# Workspace scan delegates the selected facts to each member project.
+# Each project uses its own optional .scryer/project.yaml file selection.
+# Engine-specific settings belong to projects, not this workspace file.
+# Initialization does not discover projects, run scans or install engines.

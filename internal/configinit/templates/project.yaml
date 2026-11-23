@@ -1,0 +1,20 @@
+# Project configuration. Core manages this file; it is language-independent.
+schemaVersion: 1
+
+# File selection applies to stack, line counts and scope-aware engine facts.
+# Creating this file enables Core-managed file selection. Engines without
+# file-selection support report unsupported facts rather than ignore the scope.
+scan:
+  # Omit include to select all candidate files; include: [] selects nothing.
+  # Uncomment and edit this list to narrow the scope:
+  # include: ["**/*"]
+
+  # Exclude takes precedence over include. No patterns are excluded by default.
+  exclude: []
+
+# Patterns are relative to this project and use forward slashes.
+# * matches within one path segment; ** matches zero or more path segments.
+# Use a /** suffix for a directory tree.
+# Git projects use tracked and non-ignored untracked files as candidates.
+# Include cannot restore ignored untracked files. Symlink entries are skipped.
+# Scan selection does not restrict build, test or coverage execution.
