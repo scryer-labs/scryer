@@ -58,8 +58,8 @@ and source lists, evidence-based header provider candidates, macro-body source
 scopes, macro/typed-callback candidate links, and POSIX/native-loader observations.
 See the Engine [fact extensions](https://github.com/scryer-labs/scryer-cpp-engine/blob/main/docs/FACTS.md)
 and [communication contract](contracts/WORKSPACE-IPC.md). Candidates do not become
-confirmed ownership or runtime dispatch. Existing release packages need a later
-release before these additions are available through remote upgrade.
+confirmed ownership or runtime dispatch. These additions ship in C++ Engine v0.4.0; use that version or newer
+with current Core for remote install/upgrade.
 
 Next priorities:
 

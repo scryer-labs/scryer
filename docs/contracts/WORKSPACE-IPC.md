@@ -111,7 +111,7 @@ parameter evidence, and project-local shared-memory associations.
 See the [CLI reference](../CLI.md), [Workspace report type](../../internal/application/workspace_scan.go)
 and [IPC types and matcher](../../internal/application/workspace_ipc.go).
 
-## POSIX resources (additive source-development contract)
+## POSIX resources (C++ Engine v0.4.0, additive contract)
 
 Both scopes may additionally publish `communication.ipc.posix.unixSocket` and
 `communication.ipc.posix.sharedMemory`. Each has `endpoints[]`, `links[]` and

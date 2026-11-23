@@ -166,7 +166,7 @@ consumer `scope` metadata and Core/Engine selection receipts. Initial Engine sup
 is C++; other Engines explicitly reject configured selection until implemented.
 
 
-## C++ source-development evidence extensions
+## C++ evidence extensions (Engine v0.4.0)
 
 The Engine [fact extensions](https://github.com/scryer-labs/scryer-cpp-engine/blob/main/docs/FACTS.md)
 now document file ownership candidates, macro-body source scopes/completeness,
