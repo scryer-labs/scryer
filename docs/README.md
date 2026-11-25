@@ -8,7 +8,8 @@
 | [Product direction](PRODUCT-DIRECTION.md) | Scope, product boundaries and shared checks |
 | [Milestones](MILESTONES.md) | Delivered capabilities and next work |
 | [Technical debt](TECH-DEBT.md) | Maintenance and known limitations |
-| [Contributor instructions](../AGENTS.md) | Collaboration and Orrery acceptance |
+| [Contributor entry](../AGENTS.md) | Persistent agent entry |
+| [Working conventions](WORKING-NOTES.md) | Subagent workflow, evidence and Orrery acceptance |
 
 ## Decision history
 
