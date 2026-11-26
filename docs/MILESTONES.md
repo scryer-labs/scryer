@@ -4,6 +4,8 @@ See [product direction](PRODUCT-DIRECTION.md) for scope and
 [technical debt](TECH-DEBT.md) for maintenance. Milestone IDs identify work rather than a fixed delivery
 order. Coverage is an input to impact analysis. The deferred M4/M5 extensions
 do not block consumers from using the existing facts, coverage and impact APIs.
+The immediate engineering focus is the evidence-driven C++ acceptance slice in
+M2, not reimplementing its delivered CMake or header-provider baseline.
 
 ## Delivered
 
@@ -18,11 +20,20 @@ do not block consumers from using the existing facts, coverage and impact APIs.
 - First toolchain-assisted `--resolve` pass for C++, Java dependencies, Rust,
   TS/JS (React and Svelte) and Go. See the [resolution contract](contracts/RESOLVE.md)
   for what each engine can resolve and the remaining gaps.
-- Remote install, development-to-stable upgrade and static scans verified in
-  Orrery **Official Engine Release Installation**
-  (`20261114T172344415Z-3f64c660`) and in
-  [Windows Core CI](https://github.com/scryer-labs/scryer/actions/runs/43620960684).
-  Core CI already builds its own archives and a native Windows executable.
+- C++ Engine v0.4.0 includes bounded CMake variable/source collection, explicit
+  target memberships, include-context propagation and evidence-based header
+  provider candidates. These are delivered capabilities with the limits in M2.
+- Go, Rust and TS/JS Engine v0.3.0 harden closure/callback impact projections,
+  diagnostics and unassessed source/configuration context. Core exposes projection
+  completeness and distinct framework-reference evidence. Rust remains
+  Cargo-validated source candidates, not rustc semantic bindings.
+- Remote install, development-to-stable upgrade and static scans are verified
+  through the existing Orrery release-installation plan and
+  [Windows Core CI](https://github.com/scryer-labs/scryer/actions/runs/45846711834),
+  including Go/Rust/TS-JS v0.3.0. Native engine tests and packaged ABI checks run on
+  macOS arm64 and Windows amd64. This baseline is separate from complete Windows
+  target-project resolution, test and coverage acceptance. Core CI builds its own
+  archives and a native Windows executable; a versioned Core release is still M1.
 
 ## M1 — Publish Scryer Core
 
@@ -34,6 +45,10 @@ path and independent engine releases. Windows compiler-assisted project scans
 have a separate toolchain acceptance boundary.
 
 ## M2 — C++ scan acceptance
+
+Status: architecture/files/call-graph/IPC baseline and the v0.4.0 CMake/header
+enhancements are delivered. The remaining work is measured acceptance and fixes
+for demonstrated gaps, not initial implementation of those collectors.
 
 Verify product and test targets across architecture, file membership and
 includes, call graph, and IPC. Use Scriptorium for workspace communication
@@ -51,22 +66,31 @@ unsupported conditions and unresolved references. Keep C++ source collection
 and CMake build declarations modular. Validate the JSON before handing its
 architecture and test evidence to Orrery for interactive rendering.
 
-### Current C++ delivery order
+### Delivered C++ baseline and next acceptance slice
 
-The source-development slice after v0.3.0 now includes bounded CMake variables
-and source lists, evidence-based header provider candidates, macro-body source
-scopes, macro/typed-callback candidate links, and POSIX/native-loader observations.
+The v0.4.0 baseline includes:
+
+| Area | Delivered evidence | Boundary |
+| --- | --- | --- |
+| CMake declarations | Targets/aliases, source and link declarations, known normal variables/lists, directory/include scopes and direct auxiliary-source enumeration | Not full CMake evaluation; unsupported constructs retain diagnostics |
+| File membership | Explicit source-list membership in `componentIds`, including explicitly listed headers | Include-directory exposure is not ownership |
+| Include resolution | Source-relative paths and supported target include roots propagated over local PUBLIC/INTERFACE links | Ambiguous candidates remain separate; generated/compiler-only paths can remain unresolved |
+| Header providers | Declaration/definition-name and included-header provider candidates, with exposure and ambiguity evidence | Candidates never become declared `componentIds`; type-only/template headers can remain unassigned |
+| Source/communication extensions | Macro-body scopes, typed-callback candidates and bounded POSIX/native-loader observations | Source observations do not prove compiler binding or runtime dispatch |
+
 See the Engine [fact extensions](https://github.com/scryer-labs/scryer-cpp-engine/blob/main/docs/FACTS.md)
-and [communication contract](contracts/WORKSPACE-IPC.md). Candidates do not become
-confirmed ownership or runtime dispatch. These additions ship in C++ Engine v0.4.0; use that version or newer
-with current Core for remote install/upgrade.
+and [communication contract](contracts/WORKSPACE-IPC.md). Use C++ Engine v0.4.0 or
+newer with current Core for these additions.
 
 Next priorities:
 
-1. Stronger header/provider binding and unsupported CMake constructs, driven by
-   concrete fixtures; preserve ambiguous ownership and conditional declarations.
-2. Large-repository acceptance: explicit scope and measured time/memory/JSON size,
-   with regressions for source parser recovery and indirect callbacks.
+1. Establish large-repository acceptance evidence with explicit scope, measured
+   time/memory/JSON size and source-to-fact checks across targets, memberships,
+   includes and calls. Turn confirmed omissions/false links into minimal fixtures.
+2. Fix the demonstrated gaps. Possible boundaries include GLOB/GLOB_RECURSE,
+   generator expressions, file sets, custom CMake factories and type-only/template
+   header providers. Do not expand the CMake interpreter or guess ownership merely
+   to remove an unresolved result. Preserve collector modularity and ambiguity.
 3. Completeness diagnostics and stronger value propagation: unresolved compiler
    inputs, typedefs/macros, callback mutation, indirect/global resource names,
    POSIX stream endpoints and loader replacement remain explicit boundaries.
@@ -112,6 +136,13 @@ evidence principles; stronger per-test attribution is follow-up work:
 3. Correlate the impact scope with measured coverage. Report which tests
    exercised affected code when the collector has per-test evidence. Preserve
    aggregated datasets in cases where attribution is unavailable.
+
+The v0.3.0 Go/Rust/TS-JS hardening is delivered, including malformed/unprojected
+body context retention and ambiguous lexical correspondence boundaries. Remaining
+precision work includes Rust type-directed semantics, Go external/interface and
+function-value binding, and richer React/Svelte reference propagation. These are
+specific follow-ups, not missing initial coverage/impact implementations. Config
+context changes remain unassessed; framework references are not observed calls.
 
 Java's existing analyze path supplies prior experience with evidence freshness,
 provenance and failure outcomes. Its Maven/Gradle and JaCoCo payload remains
