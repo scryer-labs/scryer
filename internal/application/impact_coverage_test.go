@@ -35,12 +35,13 @@ func Test_should_exclude_immediate_functions_and_declarations_from_runtime_cover
 		{ID: "immediate", ExecutionKind: "compile-time", Location: location},
 		{ID: "variable", ExecutionKind: "declaration", Location: location},
 		{ID: "harness", ExecutionKind: "test-harness", Location: location},
+		{ID: "component", ExecutionKind: "non-executable", Location: location},
 		{ID: "constexpr", Location: location},
 	}
-	nodes := []contract.Symbol{{ID: "immediate", Path: "traits.h"}, {ID: "variable", Path: "traits.h"}, {ID: "harness", Path: "traits.h"}, {ID: "constexpr", Path: "traits.h"}}
+	nodes := []contract.Symbol{{ID: "immediate", Path: "traits.h"}, {ID: "variable", Path: "traits.h"}, {ID: "harness", Path: "traits.h"}, {ID: "component", Path: "traits.h"}, {ID: "constexpr", Path: "traits.h"}}
 	evidence := contract.CoverageEvidence{Files: []contract.CoverageFile{{Path: "traits.h", Regions: []contract.CoverageRegion{{Start: location.Start, End: location.End, Count: 1}}}}}
 	result := matchImpactCoverage(nodes, symbols, evidence, true)
-	if result.Counts["NOT_APPLICABLE"] != 3 || result.Counts["EXECUTED"] != 1 || result.Assessed != 1 || result.WithHits != 1 {
+	if result.Counts["NOT_APPLICABLE"] != 4 || result.Counts["EXECUTED"] != 1 || result.Assessed != 1 || result.WithHits != 1 {
 		t.Fatalf("compile-time declarations contaminated runtime coverage: %#v", result)
 	}
 }

@@ -291,7 +291,7 @@
       for (const stage of outcome.stages) block.append(node('p', `${stage.name}: ${stage.status} ${stage.message || ''}`));
       completion.append(block);
     }
-    if (report.status === 'collected' && !report.changes.length) completion.append(node('p', 'No changed code symbols detected. Documentation-only changes can produce this result.'));
+    if (report.status === 'collected' && !report.changes.length) completion.append(node('p', report.matching.unresolvedChanges.length ? 'No changed code symbols in supplied projection; source/configuration or identity impact remains unassessed.' : 'No changed code symbols in supplied projection. This does not prove unchanged behavior; documentation-only changes can also produce this result.'));
   }
   renderChanges(); renderExecution(); render();
 })();

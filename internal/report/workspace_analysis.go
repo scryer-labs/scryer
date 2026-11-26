@@ -103,11 +103,17 @@ func workspaceChangeSummary(project contract.ProjectAnalysis) string {
 	if project.Status != "collected" || project.ReportOperation != "analyze" {
 		return ""
 	}
-	var report struct{ Changes []json.RawMessage }
+	var report struct {
+		Changes  []json.RawMessage
+		Matching struct{ UnresolvedChanges []string }
+	}
 	if json.Unmarshal(project.Report, &report) != nil || report.Changes == nil || len(report.Changes) > 0 {
 		return ""
 	}
-	return "no changed code symbols"
+	if len(report.Matching.UnresolvedChanges) > 0 {
+		return "no changed code symbols; context/identity impact unassessed"
+	}
+	return "no changed code symbols in supplied projection"
 }
 
 func WorkspaceAnalysisHTML(result contract.WorkspaceAnalysis) ([]byte, error) {

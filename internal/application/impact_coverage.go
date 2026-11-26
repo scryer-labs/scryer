@@ -127,9 +127,12 @@ func matchImpactCoverage(nodes []contract.Symbol, symbols []contract.ImpactSymbo
 			Reason: "No verified source-region coverage for this symbol.", Routes: []contract.TestRoute{},
 		}
 		kind := executionKinds[node.ID]
-		if kind == "compile-time" || kind == "declaration" || kind == "test-harness" {
+		if kind == "compile-time" || kind == "declaration" || kind == "test-harness" || kind == "non-executable" {
 			match.Status = "NOT_APPLICABLE"
 			match.Reason = "Runtime function coverage does not apply to a declaration node; compiler references describe potential dependencies, not runtime execution."
+			if kind == "non-executable" {
+				match.Reason = "This symbol is a non-executable source entity; function execution coverage is not applicable."
+			}
 			if kind == "test-harness" {
 				match.Reason = "This collector does not instrument test-harness source; runtime function coverage is not applicable. Test execution and per-test coverage attribution remain separate evidence."
 			}

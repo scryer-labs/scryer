@@ -14,8 +14,8 @@ The engine returns `schemaVersion`, `beforeSha`, `afterSha`, `before` and
 - `calls[]` with optional evidence `kind` (`call`, `declaration-reference`,
   `type-reference`), `callSiteId`, optional `callerSymbolId`, `callee`,
   optional `candidateSymbolId`, `resolution`, and `site`.
-- `contexts[]` with source `path` and a fingerprint of tokens outside
-  function definitions.
+- `contexts[]` with source/configuration `path` and a fingerprint of context
+  outside projected declarations (engines may include manifests and checksums).
 - `notes[]` with collection limits.
 
 Locations have `file` and one-based `start` and exclusive `end` line/byte-column
@@ -105,7 +105,7 @@ Gap and count-less segments are excluded. Core intersects these source
 intervals with affected symbol locations. Matching is `EXECUTED` when all
 observed intervals have hits, `NOT_EXECUTED` when none have hits, and
 `PARTIALLY_EXECUTED` when both occur. Missing or unverified evidence stays
-`UNKNOWN`. Nodes with `executionKind: "compile-time"`, `"declaration"` or `"test-harness"`
+`UNKNOWN`. Nodes with `executionKind: "compile-time"`, `"declaration"`, `"test-harness"` or `"non-executable"`
 receive `NOT_APPLICABLE`, excluded from the assessed count and execution
 percentage. Compilation and references do not prove constant evaluation.
 These statuses describe source observations and do not prove
@@ -202,3 +202,34 @@ candidate targets are not multiple runtime invocations. Core projects
 potential impact reachability without claiming compiler binding, concrete object
 identity or observed execution. A `targetSymbolId` remains stronger evidence and
 supersedes candidate targets for that call. Schema version and C ABI are unchanged.
+
+
+## Projection completeness and framework references
+
+Core reports `extensions.impactCompleteness` with `scope: "projected-declarations"`,
+`before`/`after` projection counts (`symbols`, `relations`, `contexts`,
+`ambiguousKeys`, `unprojectedCallers`, `unprojectedTargets`), `unassessedChanges`
+and explicit `limitations`. Counts describe the supplied snapshots, not coverage
+of every construct in the repository. They do not establish a completeness
+percentage. Context/configuration changes and duplicate correspondence keys stay
+in `matching.unresolvedChanges`; zero changed symbols does not establish unchanged
+behavior. Static binding metadata is retained in `beforeResolution` and
+`afterResolution` too. Multi-engine summaries use
+`scope: "independent-engine-projections"` and an `engines` map retaining each
+engine's summary; full child reports remain authoritative.
+
+A scan-derived framework reference may use snapshot `calls[].kind:
+"framework-reference"`, `candidateSymbolId` and `candidateBasis` (for example
+`react-render`, `react-handler`, `svelte-component`, `svelte-handler`). The legacy
+array name also carries declaration/type references; these are relationships,
+not necessarily invocation. Core emits `FRAMEWORK_REFERENCE` with optional
+`basis` on the report relation, and traverses it as a potential dependency.
+Registration, rendering and handler references do not prove runtime invocation,
+a specific event or test execution. Non-executable source entities such as a
+Svelte component use `executionKind: "non-executable"`; runtime function coverage
+is `NOT_APPLICABLE`, excluded from assessed execution percentages.
+
+Go includes closures with lexical anchors and local type-check diagnostics.
+Repeated indistinguishable anchors remain ambiguous; function-valued dispatch
+remains a boundary. Go manifest/checksum contexts expose configuration changes
+without claiming propagation to unchanged function bodies.

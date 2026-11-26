@@ -98,6 +98,7 @@ type Symbol struct {
 	Extensions    map[string]json.RawMessage `json:"extensions,omitempty"`
 }
 type Relation struct {
+	Basis      string `json:"basis,omitempty"`
 	CallSiteID string `json:"callSiteId,omitempty"`
 	Path       string `json:"path,omitempty"`
 	Line       int    `json:"line,omitempty"`

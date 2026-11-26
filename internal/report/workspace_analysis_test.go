@@ -41,3 +41,14 @@ func TestWorkspaceAnalysisPreservesUnknownProjectFieldsAndEscapesDiagnostics(t *
 		t.Fatal("missing independently rendered child report")
 	}
 }
+
+func Test_should_distinguish_unassessed_context_when_no_changed_symbols_are_projected(t *testing.T) {
+	project := contract.ProjectAnalysis{Status: "collected", ReportOperation: "analyze", Report: json.RawMessage(`{"changes":[],"matching":{"unresolvedChanges":["Changed go.mod"]}}`)}
+	if summary := workspaceChangeSummary(project); !strings.Contains(summary, "unassessed") {
+		t.Fatal(summary)
+	}
+	project.Report = json.RawMessage(`{"changes":[],"matching":{"unresolvedChanges":[]}}`)
+	if summary := workspaceChangeSummary(project); !strings.Contains(summary, "supplied projection") || strings.Contains(summary, "unassessed") {
+		t.Fatal(summary)
+	}
+}

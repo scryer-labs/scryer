@@ -66,6 +66,7 @@ func mergeImpactDocuments(documents []contract.Document, notes []string) (contra
 
 	var combined contract.AnalyzeReport
 	engineReports := map[string]json.RawMessage{}
+	completeness := map[string]json.RawMessage{}
 	var coverages []contract.CoverageReport
 	for i, document := range documents {
 		var report contract.AnalyzeReport
@@ -73,6 +74,9 @@ func mergeImpactDocuments(documents []contract.Document, notes []string) (contra
 			return document, err
 		}
 		engineReports[document.Stack] = document.Data
+		if raw := report.Extensions["impactCompleteness"]; len(raw) > 0 {
+			completeness[document.Stack] = raw
+		}
 		for j := range report.Changes {
 			report.Changes[j].Engine = document.Stack
 		}
@@ -113,6 +117,7 @@ func mergeImpactDocuments(documents []contract.Document, notes []string) (contra
 		combined.Extensions = map[string]json.RawMessage{}
 	}
 	combined.Extensions["engineReports"], _ = json.Marshal(engineReports)
+	combined.Extensions["impactCompleteness"], _ = json.Marshal(map[string]any{"scope": "independent-engine-projections", "engines": completeness})
 	if len(coverages) > 0 {
 		report := aggregateCoverage(coverages, combined.Repository)
 		combined.CoverageReport = &report

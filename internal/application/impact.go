@@ -64,6 +64,18 @@ func compareImpact(stack string, request contract.AnalyzeRequest, facts contract
 		Matching:  contract.Matching{AfterSHA: request.After, Datasets: []contract.DatasetMatch{}, Removed: []string{}, UnresolvedChanges: unresolved, Notes: []string{"No revision-verified coverage."}},
 		Notes:     notes,
 	}
+	report.Extensions = map[string]json.RawMessage{}
+	report.Extensions["impactCompleteness"], _ = json.Marshal(map[string]any{
+		"scope": "projected-declarations", "before": impactProjectionEvidence(facts.Before),
+		"after": impactProjectionEvidence(facts.After), "unassessedChanges": len(unresolved),
+		"limitations": []string{"Counts describe supplied projection evidence, not whole-repository coverage.", "Unchanged declaration tokens do not prove unchanged bindings, generated code or configuration effects.", "Absent call edges are not evidence of independence; source candidates and references do not prove runtime invocation."},
+	})
+	if len(facts.Before.Resolution) > 0 {
+		report.Extensions["beforeResolution"] = facts.Before.Resolution
+	}
+	if len(facts.After.Resolution) > 0 {
+		report.Extensions["afterResolution"] = facts.After.Resolution
+	}
 	if request.IncludeCoverage && !request.Resolve {
 		report.CoverageReport = &contract.CoverageReport{SchemaVersion: 1, Root: request.Repository, Engine: stack, Status: "unavailable", Message: "Static impact does not run tests; supply --test-target or --test-binary for dynamic analysis."}
 	}
@@ -71,7 +83,6 @@ func compareImpact(stack string, request contract.AnalyzeRequest, facts contract
 		report.Notes[1] = "Coverage has not yet been verified; collection completion is reported separately."
 		report.Execution.Notes = []string{"Dynamic scan projection collected; native execution evidence is a separate stage."}
 		report.Notes[0] = "Impact uses the engine's resolved scan evidence. Binding strength and unresolved boundaries follow that engine's scan contract."
-		report.Extensions = map[string]json.RawMessage{"beforeResolution": facts.Before.Resolution, "afterResolution": facts.After.Resolution}
 	}
 	return contract.NewDocument(stack, "analyze", report)
 }
@@ -138,11 +149,14 @@ func impactGraph(facts contract.ImpactSnapshot, changed map[string]bool, unresol
 				kind = "SCAN_RESOLVED"
 			}
 		}
+		if call.Kind == "framework-reference" {
+			kind = "FRAMEWORK_REFERENCE"
+		}
 		projected := false
 		for _, target := range targets {
 			if ids[call.Caller] && ids[target] {
 				projected = true
-				graph.Edges = append(graph.Edges, contract.Relation{Caller: call.Caller, Callee: target, Kind: kind, CallSiteID: call.ID, Path: call.Site.File, Line: call.Site.Start.Line})
+				graph.Edges = append(graph.Edges, contract.Relation{Caller: call.Caller, Callee: target, Kind: kind, Basis: call.CandidateBasis, CallSiteID: call.ID, Path: call.Site.File, Line: call.Site.Start.Line})
 				incoming[target] = append(incoming[target], call.Caller)
 				outgoing[call.Caller] = append(outgoing[call.Caller], target)
 			}
@@ -263,7 +277,37 @@ func changedImpactContext(before, after []contract.ImpactContext) []string {
 	slices.Sort(paths)
 	notes := make([]string, 0, len(paths))
 	for _, path := range paths {
-		notes = append(notes, "Changed source context outside function definitions: "+path+"; impact on function bodies is unknown.")
+		notes = append(notes, "Changed source/configuration context outside projected declarations: "+path+"; impact on function bodies is unknown.")
 	}
 	return notes
+}
+
+// Counts expose projection boundaries without asserting semantic completeness.
+func impactProjectionEvidence(snapshot contract.ImpactSnapshot) map[string]any {
+	ids := map[string]bool{}
+	_, ambiguous := impactIndex(snapshot.Symbols)
+	for _, symbol := range snapshot.Symbols {
+		ids[symbol.ID] = true
+	}
+	unknownCaller, unknownTarget := 0, 0
+	for _, call := range snapshot.Calls {
+		if !ids[call.Caller] {
+			unknownCaller++
+		}
+		targets := append([]string{}, call.Candidates...)
+		if call.Candidate != "" {
+			targets = append(targets, call.Candidate)
+		}
+		if call.Target != "" {
+			targets = []string{call.Target}
+		}
+		projected := false
+		for _, target := range targets {
+			projected = projected || ids[target]
+		}
+		if !projected {
+			unknownTarget++
+		}
+	}
+	return map[string]any{"symbols": len(snapshot.Symbols), "relations": len(snapshot.Calls), "contexts": len(snapshot.Contexts), "ambiguousKeys": len(ambiguous), "unprojectedCallers": unknownCaller, "unprojectedTargets": unknownTarget}
 }

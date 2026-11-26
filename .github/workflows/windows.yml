@@ -17,6 +17,13 @@ jobs:
       - name: Select Windows C compiler
         shell: bash
         run: echo 'C:\msys64\mingw64\bin' >> "$GITHUB_PATH"
+      - name: Check comparison and report contracts on Windows
+        shell: bash
+        run: |
+          set -eu
+          export CGO_ENABLED=1
+          go test ./internal/application ./internal/contract ./internal/report
+          go vet ./internal/application ./internal/contract ./internal/report
       - name: Build native Core executable
         shell: bash
         run: |
